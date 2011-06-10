@@ -15,7 +15,12 @@ export PATH
 #         Therefore, do not set M_CONF_TMPDIR to such a directory.
 #
 readonly M_CONF_TMPDIR=/tmp
-readonly M_CONF_PRIVKEY=/etc/macfuse/private.der
+
+if [ -n "$OSXFUSE_PRIVATE_KEY" ]; then
+    readonly M_CONF_PRIVKEY="$OSXFUSE_PRIVATE_KEY"
+else
+    readonly M_CONF_PRIVKEY="$HOME/.osxfuse_private_key"
+fi
 
 # Other constants
 #
