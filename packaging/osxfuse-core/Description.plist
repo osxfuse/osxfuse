@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IFPkgDescriptionDeleteWarning</key>
+	<string></string>
+	<key>IFPkgDescriptionDescription</key>
+	<string>MacFUSE implements a mechanism that makes it possible to implement a fully functional file system in a user-space program on Mac OS X. It aims to be API-compliant with the FUSE (Filesystem in USErspace) mechanism that originated on Linux. Therefore, many existing FUSE file systems become readily usable on Mac OS X. The core of MacFUSE is in a dynamically loadable kernel extension and the FUSE library and headers.
+
+This package will install the runtime and development of MacFUSE.  This will enable you to develop and run your own FUSE file system on OS X.  Please note that this core package does not contain any file systems; those should be installed separately.
+
+Please see:
+
+http://code.google.com/p/macfuse/
+
+for further details.</string>
+	<key>IFPkgDescriptionTitle</key>
+	<string>MacFUSE Core</string>
+	<key>IFPkgDescriptionVersion</key>
+	<string>MacFUSE, © 2007-2008 Google Inc.</string>
+</dict>
+</plist>

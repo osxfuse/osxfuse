@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# Copyright (C) 2006 Google. All Rights Reserved.
+#
+
+PACKAGE_PATH=$1
+# INSTALL_PATH=$2   <-- NOTE: This is always set to '/'
+# INSTALL_VOLUME=$3 <-- NOTE: This is always set to '/'
+# SYSTEM_ROOT=$4    <-- NOTE: This is always set to '/'
+
+VERSION_PATH="/System/Library/CoreServices/SystemVersion"
+if [ ! -f "/${VERSION_PATH}.plist" ]
+then
+  # Doesn't appear to have OS X installed.
+  exit 112
+fi
+
+VERSION=`/usr/bin/defaults read "$VOLUME/$VERSION_PATH" ProductVersion`
+if [ x"$VERSION" = x"" ]
+then
+  # Unable to get OS X version.
+  exit 113
+fi
+
+MAJOR=`echo "$VERSION" | /usr/bin/awk -F. '{ print $1 }'`
+MINOR=`echo "$VERSION" | /usr/bin/awk -F. '{ print $2 }'`
+if [ \( x"$MAJOR" = x"" \) -o \( x"$MINOR" = x"" \) ]
+then
+  # Unable to parse OS X version obtained from volume.
+  exit 114
+fi
+
+if [ \( $MAJOR -lt 10 \) -o \( $MINOR -lt 5 \) ]
+then
+  # Requires Mac OS X 10.5 or greater.
+  exit 115
+fi
+
+# Success!
+exit 0
