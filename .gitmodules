@@ -1,0 +1,12 @@
+[submodule "fuse"]
+	path = fuse
+	url = ../fuse.git
+[submodule "kext"]
+	path = kext
+	url = ../kext.git
+[submodule "prefpane"]
+	path = prefpane
+	url = ../prefpane.git
+[submodule "sdk"]
+        path = sdk
+        url = ../framework.git
