@@ -26,8 +26,8 @@ readonly M_PROGVERS=1.0
 readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
-readonly M_PLATFORMS="10.4 10.5 10.6"     # default is native
-readonly M_PLATFORMS_REALISTIC="10.4 10.5"
+readonly M_PLATFORMS="10.5 10.6"          # default is native
+readonly M_PLATFORMS_REALISTIC="10.5"
 readonly M_TARGETS="clean dist examples lib libsrc reload smalldist swconfigure"
 readonly M_TARGETS_WITH_PLATFORM="examples lib libsrc smalldist swconfigure"
 
@@ -214,10 +214,6 @@ function m_set_platform()
     fi
 
     case "$m_platform" in
-    10.4*)
-        m_osname="Tiger"
-        m_usdk_dir="/Developer/SDKs/MacOSX10.4u.sdk"
-    ;;
     10.5*)
         m_osname="Leopard"
         m_usdk_dir="/Developer/SDKs/MacOSX10.5.sdk"
@@ -580,10 +576,6 @@ function m_handler_examples()
     m_exit_on_error "cannot access examples source."
 
     local me_installed_lib="/usr/local/lib/libfuse_ino64.la"
-    if [ "$m_platform" == "10.4" ]
-    then
-        me_installed_lib="/usr/local/lib/libfuse.la"
-    fi
 
     perl -pi -e "s#../lib/libfuse.la#$me_installed_lib#g" Makefile
     m_exit_on_error "failed to prepare example source for build."
@@ -765,9 +757,6 @@ function m_handler_dist()
         md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_CORE"
 
         case "$md_tmp_os_version" in
-        10.4)
-            m_version_tiger=$md_tmp_release_version
-        ;;
         10.5)
             m_version_leopard=$md_tmp_release_version
         ;;
@@ -1002,20 +991,6 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
       <key>Size</key>
       <string>$md_dmg_size</string>
     </dict>
-    <dict>
-      <key>ProductID</key>
-      <string>$M_MACFUSE_PRODUCT_ID</string>
-      <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.4" AND Ticket.version != "$m_version_tiger"</string>
-      <key>Version</key>
-      <string>$m_version_tiger</string>
-      <key>Codebase</key>
-      <string>$md_download_url</string>
-      <key>Hash</key>
-      <string>$md_dmg_hash</string>
-      <key>Size</key>
-      <string>$md_dmg_size</string>
-    </dict>
   </array>
 </dict>
 </plist>
@@ -1136,12 +1111,7 @@ function m_handler_smalldist()
         m_exit_on_error "cannot find built products directory."
     fi
 
-    if [ "$m_platform" == "10.4" ]
-    then
-        ms_macfuse_system_dir="/System"
-    else
-        ms_macfuse_system_dir=""
-    fi
+    ms_macfuse_system_dir=""
 
     mkdir -p "$ms_macfuse_build"
     m_exit_on_error "cannot make new build directory '$ms_macfuse_build'."
@@ -1189,12 +1159,6 @@ function m_handler_smalldist()
     ln -s "/Library/PreferencePanes/MacFUSE.prefPane/Contents/MacOS/autoinstall-macfuse-core" "$ms_bundle_support_dir/autoinstall-macfuse-core"
     m_exit_on_error "cannot create legacy symlink '$ms_bundle_support_dir/autoinstall-macfuse-core'".
 
-    if [ "$m_platform" == "10.4" ]
-    then
-        mkdir -p "$ms_macfuse_root/Library/Filesystems"
-        ln -s "$ms_macfuse_system_dir/$ms_bundle_dir_generic" "$ms_macfuse_root/$ms_bundle_dir_generic"
-    fi
-
     # Build the user-space MacFUSE library
     #
 
@@ -1231,44 +1195,37 @@ function m_handler_smalldist()
     # Now build again, if necessary, with 64-bit inode support
     #
 
-    # ino64 is not supported on Tiger
+    m_log "building user-space MacFUSE library (ino64)"
 
-    if [ "$m_platform" != "10.4" ]
-    then
+    cd "$ms_macfuse_build"/fuse*/lib
+    m_exit_on_error "cannot access MacFUSE library (ino64) source in '$ms_macfuse_build/fuse*/lib'."
 
-        m_log "building user-space MacFUSE library (ino64)"
+    make clean >$m_stdout 2>$m_stderr
+    m_exit_on_error "make failed while compiling the MacFUSE library (ino64)."
 
-        cd "$ms_macfuse_build"/fuse*/lib
-        m_exit_on_error "cannot access MacFUSE library (ino64) source in '$ms_macfuse_build/fuse*/lib'."
+    perl -pi -e 's#libfuse#libfuse_ino64#g' Makefile
+    m_exit_on_error "failed to prepare MacFUSE library (ino64) for compilation."
 
-        make clean >$m_stdout 2>$m_stderr
-        m_exit_on_error "make failed while compiling the MacFUSE library (ino64)."
+    perl -pi -e 's#-D__FreeBSD__=10#-D__DARWIN_64_BIT_INO_T=1 -D__FreeBSD__=10#g' Makefile
+    m_exit_on_error "failed to prepare MacFUSE library (ino64) for compilation."
 
-        perl -pi -e 's#libfuse#libfuse_ino64#g' Makefile
-        m_exit_on_error "failed to prepare MacFUSE library (ino64) for compilation."
+    make -j2 >$m_stdout 2>$m_stderr
+    m_exit_on_error "make failed while compiling the MacFUSE library (ino64)."
 
-        perl -pi -e 's#-D__FreeBSD__=10#-D__DARWIN_64_BIT_INO_T=1 -D__FreeBSD__=10#g' Makefile
-        m_exit_on_error "failed to prepare MacFUSE library (ino64) for compilation."
+    make install DESTDIR="$ms_macfuse_root" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot prepare MacFUSE library (ino64) build for installation."
 
-        make -j2 >$m_stdout 2>$m_stderr
-        m_exit_on_error "make failed while compiling the MacFUSE library (ino64)."
+    rm -f "$ms_macfuse_root"/usr/local/lib/*ulockmgr*
+    # ignore any errors
 
-        make install DESTDIR="$ms_macfuse_root" >$m_stdout 2>$m_stderr
-        m_exit_on_error "cannot prepare MacFUSE library (ino64) build for installation."
+    rm -f "$ms_macfuse_root"/usr/local/include/*ulockmgr*
+    # ignore any errors
 
-        rm -f "$ms_macfuse_root"/usr/local/lib/*ulockmgr*
-        # ignore any errors
-
-        rm -f "$ms_macfuse_root"/usr/local/include/*ulockmgr*
-        # ignore any errors
-
-        # generate dsym
-        dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse.dylib
-        m_exit_on_error "cannot generate debugging information for libfuse."
-        dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse_ino64.dylib
-        m_exit_on_error "cannot generate debugging information for libfuse_ino64."
-
-    fi # ino64 on > Tiger
+    # generate dsym
+    dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse.dylib
+    m_exit_on_error "cannot generate debugging information for libfuse."
+    dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse_ino64.dylib
+    m_exit_on_error "cannot generate debugging information for libfuse_ino64."
 
     # Build MacFUSE.framework
     #
@@ -1281,25 +1238,17 @@ function m_handler_smalldist()
     rm -rf build/
     m_exit_on_error "cannot remove previous build of MacFUSE.framework."
 
-    if [ "$m_platform" == "10.4" ]
-    then
-        xcodebuild -configuration "$m_configuration" -target "MacFUSE-$ms_os_version" "MACFUSE_BUILD_ROOT=$ms_macfuse_root" "MACFUSE_BUNDLE_VERSION_LITERAL=$ms_macfuse_version" "CUSTOM_CFLAGS=-DMACFUSE_TARGET_OS=MAC_OS_X_VERSION_10_4" >$m_stdout 2>$m_stderr
-    else
-        xcodebuild -configuration "$m_configuration" -target "MacFUSE-$ms_os_version" "MACFUSE_BUILD_ROOT=$ms_macfuse_root" "MACFUSE_BUNDLE_VERSION_LITERAL=$ms_macfuse_version" >$m_stdout 2>$m_stderr
-    fi
+    xcodebuild -configuration "$m_configuration" -target "MacFUSE-$ms_os_version" "MACFUSE_BUILD_ROOT=$ms_macfuse_root" "MACFUSE_BUNDLE_VERSION_LITERAL=$ms_macfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_macfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'MacFUSE.framework' to destination."
 
-    if [ "$m_platform" != "10.4" ]
-    then
-        mv "$ms_macfuse_root"/usr/local/lib/*.dSYM "$ms_macfuse_root"/Library/Frameworks/MacFUSE.framework/Resources/Debug/
-        mkdir -p "$ms_macfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
-        m_exit_on_error "cannot create directory for Xcode templates."
-        ln -s "/Library/Frameworks/MacFUSE.framework/Resources/ProjectTemplates/" "$ms_macfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/MacFUSE"
-        m_exit_on_error "cannot create symlink for Xcode templates."
-    fi
+    mv "$ms_macfuse_root"/usr/local/lib/*.dSYM "$ms_macfuse_root"/Library/Frameworks/MacFUSE.framework/Resources/Debug/
+    mkdir -p "$ms_macfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
+    m_exit_on_error "cannot create directory for Xcode templates."
+    ln -s "/Library/Frameworks/MacFUSE.framework/Resources/ProjectTemplates/" "$ms_macfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/MacFUSE"
+    m_exit_on_error "cannot create symlink for Xcode templates."
 
     m_set_suprompt "to chown '$ms_macfuse_root/*'"
     sudo -p "$m_suprompt" chown -R root:wheel "$ms_macfuse_root"/*
@@ -1382,13 +1331,7 @@ function m_handler_swconfigure()
     local extra_cflags=""
     local architectures=""
 
-    if [ "$m_platform" == "10.4" ]
-    then
-        extra_cflags="-mmacosx-version-min=10.4"
-        architectures="-arch i386 -arch ppc"
-    else
-        architectures="-arch i386 -arch ppc"
-    fi
+    architectures="-arch i386 -arch x86_64"
 
     local common_cflags="-O0 -g $architectures -isysroot $m_usdk_dir -I/usr/local/include"
     local common_ldflags="-Wl,-syslibroot,$m_usdk_dir $architectures -L/usr/local/lib"
