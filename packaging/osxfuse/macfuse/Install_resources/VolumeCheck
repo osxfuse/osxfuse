@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# Copyright (C) 2006 Google. All Rights Reserved.
+#
+# See http://developer.apple.com/documentation/DeveloperTools/Conceptual/SoftwareDistribution4/Concepts/sd_volume_check_ref.html
+
+VOLUME=$1
+
+VERSION_PATH="/System/Library/CoreServices/SystemVersion"
+
+if [ ! -f "${VOLUME}/${VERSION_PATH}.plist" ]
+then
+  # Volume doesn't appear to have OS X installed.
+  exit 112
+fi
+
+VERSION=`/usr/bin/defaults read "$VOLUME/$VERSION_PATH" ProductVersion`
+if [ x"$VERSION" = x"" ]
+then
+  # Unable to get OS X version from volume.
+  exit 113
+fi
+
+MAJOR=`echo "$VERSION" | /usr/bin/awk -F. '{ print $1 }'`
+MINOR=`echo "$VERSION" | /usr/bin/awk -F. '{ print $2 }'`
+if [ \( x"$MAJOR" = x"" \) -o \( x"$MINOR" = x"" \) ]
+then
+  # Unable to parse OS X version obtained from volume.
+  exit 114
+fi
+
+if [ \( $MAJOR -lt 10 \) -o \( $MINOR -lt 4 \) ]
+then
+  # Requires Mac OS X 10.4 or greater.
+  exit 115
+fi
+
+# Success!
+exit 0

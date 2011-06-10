@@ -1,0 +1,203 @@
+#!/bin/bash
+#
+# Copyright (C) 2008 Google. All Rights Reserved.
+#
+
+INSTALL_LOG="/tmp/.macfuse-install.log"
+FORCE_EMBEDDED_FILE="/tmp/.macfuse-force-embedded"
+
+exec >> "$INSTALL_LOG" 2>&1
+
+PACKAGE_PATH=$1
+INSTALL_PATH=$2
+INSTALL_VOLUME=$3
+SYSTEM_ROOT=$4
+
+# Binaries we use
+RESOURCES="${PACKAGE_PATH}/Contents/Resources"
+AUTOINSTALLER_NAME="autoinstall-macfuse-core"
+AUTOINSTALLER="${RESOURCES}/${AUTOINSTALLER_NAME}"
+PATH="/bin:/usr/bin:/usr/sbin"; export PATH
+
+# Header
+echo ""
+echo -n "Running postflight: "
+date
+echo ""
+
+# Determine this .pkg's receipt location.
+PACKAGE_NAME=$(basename "$PACKAGE_PATH")
+if [ -z "$PACKAGE_NAME" ]
+then
+  echo "Empty PACKAGE_NAME."
+  exit 1
+fi
+FINAL_RECEIPT="${INSTALL_VOLUME}/Library/Receipts/${PACKAGE_NAME}"
+
+# Determine OS version MAJOR-MINOR that we are running on.
+OS_VERSION_PATH="${INSTALL_VOLUME}/System/Library/CoreServices/SystemVersion"
+OS_VERSION=$(/usr/bin/defaults read "$OS_VERSION_PATH" ProductVersion)
+if [ -z "$OS_VERSION" ]
+then
+  # Unable to get OS X version from volume.
+  exit 1
+fi
+OS_MAJOR=$(echo "$OS_VERSION" | awk -F. '{ print $1 }')
+OS_MINOR=$(echo "$OS_VERSION" | awk -F. '{ print $2 }')
+if [ \( -z "$OS_MAJOR" \) -o \( -z "$OS_MINOR" \) ]
+then
+  # Unable to parse OS X version obtained from volume.
+  exit 1
+fi
+
+CORE_NAME="MacFUSE Core.pkg"
+
+# Some third-party software releases have mis-packaged MacFUSE Core. If this 
+# looks to be the case then we need to remove the improper receipt.
+if [ -d "$CORE_RECEIPT" ]
+then
+  CORE_RECEIPT="${INSTALL_VOLUME}/Library/Receipts/${CORE_NAME}"
+  CORE_RECEIPT_INFO="${CORE_RECEIPT}/Contents/Info"
+  MACFUSE_BUNDLE_ID=$(defaults read "$CORE_RECEIPT_INFO" CFBundleIdentifier)
+  if [ "$MACFUSE_BUNDLE_ID" != "com.google.macfuse.core" ]
+  then
+     echo "Removing broken MacFUSE Core receipt: $CORE_RECEIPT"
+     # TODO: Should we also uninstall macfuse core?
+     rm -rf "$CORE_RECEIPT"
+  fi
+fi
+
+# Determine the appropriate embedded pkg for this platform.
+OS_MAJOR_MINOR="${OS_MAJOR}.${OS_MINOR}"
+EMBEDDED_PKG="${PACKAGE_PATH}/Contents/Resources/${OS_MAJOR_MINOR}/${CORE_NAME}"
+INSTALL_EMBEDDED_PKG=1          # Default to installing the embedded .pkg
+FAIL_IF_MISSING_EMBEDDED_PKG=1  # Default to fail if no embedded .pkg
+echo "Potential embedded package path: ${EMBEDDED_PKG}"
+
+# Use autoinstaller to see if there is a newer MacFUSE Core.
+NEW_VERSION=
+
+if [ -f "$FORCE_EMBEDDED_FILE" ]
+then
+  # We are being forced to use the embedded package and not check for updates
+  echo "Found $FORCE_EMBEDDED_FILE; skipping check for online updates"
+  rm -f "$FORCE_EMBEDDED_FILE"
+else
+  AUTOINSTALLER_OUTPUT=$("$AUTOINSTALLER" --list)
+  AUTOINSTALLER_RC=$?
+  echo "$AUTOINSTALLER_OUTPUT"  # So that we can see in postflight log
+  if [ $AUTOINSTALLER_RC -eq 0 ]
+  then
+    NEW_VERSION=$(unset Version; eval "$AUTOINSTALLER_OUTPUT" > /dev/null; echo "$Version")
+    NEW_VERSION_STRING=${NEW_VERSION:-"None"}
+    if [ "$NEW_VERSION_STRING" = "None" ]
+    then
+      FAIL_IF_MISSING_EMBEDDED_PKG=0
+    fi
+    echo "New version available: $NEW_VERSION_STRING"
+  else
+    echo "Unable to get data from autoinstaller about new versions."
+  fi
+fi
+
+# If there is a newer version, we check if it is newer than what we have embedded
+# in this .pkg. If so, we run autoinstaller to start install of the new one.
+if [ "$NEW_VERSION" != "" ]
+then
+  # Check to see if the new version is embedded in this .pkg
+  EMBEDDED_INFO="${EMBEDDED_PKG}/Contents/Info"
+  EMBEDDED_VERSION=$(defaults read "$EMBEDDED_INFO" CFBundleShortVersionString)
+  if [ "$EMBEDDED_VERSION" != "$NEW_VERSION" ]
+  then
+    echo "Attempting to download and install version ${NEW_VERSION}."
+    "$AUTOINSTALLER" --install -v
+    if [ $? -eq 0 ]
+    then
+      echo "Successfully downloaded and installed updated version."
+     INSTALL_EMBEDDED_PKG=0
+    else
+      echo "Failed to download and install new version."
+    fi
+  else 
+    echo "Embedded version is current."
+  fi
+fi
+
+# If we need to install the embedded package then see if it actually exists.
+if [ $INSTALL_EMBEDDED_PKG -eq 1 ]
+then
+  if [ ! -d "$EMBEDDED_PKG" ]
+  then
+    echo "Missing embedded pkg: ${EMBEDDED_PKG}"
+    INSTALL_EMBEDDED_PKG=0
+    if [ $FAIL_IF_MISSING_EMBEDDED_PKG -eq 1 ]
+    then
+      echo "Failure due to missing embedded pkg: ${EMBEDDED_PKG}"
+      exit 1
+    fi
+  fi
+fi
+
+# Maybe try to install our embedded MacFUSE Core.pkg.
+if [ $INSTALL_EMBEDDED_PKG -eq 1 ]
+then
+  echo "Attempting to install embedded package: ${EMBEDDED_PKG}"
+  INSTALLER_OUTPUT=$(installer -pkg "$EMBEDDED_PKG" -target "$INSTALL_VOLUME")
+  INSTALLER_RC=$?
+  echo "$INSTALLER_OUTPUT"  # So that we see it in our postflight log
+  if [ $INSTALLER_RC -eq 0 ]
+  then
+    # Remove old autoinstaller bundle if it is still there.
+    MACFUSE_SUPPORT="/Library/Filesystems/fusefs.fs/Support/"
+    if [ $OS_MINOR -eq 4 ]
+    then
+      MACFUSE_SUPPORT="/System/${MACFUSE_SUPPORT}"
+    fi
+    MACFUSE_SUPPORT="${INSTALL_VOLUME}/${MACFUSE_SUPPORT}"
+    if [ ! -d "$MACFUSE_SUPPORT" ]
+    then
+      echo "Unable to find Support directory: ${MACFUSE_SUPPORT}"
+      exit 1
+    fi
+
+    # Remove the old autoinstaller bundle if necessary.
+    rm -rf "${MACFUSE_SUPPORT}/MacFUSEAutoinstaller.bundle"
+
+    # Copy the autoinstaller binary.
+# DISABLED: The autoinstaller binary is now installed as part of the outer pkg.
+#    cp "$AUTOINSTALLER" "${MACFUSE_SUPPORT}/${AUTOINSTALLER_NAME}"
+#    if [ $? -ne 0 ]
+#    then
+#      echo "Unable to copy autoinstaller bundle to Support directory."
+#      exit 1
+#    fi
+#    chown -R root:wheel "${MACFUSE_SUPPORT}/${AUTOINSTALLER_NAME}"
+#    if [ $? -ne 0 ]
+#    then
+#      echo "Unable to chown macfuse autoinstaller."
+#      exit 1
+#    fi
+  else
+    # If the install failed due to an existing newer version then it is OK.
+    # TODO: This grep is sort of lame and dependent on installer (and lang?)
+    echo "$INSTALLER_OUTPUT" | \
+          grep "newer version of this software already exists" > /dev/null
+    if [ $? -eq 0 ]
+    then
+      echo "Embedded package was older than what is already installed (status OK)."
+    else
+      echo "Failed to install $EMBEDDED_PKG"
+      exit 1
+    fi
+  fi
+fi
+
+# Make Spotlight aware of debug symbols for libfuse and the Objective-C framework.
+# We do this for the user that is logged in at the console.
+sudo -u `stat -f %Su /dev/console` mdimport /Library/Frameworks/MacFUSE.framework/Resources/Debug/
+
+# Remove our receipt; MacFUSE.pkg doesn't have a payload.
+rm -rf "$FINAL_RECEIPT"
+
+## Signal success
+exit 0

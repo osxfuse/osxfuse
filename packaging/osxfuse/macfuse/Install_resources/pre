@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# Copyright (C) 2008 Google. All Rights Reserved.
+#
+PACKAGE_PATH=$1
+INSTALL_PATH=$2
+INSTALL_VOLUME=$3
+SYSTEM_ROOT=$4
+
+## Signal success
+
+exit 0
