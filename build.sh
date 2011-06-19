@@ -1014,14 +1014,14 @@ function m_handler_smalldist()
 
     m_set_srcroot "$m_platform"
 
-    local lib_dir="$m_srcroot"/core/"$m_platform"/libfuse
+    local lib_dir="$m_srcroot"/fuse
     if [ ! -d "$lib_dir" ]
     then
         false
         m_exit_on_error "cannot access directory '$lib_dir'."
     fi
 
-    local kernel_dir="$m_srcroot"/core/"$m_platform"/fusefs
+    local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
         false
@@ -1031,7 +1031,7 @@ function m_handler_smalldist()
     if [ "$m_shortcircuit" != "1" ]
     then
         rm -rf "$kernel_dir/build/"
-        rm -rf "$m_srcroot/core/sdk-objc/build/"
+        rm -rf "$m_srcroot/sdk/build/"
     fi
 
     local ms_os_version="$m_platform"
@@ -1142,7 +1142,7 @@ function m_handler_smalldist()
     cp -pRX "$ms_built_products_dir/mount_fusefs" "$ms_bundle_support_dir/mount_fusefs"
     m_exit_on_error "cannot copy 'mount_fusefs' to destination."
 
-    cp -pRX "$m_srcroot/core/$m_platform/packaging/macfuse-core/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
+    cp -pRX "$m_srcroot/packaging/osxfuse-core/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
     m_exit_on_error "cannot copy 'uninstall-macfuse-core.sh' to destination."
 
     ln -s "/Library/PreferencePanes/MacFUSE.prefPane/Contents/MacOS/autoinstall-macfuse-core" "$ms_bundle_support_dir/autoinstall-macfuse-core"
@@ -1153,17 +1153,13 @@ function m_handler_smalldist()
 
     m_log "building user-space MacFUSE library"
 
-    tar -C "$ms_macfuse_build" -xzf "$lib_dir/$M_LIBFUSE_SRC" \
-        >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot untar MacFUSE library source from '$M_LIBFUSE_SRC'."
+    cp -pRX "$lib_dir" "$ms_macfuse_build"
+    m_exit_on_error "cannot copy MacFUSE library source from '$lib_dir'."
 
-    cd "$ms_macfuse_build"/fuse*
-    m_exit_on_error "cannot access MacFUSE library source in '$ms_macfuse_build/fuse*'."
+    cd "$ms_macfuse_build"/fuse
+    m_exit_on_error "cannot access MacFUSE library source in '$ms_macfuse_build/fuse'."
 
-    patch -p1 < "$lib_dir/$M_LIBFUSE_PATCH" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot patch MacFUSE library source."
-
-    /bin/sh ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure MacFUSE library source for compilation."
 
     make -j2 >$m_stdout 2>$m_stderr
@@ -1186,7 +1182,7 @@ function m_handler_smalldist()
 
     m_log "building user-space MacFUSE library (ino64)"
 
-    cd "$ms_macfuse_build"/fuse*/lib
+    cd "$ms_macfuse_build"/fuse/lib
     m_exit_on_error "cannot access MacFUSE library (ino64) source in '$ms_macfuse_build/fuse*/lib'."
 
     make clean >$m_stdout 2>$m_stderr
@@ -1195,7 +1191,7 @@ function m_handler_smalldist()
     perl -pi -e 's#libfuse#libfuse_ino64#g' Makefile
     m_exit_on_error "failed to prepare MacFUSE library (ino64) for compilation."
 
-    perl -pi -e 's#-D__FreeBSD__=10#-D__DARWIN_64_BIT_INO_T=1 -D__FreeBSD__=10#g' Makefile
+    perl -pi -e 's#-D__DARWIN_64_BIT_INO_T=0#-D__DARWIN_64_BIT_INO_T=1#g' Makefile
     m_exit_on_error "failed to prepare MacFUSE library (ino64) for compilation."
 
     make -j2 >$m_stdout 2>$m_stderr
@@ -1221,7 +1217,7 @@ function m_handler_smalldist()
 
     m_log "building MacFUSE Objective-C SDK"
 
-    cd "$ms_project_dir/../../sdk-objc"
+    cd "$ms_project_dir/../sdk"
     m_exit_on_error "cannot access Objective-C SDK directory."
 
     rm -rf build/
@@ -1282,7 +1278,7 @@ function m_handler_smalldist()
 
     m_log "building installer package for $m_platform"
 
-    m_build_pkg "$ms_macfuse_version" "$m_srcroot/core/$m_platform/packaging/macfuse-core" "$ms_macfuse_root" "$M_PKGNAME_CORE" "$ms_macfuse_out"
+    m_build_pkg "$ms_macfuse_version" "$m_srcroot/packaging/osxfuse-core" "$ms_macfuse_root" "$M_PKGNAME_CORE" "$ms_macfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
 
     echo >$m_stdout
