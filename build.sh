@@ -172,9 +172,9 @@ function m_set_srcroot()
     local is_absolute_path=`echo "$0" | cut -c1`
     if [ "$is_absolute_path" == "/" ]
     then
-        macfuse_dir="`dirname $0`/.."
+        macfuse_dir="`dirname $0`/"
     else
-        macfuse_dir="`pwd`/`dirname $0`/.."
+        macfuse_dir="`pwd`/`dirname $0`/"
     fi
     pushd . > /dev/null
     cd "$macfuse_dir" || exit 1
