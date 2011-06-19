@@ -1189,14 +1189,14 @@ function m_handler_swconfigure()
 
     m_set_srcroot "$m_platform"
 
-    local lib_dir="$m_srcroot"/core/"$m_platform"/libfuse
+    local lib_dir="$m_srcroot"/fuse
     if [ ! -d "$lib_dir" ]
     then
         false
         m_exit_on_error "cannot access directory '$lib_dir'."
     fi
 
-    local kernel_dir="$m_srcroot"/core/"$m_platform"/fusefs
+    local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
         false
