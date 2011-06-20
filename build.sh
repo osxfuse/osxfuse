@@ -493,13 +493,13 @@ function m_handler_dist()
 
         m_set_srcroot "$m_platform"
 
-        rm -rf "$m_srcroot/core/autoinstaller/build"
+        rm -rf "$m_srcroot/prefpane/autoinstaller/build"
         m_log "cleaned internal subtarget autoinstaller"
 
-        rm -rf "$m_srcroot/core/prefpane/build"
+        rm -rf "$m_srcroot/prefpane/build"
         m_log "cleaned internal subtarget prefpane"
 
-        m_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/core/$m_platform/fusefs/common/fuse_version.h" | cut -d . -f 1,2`
+        m_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
         if [ ! -z "$m_release" ]
         then
             if [ -e "$M_CONF_TMPDIR/macfuse-$m_release" ]
@@ -536,7 +536,7 @@ function m_handler_dist()
     # Autoinstaller
     #
 
-    local md_ai_builddir="$m_srcroot/core/autoinstaller/build"
+    local md_ai_builddir="$m_srcroot/prefpane/autoinstaller/build"
 
     if [ "$m_shortcircuit" != "1" ]
     then
@@ -546,7 +546,7 @@ function m_handler_dist()
 
     m_log "building the MacFUSE autoinstaller"
 
-    pushd "$m_srcroot/core/autoinstaller" >/dev/null 2>/dev/null
+    pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
     xcodebuild -configuration "$m_configuration" -target "Build All" \
         >$m_stdout 2>$m_stderr
@@ -580,7 +580,7 @@ function m_handler_dist()
 
     # Build the preference pane
     #
-    local md_pp_builddir="$m_srcroot/core/prefpane/build"
+    local md_pp_builddir="$m_srcroot/prefpane/build"
 
     if [ "$m_shortcircuit" != "1" ]
     then
@@ -590,7 +590,7 @@ function m_handler_dist()
 
     m_log "building the MacFUSE prefpane"
 
-    pushd "$m_srcroot/core/prefpane" >/dev/null 2>/dev/null
+    pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the prefpane source."
     xcodebuild -configuration "$m_configuration" -target "MacFUSE" \
         >$m_stdout 2>$m_stderr
@@ -612,7 +612,7 @@ function m_handler_dist()
 
     m_active_target="dist"
 
-    m_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/core/$m_platform/fusefs/common/fuse_version.h" | cut -d . -f 1,2`
+    m_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
     m_exit_on_error "cannot get MacFUSE release version."
 
     local md_macfuse_out="$M_CONF_TMPDIR/macfuse-$m_release"
@@ -666,7 +666,7 @@ function m_handler_dist()
     m_set_suprompt "to chown '$md_macfuse_root/'."
     sudo -p "$m_suprompt" chown -R root:wheel "$md_macfuse_root/"
 
-    local md_srcroot="$m_srcroot/core/packaging/macfuse"
+    local md_srcroot="$m_srcroot/packaging/osxfuse-core"
     local md_infoplist_in="$md_srcroot/Info.plist.in"
     local md_infoplist_out="$md_macfuse_out/Info.plist"
     local md_descriptionplist="$md_srcroot/Description.plist"
