@@ -34,7 +34,7 @@ readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist swconfigure"
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
 readonly M_DEFAULT_TARGET="$M_DEFAULT_VALUE"
 
-readonly M_XCODE_VERSION_REQUIRED=3.1.1
+readonly M_XCODE_VERSION_REQUIRED=4.0.0
 
 # Globals
 #
