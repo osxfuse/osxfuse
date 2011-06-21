@@ -328,7 +328,7 @@ function m_handler_reload()
 
     m_set_srcroot "$m_platform"
 
-    local kernel_dir="$m_srcroot/core/$m_platform/fusefs"
+    local kernel_dir="$m_srcroot/kext"
     if [ ! -d "$kernel_dir" ]
     then
         false
@@ -391,7 +391,7 @@ function m_handler_reload()
 
     m_set_suprompt "to load newly built MacFUSE kext"
     sudo -p "$m_suprompt" \
-        kextload -s "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" \
+        kextutil -s "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" \
             -v "$M_CONF_TMPDIR/$M_KEXT_NAME" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot load newly built MacFUSE kext."
 
