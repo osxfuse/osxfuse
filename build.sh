@@ -182,17 +182,6 @@ function m_set_srcroot()
     popd > /dev/null
 
     m_srcroot="$macfuse_dir"
-
-    if [ "x$1" != "x" ] && [ "$1" != "$M_DEFAULT_PLATFORM" ]
-    then
-        m_srcroot_platformdir="$m_srcroot/core/$1"
-        if [ ! -d "$m_srcroot_platformdir" ]
-        then
-            m_srcroot_platformdir="$M_DEFAULT_VALUE"
-            m_warn "directory '$m_srcroot/$1' does not exist."
-        fi
-    fi
-
     return 0
 }
 
