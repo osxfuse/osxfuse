@@ -417,34 +417,21 @@ function m_handler_examples()
 
     m_set_srcroot "$m_platform"
 
-    local lib_dir="$m_srcroot"/core/"$m_platform"/libfuse
+    local lib_dir="$m_srcroot"/fuse
     if [ ! -d "$lib_dir" ]
     then
         false
         m_exit_on_error "cannot access directory '$lib_dir'."
     fi
 
-    local kernel_dir="$m_srcroot"/core/"$m_platform"/fusefs
+    local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
         false
         m_exit_on_error "cannot access directory '$kernel_dir'."
     fi
 
-    local package_dir=`tar -tzvf "$lib_dir/$M_LIBFUSE_SRC" | head -1 | awk '{print $NF}'`
-    if [ "x$package_dir" == "x" ]
-    then
-        false
-        m_exit_on_error "cannot determine MacFUSE library version."
-    fi
-
-    local package_name=`basename "$package_dir"`
-
-    if [ "x$package_name" == "x" ]
-    then
-        false
-        m_exit_on_error "cannot determine MacFUSE library version."
-    fi
+    local package_name="fuse"
 
     rm -rf "$M_CONF_TMPDIR/$package_name"
 
@@ -457,19 +444,14 @@ function m_handler_examples()
 
     m_log "initiating Universal build for $m_platform"
 
-    tar -C "$M_CONF_TMPDIR" -xzvf "$lib_dir/$M_LIBFUSE_SRC" \
-        >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot untar MacFUSE library source from '$M_LIBFUSE_SRC'."
+    cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
+    m_exit_on_error "cannot copy MacFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
     m_exit_on_error "cannot access MacFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
-    m_log "preparing library source"
-    patch -p1 < "$lib_dir/$M_LIBFUSE_PATCH" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot patch MacFUSE library source."
-
     m_log "configuring library source"
-    /bin/sh ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure MacFUSE library source for compilation."
 
     cd example
