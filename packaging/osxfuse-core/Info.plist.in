@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>MacFUSE</string>
+	<string>OSXFUSE</string>
 	<key>CFBundleGetInfoString</key>
-	<string>MACFUSE_VERSION_LITERAL, MacFUSE Project</string>
+	<string>OSXFUSE_VERSION_LITERAL, FUSE for OS X (OSXFUSE)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.google.macfuse.core</string>
+	<string>com.github.osxfuse.osxfuse-core</string>
 	<key>CFBundleShortVersionString</key>
-	<string>MACFUSE_VERSION_LITERAL</string>
+	<string>OSXFUSE_VERSION_LITERAL</string>
 	<key>IFMajorVersion</key>
 	<integer>0</integer>
 	<key>IFMinorVersion</key>
