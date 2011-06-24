@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2006 Google. All Rights Reserved.
 #
-# Uninstalls the "MacFUSE Core.pkg".
+# Uninstalls the "OSXFUSE Core.pkg".
 
 INSTALL_VOLUME="/"
 
@@ -12,17 +12,17 @@ function log() {
   local msg="$1"
   if [ $LOG_SYSLOG -eq 1 ]
   then
-    syslog -l Notice -s "MacFUSE Uninstaller: $msg"
+    syslog -l Notice -s "OSXFUSE Uninstaller: $msg"
   fi
   if [ $LOG_STDOUT -eq 1 ]
   then
-    echo "MacFUSE Uninstaller: $msg"
+    echo "OSXFUSE Uninstaller: $msg"
   fi
 }
 
 # Check to make sure that operations (such as rm, rmdir) are relatively
 # safe. This should only allow operations throught that would operate on
-# stuff installed by MacFUSE.
+# stuff installed by OSXFUSE.
 #
 # Ret: 1 (true) if the prefix is ok to use, otherwise 0 (false).
 function is_safe_prefix() {
@@ -35,17 +35,17 @@ function is_safe_prefix() {
     "$INSTALL_VOLUME"/./usr/local/bin/*                        |  \
     "$INSTALL_VOLUME"/./usr/local/lib/*                        |  \
     "$INSTALL_VOLUME"/./usr/local/include/*                    |  \
-    "$INSTALL_VOLUME"/./Library/Extensions/fusefs.kext         |  \
-    "$INSTALL_VOLUME"/./Library/Extensions/fusefs.kext/*       |  \
-    "$INSTALL_VOLUME"/./Library/Filesystems/fusefs.fs          |  \
-    "$INSTALL_VOLUME"/./Library/Filesystems/fusefs.fs/*        |  \
-    "$INSTALL_VOLUME"/./Library/Frameworks/MacFUSE.framework   |  \
-    "$INSTALL_VOLUME"/./Library/Frameworks/MacFUSE.framework/* |  \
+    "$INSTALL_VOLUME"/./Library/Extensions/osxfusefs.kext         |  \
+    "$INSTALL_VOLUME"/./Library/Extensions/osxfusefs.kext/*       |  \
+    "$INSTALL_VOLUME"/./Library/Filesystems/osxfusefs.fs          |  \
+    "$INSTALL_VOLUME"/./Library/Filesystems/osxfusefs.fs/*        |  \
+    "$INSTALL_VOLUME"/./Library/Frameworks/OSXFUSE.framework   |  \
+    "$INSTALL_VOLUME"/./Library/Frameworks/OSXFUSE.framework/* |  \
     "$INSTALL_VOLUME"/./Library/Application\ Support/Developer/Shared/Xcode/Project\ Templates/* |  \
-    "$INSTALL_VOLUME"/Library/Receipts/MacFUSE.pkg             |  \
-    "$INSTALL_VOLUME"/Library/Receipts/MacFUSE.pkg/*           |  \
-    "$INSTALL_VOLUME"/Library/Receipts/MacFUSE\ Core.pkg       |  \
-    "$INSTALL_VOLUME"/Library/Receipts/MacFUSE\ Core.pkg/*)
+    "$INSTALL_VOLUME"/Library/Receipts/OSXFUSE.pkg             |  \
+    "$INSTALL_VOLUME"/Library/Receipts/OSXFUSE.pkg/*           |  \
+    "$INSTALL_VOLUME"/Library/Receipts/OSXFUSE\ Core.pkg       |  \
+    "$INSTALL_VOLUME"/Library/Receipts/OSXFUSE\ Core.pkg/*)
       # These are all ok to process.
       return 1;
       ;;  
@@ -167,18 +167,14 @@ fi
 
 OS_RELEASE=`/usr/bin/uname -r`
 case "$OS_RELEASE" in 
-  8*)
-    log "Incorrect uninstall. Use the Tiger version please."
-    exit 1
-    ;;
   9*)
-    PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/MacFUSE Core.pkg"
-    OUTER_PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/MacFUSE.pkg"
+    PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/OSXFUSE Core.pkg"
+    OUTER_PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/OSXFUSE.pkg"
     BOMFILE="$PACKAGE_RECEIPT/Contents/Archive.bom"
     ;;
   10*)
      PACKAGE_RECEIPT=""
-     BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.google.macfuse.core.bom"
+     BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.osxfuse-core.bom"
      ;;
 esac
 
@@ -188,30 +184,30 @@ if [ ! -d "$INSTALL_VOLUME" ]; then
   exit 2
 fi
 
-# Make sure that MacFUSE Core is installed and the Archive.bom is present.
+# Make sure that OSXFUSE Core is installed and the Archive.bom is present.
 if [ ! -z "$PACKAGE_RECEIPT" ]
 then 
   if [ ! -d "$PACKAGE_RECEIPT" ]
   then
-    log "It appears that MacFUSE Core is not installed."
+    log "It appears that OSXFUSE Core is not installed."
     exit 3
   fi
 else
-  /usr/sbin/pkgutil --pkg-info com.google.macfuse.core > /dev/null 2>&1
+  /usr/sbin/pkgutil --pkg-info com.github.osxfuse.osxfuse-core > /dev/null 2>&1
   if [ $? -ne 0 ]
   then
-    log "It appears that MacFUSE Core is not installed."
+    log "It appears that OSXFUSE Core is not installed."
     exit 3    
   fi
 fi
 if [ ! -f "$BOMFILE" ]
 then
-  log "Can not find the Archive.bom for MacFUSE Core package."
+  log "Can not find the Archive.bom for OSXFUSE Core package."
   exit 4
 fi
 
 # 1. Try to unload the kext if possible. Best effort, so ignore errors.
-kextunload -b com.google.filesystems.fusefs > /dev/null 2>&1
+kextunload -b com.github.osxfuse.osxfusefs > /dev/null 2>&1
 
 # 2. Remove files and symlinks
 OLD_IFS="$IFS"
@@ -227,7 +223,7 @@ done
 IFS="$OLD_IFS"
 
 # 3. Remove autoinstaller
-remove_file "$INSTALL_VOLUME/./Library/Filesystems/fusefs.fs/Support/autoinstall-macfuse-core"
+remove_file "$INSTALL_VOLUME/./Library/Filesystems/osxfusefs.fs/Support/autoinstall-osxfuse-core"
 
 # 4. Remove the directories
 OLD_IFS="$IFS"
@@ -252,19 +248,19 @@ then
     then
       IS_BOTCHED_UNINSTALL=1
     fi
-    # Best effort remove of MacFUSE.pkg
+    # Best effort remove of OSXFUSE.pkg
     if [ ! -z "$OUTER_PACKAGE_RECEIPT" ]
     then
       remove_tree "$OUTER_PACKAGE_RECEIPT"
     fi
   else 
-    /usr/sbin/pkgutil --forget com.google.macfuse.core
+    /usr/sbin/pkgutil --forget com.github.osxfuse.osxfuse-core
     if [ $? -ne 0 ]
     then
       IS_BOTCHED_UNINSTALL=1
     fi
-    # Best effort remove of MacFUSE.pkg.
-    /usr/sbin/pkgutil --forget com.google.macfuse
+    # Best effort remove of OSXFUSE.pkg.
+    /usr/sbin/pkgutil --forget com.github.osxfuse.osxfuse
   fi
 fi
 

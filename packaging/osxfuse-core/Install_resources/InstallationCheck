@@ -32,7 +32,7 @@ fi
 
 if [ \( $MAJOR -lt 10 \) -o \( $MINOR -lt 5 \) ]
 then
-  # Requires Mac OS X 10.5 or greater.
+  # Requires OS X 10.5 or greater.
   exit 115
 fi
 
