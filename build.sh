@@ -666,7 +666,7 @@ function m_handler_dist()
     m_set_suprompt "to chown '$md_osxfuse_root/'."
     sudo -p "$m_suprompt" chown -R root:wheel "$md_osxfuse_root/"
 
-    local md_srcroot="$m_srcroot/packaging/osxfuse-core"
+    local md_srcroot="$m_srcroot/packaging/osxfuse/osxfuse"
     local md_infoplist_in="$md_srcroot/Info.plist.in"
     local md_infoplist_out="$md_osxfuse_out/Info.plist"
     local md_descriptionplist="$md_srcroot/Description.plist"
