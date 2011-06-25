@@ -234,7 +234,7 @@ function m_build_pkg()
 
     # Fix up the Info.plist
     #
-    sed -e "s/MACFUSE_VERSION_LITERAL/$bp_pkgversion/g" \
+    sed -e "s/OSXFUSE_VERSION_LITERAL/$bp_pkgversion/g" \
         < "$bp_infoplist_in" > "$bp_infoplist_out"
     m_exit_on_error "cannot finalize Info.plist for package '$bp_pkgname'."
 
