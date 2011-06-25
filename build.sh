@@ -407,7 +407,7 @@ function m_handler_reload()
     return 0
 }
 
-# Build examples from the user-space MacFUSE library
+# Build examples from the user-space OSXFUSE library
 #
 function m_handler_examples()
 {
@@ -445,26 +445,26 @@ function m_handler_examples()
     m_log "initiating Universal build for $m_platform"
 
     cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
-    m_exit_on_error "cannot copy MacFUSE library source from '$lib_dir'."
+    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
-    m_exit_on_error "cannot access MacFUSE library source in '$M_CONF_TMPDIR/$package_name'."
+    m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
     ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot configure MacFUSE library source for compilation."
+    m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     cd example
     m_exit_on_error "cannot access examples source."
 
-    local me_installed_lib="/usr/local/lib/libfuse_ino64.la"
+    local me_installed_lib="/usr/local/lib/libosxfuse_ino64.la"
 
-    perl -pi -e "s#../lib/libfuse.la#$me_installed_lib#g" Makefile
+    perl -pi -e "s#../lib/libosxfuse.la#$me_installed_lib#g" Makefile
     m_exit_on_error "failed to prepare example source for build."
 
     m_log "running make"
     make -j2 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the MacFUSE examples."
+    m_exit_on_error "make failed while compiling the OSXFUSE examples."
 
     echo >$m_stdout
     m_log "succeeded, results in '$M_CONF_TMPDIR/$package_name/example'."
