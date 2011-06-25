@@ -295,18 +295,18 @@ function m_handler_lib()
     m_log "initiating Universal build for $m_platform"
 
     cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
-    m_exit_on_error "cannot copy MacFUSE library source from '$lib_dir'."
+    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
-    m_exit_on_error "cannot access MacFUSE library source in '$M_CONF_TMPDIR/$package_name'."
+    m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
     ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot configure MacFUSE library source for compilation."
+    m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     m_log "running make"
     make -j2 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the MacFUSE library."
+    m_exit_on_error "make failed while compiling the OSXFUSE library."
 
     echo >$m_stdout
     m_log "succeeded, results in '$M_CONF_TMPDIR/$package_name'."
