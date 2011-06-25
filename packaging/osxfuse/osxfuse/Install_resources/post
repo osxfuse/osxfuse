@@ -3,8 +3,8 @@
 # Copyright (C) 2008 Google. All Rights Reserved.
 #
 
-INSTALL_LOG="/tmp/.macfuse-install.log"
-FORCE_EMBEDDED_FILE="/tmp/.macfuse-force-embedded"
+INSTALL_LOG="/tmp/.osxfuse-install.log"
+FORCE_EMBEDDED_FILE="/tmp/.osxfuse-force-embedded"
 
 exec >> "$INSTALL_LOG" 2>&1
 
@@ -15,7 +15,7 @@ SYSTEM_ROOT=$4
 
 # Binaries we use
 RESOURCES="${PACKAGE_PATH}/Contents/Resources"
-AUTOINSTALLER_NAME="autoinstall-macfuse-core"
+AUTOINSTALLER_NAME="autoinstall-osxfuse-core"
 AUTOINSTALLER="${RESOURCES}/${AUTOINSTALLER_NAME}"
 PATH="/bin:/usr/bin:/usr/sbin"; export PATH
 
@@ -50,22 +50,7 @@ then
   exit 1
 fi
 
-CORE_NAME="MacFUSE Core.pkg"
-
-# Some third-party software releases have mis-packaged MacFUSE Core. If this 
-# looks to be the case then we need to remove the improper receipt.
-if [ -d "$CORE_RECEIPT" ]
-then
-  CORE_RECEIPT="${INSTALL_VOLUME}/Library/Receipts/${CORE_NAME}"
-  CORE_RECEIPT_INFO="${CORE_RECEIPT}/Contents/Info"
-  MACFUSE_BUNDLE_ID=$(defaults read "$CORE_RECEIPT_INFO" CFBundleIdentifier)
-  if [ "$MACFUSE_BUNDLE_ID" != "com.google.macfuse.core" ]
-  then
-     echo "Removing broken MacFUSE Core receipt: $CORE_RECEIPT"
-     # TODO: Should we also uninstall macfuse core?
-     rm -rf "$CORE_RECEIPT"
-  fi
-fi
+CORE_NAME="OSXFUSE Core.pkg"
 
 # Determine the appropriate embedded pkg for this platform.
 OS_MAJOR_MINOR="${OS_MAJOR}.${OS_MINOR}"
@@ -74,7 +59,7 @@ INSTALL_EMBEDDED_PKG=1          # Default to installing the embedded .pkg
 FAIL_IF_MISSING_EMBEDDED_PKG=1  # Default to fail if no embedded .pkg
 echo "Potential embedded package path: ${EMBEDDED_PKG}"
 
-# Use autoinstaller to see if there is a newer MacFUSE Core.
+# Use autoinstaller to see if there is a newer OSXFUSE Core.
 NEW_VERSION=
 
 if [ -f "$FORCE_EMBEDDED_FILE" ]
@@ -138,46 +123,15 @@ then
   fi
 fi
 
-# Maybe try to install our embedded MacFUSE Core.pkg.
+# Maybe try to install our embedded OSXFUSE Core.pkg.
 if [ $INSTALL_EMBEDDED_PKG -eq 1 ]
 then
   echo "Attempting to install embedded package: ${EMBEDDED_PKG}"
   INSTALLER_OUTPUT=$(installer -pkg "$EMBEDDED_PKG" -target "$INSTALL_VOLUME")
   INSTALLER_RC=$?
   echo "$INSTALLER_OUTPUT"  # So that we see it in our postflight log
-  if [ $INSTALLER_RC -eq 0 ]
+  if [ $INSTALLER_RC -ne 0 ]
   then
-    # Remove old autoinstaller bundle if it is still there.
-    MACFUSE_SUPPORT="/Library/Filesystems/fusefs.fs/Support/"
-    if [ $OS_MINOR -eq 4 ]
-    then
-      MACFUSE_SUPPORT="/System/${MACFUSE_SUPPORT}"
-    fi
-    MACFUSE_SUPPORT="${INSTALL_VOLUME}/${MACFUSE_SUPPORT}"
-    if [ ! -d "$MACFUSE_SUPPORT" ]
-    then
-      echo "Unable to find Support directory: ${MACFUSE_SUPPORT}"
-      exit 1
-    fi
-
-    # Remove the old autoinstaller bundle if necessary.
-    rm -rf "${MACFUSE_SUPPORT}/MacFUSEAutoinstaller.bundle"
-
-    # Copy the autoinstaller binary.
-# DISABLED: The autoinstaller binary is now installed as part of the outer pkg.
-#    cp "$AUTOINSTALLER" "${MACFUSE_SUPPORT}/${AUTOINSTALLER_NAME}"
-#    if [ $? -ne 0 ]
-#    then
-#      echo "Unable to copy autoinstaller bundle to Support directory."
-#      exit 1
-#    fi
-#    chown -R root:wheel "${MACFUSE_SUPPORT}/${AUTOINSTALLER_NAME}"
-#    if [ $? -ne 0 ]
-#    then
-#      echo "Unable to chown macfuse autoinstaller."
-#      exit 1
-#    fi
-  else
     # If the install failed due to an existing newer version then it is OK.
     # TODO: This grep is sort of lame and dependent on installer (and lang?)
     echo "$INSTALLER_OUTPUT" | \
@@ -192,11 +146,11 @@ then
   fi
 fi
 
-# Make Spotlight aware of debug symbols for libfuse and the Objective-C framework.
+# Make Spotlight aware of debug symbols for libosxfuse and the Objective-C framework.
 # We do this for the user that is logged in at the console.
-sudo -u `stat -f %Su /dev/console` mdimport /Library/Frameworks/MacFUSE.framework/Resources/Debug/
+sudo -u `stat -f %Su /dev/console` mdimport /Library/Frameworks/OSXFUSE.framework/Resources/Debug/
 
-# Remove our receipt; MacFUSE.pkg doesn't have a payload.
+# Remove our receipt; OSXFUSE.pkg doesn't have a payload.
 rm -rf "$FINAL_RECEIPT"
 
 ## Signal success
