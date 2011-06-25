@@ -24,8 +24,8 @@ fi
 
 # Other constants
 #
-readonly M_PROGDESC="MacFUSE build tool"
-readonly M_PROGNAME=macfuse_buildtool
+readonly M_PROGDESC="OSXFUSE build tool"
+readonly M_PROGNAME=build
 readonly M_PROGVERS=1.0
 
 readonly M_DEFAULT_VALUE=__default__
@@ -58,22 +58,21 @@ declare m_stdout=/dev/stdout
 declare m_suprompt=" invalid "
 declare m_target="$M_DEFAULT_TARGET"
 declare m_usdk_dir=""
-declare m_version_tiger=""
 declare m_version_leopard=""
 declare m_version_snowleopard=""
 declare m_xcode_version=
 
 # Other implementation details
 #
-readonly M_FSBUNDLE_NAME=fusefs.fs
+readonly M_FSBUNDLE_NAME=osxfusefs.fs
 readonly M_INSTALL_RESOURCES_DIR=Install_resources
-readonly M_KEXT_ID=com.google.filesystems.fusefs
-readonly M_KEXT_NAME=fusefs.kext
-readonly M_KEXT_SYMBOLS=fusefs-symbols
-readonly M_LOGPREFIX=MacFUSEBuildTool
-readonly M_MACFUSE_PRODUCT_ID=com.google.filesystems.fusefs
-readonly M_PKGNAME_CORE="MacFUSE Core.pkg"
-readonly M_PKGNAME=MacFUSE.pkg
+readonly M_KEXT_ID=com.github.osxfuse.osxfusefs
+readonly M_KEXT_NAME=osxfusefs.kext
+readonly M_KEXT_SYMBOLS=osxfusefs-symbols
+readonly M_LOGPREFIX=OSXFUSEBuildTool
+readonly M_OSXFUSE_PRODUCT_ID=com.github.osxfuse.osxfusefs
+readonly M_PKGNAME_CORE="OSXFUSE Core.pkg"
+readonly M_PKGNAME=OSXFUSE.pkg
 readonly M_WANTSU="needs the Administrator password"
 readonly M_WARNING="*** Warning"
 
@@ -852,7 +851,7 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
   <array>
     <dict>
       <key>ProductID</key>
-      <string>$M_MACFUSE_PRODUCT_ID</string>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
       <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_version_leopard"</string>
       <key>Version</key>
@@ -866,7 +865,7 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
     </dict>
     <dict>
       <key>ProductID</key>
-      <string>$M_MACFUSE_PRODUCT_ID</string>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
       <string>SystemVersion.ProductVersion beginswith "10.5" AND Ticket.version != "$m_version_leopard"</string>
       <key>Version</key>
