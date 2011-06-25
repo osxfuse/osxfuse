@@ -165,20 +165,20 @@ function m_set_suprompt()
 #
 function m_set_srcroot()
 {
-    local macfuse_dir=""
+    local osxfuse_dir=""
     local is_absolute_path=`echo "$0" | cut -c1`
     if [ "$is_absolute_path" == "/" ]
     then
-        macfuse_dir="`dirname $0`/"
+        osxfuse_dir="`dirname $0`/"
     else
-        macfuse_dir="`pwd`/`dirname $0`/"
+        osxfuse_dir="`pwd`/`dirname $0`/"
     fi
     pushd . > /dev/null
-    cd "$macfuse_dir" || exit 1
-    macfuse_dir=`pwd`
+    cd "$osxfuse_dir" || exit 1
+    osxfuse_dir=`pwd`
     popd > /dev/null
 
-    m_srcroot="$macfuse_dir"
+    m_srcroot="$osxfuse_dir"
     return 0
 }
 
