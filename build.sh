@@ -117,15 +117,11 @@ function m_version
     m_set_platform
     m_set_srcroot "$m_platform"
 
-    local mv_platform_dirs=`ls -d "$m_srcroot"/core/10.*`
-    for i in $mv_platform_dirs
-    do
-        local mv_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$i/fusefs/common/fuse_version.h"`
-        if [ ! -z "$mv_release" ]
-        then
-            echo "Platform source '$i': MacFUSE version $mv_release"
-        fi
-    done
+    local mv_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "kext/common/fuse_version.h"`
+    if [ ! -z "$mv_release" ]
+    then
+        echo "OSXFUSE version $mv_release"
+    fi
 
     return 0
 }
