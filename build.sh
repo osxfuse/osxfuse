@@ -337,16 +337,16 @@ function m_handler_reload()
 
     if [ -e "$M_CONF_TMPDIR/$M_KEXT_NAME" ]
     then
-        m_set_suprompt "to remove old MacFUSE kext"
+        m_set_suprompt "to remove old OSXFUSE kext"
         sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/$M_KEXT_NAME"
-        m_exit_on_error "cannot remove old copy of MacFUSE kext."
+        m_exit_on_error "cannot remove old copy of OSXFUSE kext."
     fi
 
     if [ -e "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" ]
     then
-        m_set_suprompt "to remove old copy of MacFUSE kext symbols"
+        m_set_suprompt "to remove old copy of OSXFUSE kext symbols"
         sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
-        m_exit_on_error "cannot remove old copy of MacFUSE kext symbols."
+        m_exit_on_error "cannot remove old copy of OSXFUSE kext symbols."
     fi
 
     if [ "$1" == "clean" ]
@@ -363,7 +363,7 @@ function m_handler_reload()
     if [ "$?" == "0" ]
     then
         m_log "unloading kernel extension"
-        m_set_suprompt "to unload MacFUSE kext"
+        m_set_suprompt "to unload OSXFUSE kext"
         sudo -p "$m_suprompt" \
             kextunload -v -b "$M_KEXT_ID" >$m_stdout 2>$m_stderr
         m_exit_on_error "cannot unload kext '$M_KEXT_ID'."
@@ -378,22 +378,22 @@ function m_handler_reload()
     m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
  
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
-    m_exit_on_error "cannot create directory for MacFUSE kext symbols."
+    m_exit_on_error "cannot create directory for OSXFUSE kext symbols."
 
     cp -R "$kernel_dir/build/Debug/$M_KEXT_NAME" "$M_CONF_TMPDIR/$M_KEXT_NAME"
-    m_exit_on_error "cannot copy newly built MacFUSE kext."
+    m_exit_on_error "cannot copy newly built OSXFUSE kext."
 
-    m_set_suprompt "to set permissions on newly built MacFUSE kext"
+    m_set_suprompt "to set permissions on newly built OSXFUSE kext"
     sudo -p "$m_suprompt" chown -R root:wheel "$M_CONF_TMPDIR/$M_KEXT_NAME"
-    m_exit_on_error "cannot set permissions on newly built MacFUSE kext."
+    m_exit_on_error "cannot set permissions on newly built OSXFUSE kext."
 
     m_log "reloading kext"
 
-    m_set_suprompt "to load newly built MacFUSE kext"
+    m_set_suprompt "to load newly built OSXFUSE kext"
     sudo -p "$m_suprompt" \
         kextutil -s "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" \
             -v "$M_CONF_TMPDIR/$M_KEXT_NAME" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot load newly built MacFUSE kext."
+    m_exit_on_error "cannot load newly built OSXFUSE kext."
 
     echo >$m_stdout
     m_log "checking status of kernel extension"
