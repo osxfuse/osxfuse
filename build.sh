@@ -499,13 +499,13 @@ function m_handler_dist()
         rm -rf "$m_srcroot/prefpane/build"
         m_log "cleaned internal subtarget prefpane"
 
-        m_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
+        m_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
         if [ ! -z "$m_release" ]
         then
-            if [ -e "$M_CONF_TMPDIR/macfuse-$m_release" ]
+            if [ -e "$M_CONF_TMPDIR/osxfuse-$m_release" ]
             then
                 m_set_suprompt "to remove previous output packages"
-                sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/macfuse-$m_release"
+                sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-$m_release"
                 m_log "cleaned any previous output packages in '$M_CONF_TMPDIR'"
             fi
         fi
@@ -513,7 +513,7 @@ function m_handler_dist()
         return 0
     fi
 
-    m_log "initiating Universal build of MacFUSE"
+    m_log "initiating Universal build of OSXFUSE"
 
     m_set_platform
     m_set_srcroot "$m_platform"
@@ -526,11 +526,11 @@ function m_handler_dist()
         m_log "packaging flavor is 'Developer Prerelease'"
     fi
 
-    m_log "locating MacFUSE private key"
+    m_log "locating OSXFUSE private key"
     if [ ! -f "$M_CONF_PRIVKEY" ]
     then
         false
-        m_exit_on_error "cannot find MacFUSE private key in '$M_CONF_PRIVKEY'."
+        m_exit_on_error "cannot find OSXFUSE private key in '$M_CONF_PRIVKEY'."
     fi
 
     # Autoinstaller
@@ -544,7 +544,7 @@ function m_handler_dist()
         # ignore any errors
     fi
 
-    m_log "building the MacFUSE autoinstaller"
+    m_log "building the OSXFUSE autoinstaller"
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
@@ -553,7 +553,7 @@ function m_handler_dist()
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
-    local md_ai="$md_ai_builddir/$m_configuration/autoinstall-macfuse-core"
+    local md_ai="$md_ai_builddir/$m_configuration/autoinstall-osxfuse-core"
     if [ ! -x "$md_ai" ]
     then
         false
@@ -566,7 +566,7 @@ function m_handler_dist()
         m_exit_on_error "cannot find plist signer '$md_plistsigner'."
     fi
 
-    # Create platform-Specific MacFUSE subpackages
+    # Create platform-Specific OSXFUSE subpackages
     #
     for m_p in $M_PLATFORMS_REALISTIC
     do
@@ -588,16 +588,16 @@ function m_handler_dist()
         # ignore any errors
     fi
 
-    m_log "building the MacFUSE prefpane"
+    m_log "building the OSXFUSE prefpane"
 
     pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the prefpane source."
-    xcodebuild -configuration "$m_configuration" -target "MacFUSE" \
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" \
         >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget prefpane."
     popd >/dev/null 2>/dev/null
 
-    local md_pp="$md_pp_builddir/$m_configuration/MacFUSE.prefPane"
+    local md_pp="$md_pp_builddir/$m_configuration/OSXFUSE.prefPane"
     if [ ! -d "$md_pp" ]
     then
         false
@@ -612,23 +612,23 @@ function m_handler_dist()
 
     m_active_target="dist"
 
-    m_release=`awk '/#define[ \t]*MACFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
-    m_exit_on_error "cannot get MacFUSE release version."
+    m_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
+    m_exit_on_error "cannot get OSXFUSE release version."
 
-    local md_macfuse_out="$M_CONF_TMPDIR/macfuse-$m_release"
-    local md_macfuse_root="$md_macfuse_out/pkgroot/"
+    local md_osxfuse_out="$M_CONF_TMPDIR/osxfuse-$m_release"
+    local md_osxfuse_root="$md_osxfuse_out/pkgroot/"
 
-    if [ -e "$md_macfuse_out" ]
+    if [ -e "$md_osxfuse_out" ]
     then
         m_set_suprompt "to remove a previously built container package"
-        sudo -p "$m_suprompt" rm -rf "$md_macfuse_out"
+        sudo -p "$m_suprompt" rm -rf "$md_osxfuse_out"
         # ignore any errors
     fi
 
     m_log "initiating distribution build"
 
     local md_platforms=""
-    local md_platform_dirs=`ls -d "$M_CONF_TMPDIR"/macfuse-core-*${m_release}.* | paste -s -`
+    local md_platform_dirs=`ls -d "$M_CONF_TMPDIR"/osxfuse-core-*${m_release}.* | paste -s -`
     m_log "found payloads $md_platform_dirs"
     for i in $md_platform_dirs
     do
@@ -652,30 +652,30 @@ function m_handler_dist()
 
     m_log "building '$M_PKGNAME'"
 
-    mkdir "$md_macfuse_out"
-    m_exit_on_error "cannot create directory '$md_macfuse_out'."
+    mkdir "$md_osxfuse_out"
+    m_exit_on_error "cannot create directory '$md_osxfuse_out'."
 
-    mkdir "$md_macfuse_root"
-    m_exit_on_error "cannot create directory '$md_macfuse_root'."
+    mkdir "$md_osxfuse_root"
+    m_exit_on_error "cannot create directory '$md_osxfuse_root'."
 
     m_log "copying generic container package payload"
-    mkdir -p "$md_macfuse_root/Library/PreferencePanes"
-    m_exit_on_error "cannot make directory '$md_macfuse_root/Library/PreferencePanes'."
-    cp -R "$md_pp" "$md_macfuse_root/Library/PreferencePanes/"
-    m_exit_on_error "cannot copy the prefpane to '$md_macfuse_root/Library/PreferencePanes/'."
-    m_set_suprompt "to chown '$md_macfuse_root/'."
-    sudo -p "$m_suprompt" chown -R root:wheel "$md_macfuse_root/"
+    mkdir -p "$md_osxfuse_root/Library/PreferencePanes"
+    m_exit_on_error "cannot make directory '$md_osxfuse_root/Library/PreferencePanes'."
+    cp -R "$md_pp" "$md_osxfuse_root/Library/PreferencePanes/"
+    m_exit_on_error "cannot copy the prefpane to '$md_osxfuse_root/Library/PreferencePanes/'."
+    m_set_suprompt "to chown '$md_osxfuse_root/'."
+    sudo -p "$m_suprompt" chown -R root:wheel "$md_osxfuse_root/"
 
     local md_srcroot="$m_srcroot/packaging/osxfuse-core"
     local md_infoplist_in="$md_srcroot/Info.plist.in"
-    local md_infoplist_out="$md_macfuse_out/Info.plist"
+    local md_infoplist_out="$md_osxfuse_out/Info.plist"
     local md_descriptionplist="$md_srcroot/Description.plist"
-    local md_install_resources="$md_macfuse_out/$M_INSTALL_RESOURCES_DIR"
+    local md_install_resources="$md_osxfuse_out/$M_INSTALL_RESOURCES_DIR"
 
     # Get rid of .svn files from M_INSTALL_RESOURCES_DIR
     #
     (tar -C "$md_srcroot" --exclude '.svn' -cpvf - \
-        "$M_INSTALL_RESOURCES_DIR" | tar -C "$md_macfuse_out" -xpvf - \
+        "$M_INSTALL_RESOURCES_DIR" | tar -C "$md_osxfuse_out" -xpvf - \
             >$m_stdout 2>$m_stderr)>$m_stdout 2>$m_stderr
 
     # Copy subpackage platform directories under Resources
@@ -730,8 +730,8 @@ function m_handler_dist()
 
     # Fix up the container's Info.plist
     #
-    sed -e "s/MACFUSE_PKG_VERSION_LITERAL/$m_release/g"  \
-        -e "s/MACFUSE_PKG_INSTALLED_SIZE/$md_pkg_size/g" \
+    sed -e "s/OSXFUSE_PKG_VERSION_LITERAL/$m_release/g"  \
+        -e "s/OSXFUSE_PKG_INSTALLED_SIZE/$md_pkg_size/g" \
             < "$md_infoplist_in" > "$md_infoplist_out"
     m_exit_on_error "cannot fix the Info.plist of the container package."
 
@@ -739,24 +739,24 @@ function m_handler_dist()
     #
     m_set_suprompt "to run packagemaker for the container package"
     sudo -p "$m_suprompt" \
-        packagemaker -build -p "$md_macfuse_out/$M_PKGNAME" \
-          -f "$md_macfuse_root" -b "$M_CONF_TMPDIR" -ds -v  \
+        packagemaker -build -p "$md_osxfuse_out/$M_PKGNAME" \
+          -f "$md_osxfuse_root" -b "$M_CONF_TMPDIR" -ds -v  \
           -r "$md_install_resources" -i "$md_infoplist_out" \
           -d "$md_descriptionplist" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create container package '$M_PKGNAME'."
 
     # Create the distribution volume
     #
-    local md_volume_name="MacFUSE $m_release"
-    local md_scratch_dmg="$md_macfuse_out/macfuse-scratch.dmg"
+    local md_volume_name="FUSE for OS X $m_release"
+    local md_scratch_dmg="$md_osxfuse_out/osxfuse-scratch.dmg"
     hdiutil create -layout NONE -megabytes 10 -fs HFS+ \
         -volname "$md_volume_name" "$md_scratch_dmg" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot create scratch MacFUSE disk image."
+    m_exit_on_error "cannot create scratch OSXFUSE disk image."
 
     # Attach/mount the volume
     #
     hdiutil attach -private -nobrowse "$md_scratch_dmg" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot attach scratch MacFUSE disk image."
+    m_exit_on_error "cannot attach scratch OSXFUSE disk image."
 
     # Create the .engine_install file
     #
@@ -777,7 +777,7 @@ __END_ENGINE_INSTALL
 
     # Copy over the package
     #
-    cp -pRX "$md_macfuse_out/$M_PKGNAME" "$md_volume_path"
+    cp -pRX "$md_osxfuse_out/$M_PKGNAME" "$md_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -797,12 +797,12 @@ __END_ENGINE_INSTALL
     # Copy over the license file
     #
     cp "$md_install_resources/License.rtf" "$md_volume_path/License.rtf"
-    m_exit_on_error "cannot copy MacFUSE license to scratch disk image."
+    m_exit_on_error "cannot copy OSXFUSE license to scratch disk image."
 
     # Copy over the CHANGELOG.txt file
     #
     cp "$m_srcroot/CHANGELOG.txt" "$md_volume_path/CHANGELOG.txt"
-    m_exit_on_error "cannot copy MacFUSE CHANGELOG to scratch disk image."
+    m_exit_on_error "cannot copy OSXFUSE CHANGELOG to scratch disk image."
 
     # Detach the volume.
     hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -814,11 +814,11 @@ __END_ENGINE_INSTALL
 
     # Convert to a read-only compressed dmg
     #
-    local md_dmg_name="MacFUSE-$m_release.dmg"
-    local md_dmg_path="$md_macfuse_out/$md_dmg_name"
+    local md_dmg_name="OSXFUSE-$m_release.dmg"
+    local md_dmg_path="$md_osxfuse_out/$md_dmg_name"
     hdiutil convert -imagekey zlib-level=9 -format UDZO "$md_scratch_dmg" \
         -o "$md_dmg_path" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot finalize MacFUSE distribution disk image."
+    m_exit_on_error "cannot finalize OSXFUSE distribution disk image."
 
     rm -f "$md_scratch_dmg"
     # ignore any errors
@@ -830,11 +830,11 @@ __END_ENGINE_INSTALL
     local md_dmg_hash=$(openssl sha1 -binary "$md_dmg_path" | openssl base64)
     local md_dmg_size=$(stat -f%z "$md_dmg_path")
 
-    local md_rules_plist="$md_macfuse_out/DeveloperRelease.plist"
+    local md_rules_plist="$md_osxfuse_out/DeveloperRelease.plist"
     local md_download_url="http://macfuse.googlecode.com/svn/releases/developer/$md_dmg_name"
     if [ "$m_developer" == "0" ]
     then
-        md_rules_plist="$md_macfuse_out/CurrentRelease.plist"
+        md_rules_plist="$md_osxfuse_out/CurrentRelease.plist"
         md_download_url="http://macfuse.googlecode.com/svn/releases/$md_dmg_name"
     fi
 
@@ -890,7 +890,7 @@ __END_RULES_PLIST
     m_exit_on_error "cannot sign the rules file '$md_rules_plist' with key '$M_CONF_PRIVKEY'."
 
     echo >$m_stdout
-    m_log "succeeded, results in '$md_macfuse_out'."
+    m_log "succeeded, results in '$md_osxfuse_out'."
     echo >$m_stdout
 
     return 0
