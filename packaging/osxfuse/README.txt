@@ -1,1 +1,1 @@
-Packaging stuff for MacFUSE installer package.
+Packaging stuff for OSXFUSE installer package.
