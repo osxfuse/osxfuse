@@ -1302,7 +1302,7 @@ function m_validate_xcode()
 
     if [ $mvs_have -lt $mvs_want ]
     then
-        echo "Xcode version $M_XCODE_VERSION_REQUIRED or higher is required to build MacFUSE."
+        echo "Xcode version $M_XCODE_VERSION_REQUIRED or higher is required to build OSXFUSE."
         exit 2
     fi 
 
