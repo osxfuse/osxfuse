@@ -457,9 +457,9 @@ function m_handler_examples()
     cd example
     m_exit_on_error "cannot access examples source."
 
-    local me_installed_lib="/usr/local/lib/libosxfuse_ino64.la"
+    local me_installed_lib="/usr/local/lib/libosxfuse_i64.la"
 
-    perl -pi -e "s#../lib/libosxfuse.la#$me_installed_lib#g" Makefile
+    perl -pi -e "s#../lib/libosxfuse_i32.la#$me_installed_lib#g" Makefile
     m_exit_on_error "failed to prepare example source for build."
 
     m_log "running make"
@@ -1061,9 +1061,6 @@ function m_handler_smalldist()
     make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot prepare library build for installation."
 
-    ln -s libosxfuse.dylib "$ms_osxfuse_root/usr/local/lib/libosxfuse.0.dylib"
-    m_exit_on_error "cannot create compatibility symlink."
-
     rm -f "ms_osxfuse_root"/usr/local/lib/*ulockmgr*
     # ignore any errors
 
@@ -1081,7 +1078,7 @@ function m_handler_smalldist()
     make clean >$m_stdout 2>$m_stderr
     m_exit_on_error "make failed while compiling the OSXFUSE library (ino64)."
 
-    perl -pi -e 's#libosxfuse#libosxfuse_ino64#g' Makefile
+    perl -pi -e 's#libosxfuse_i32#libosxfuse_i64#g' Makefile
     m_exit_on_error "failed to prepare OSXFUSE library (ino64) for compilation."
 
     perl -pi -e 's#-D__DARWIN_64_BIT_INO_T=0#-D__DARWIN_64_BIT_INO_T=1#g' Makefile
@@ -1099,11 +1096,20 @@ function m_handler_smalldist()
     rm -f "$ms_osxfuse_root"/usr/local/include/*ulockmgr*
     # ignore any errors
 
+    for f in "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64*.dylib; do
+        local source=`basename "$f"`
+        local target="`echo \"$f\" | sed 's/libosxfuse_i64/libosxfuse/'`"
+        ln -s "$source" "$target"
+        m_exit_on_error "cannot create symlink '$target' -> '$source'."
+    done
+    ln -s libosxfuse_i64.la "$ms_osxfuse_root/usr/local/lib/libosxfuse.la"
+    m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/libosxfuse.la' -> 'libosxfuse_i64.la'."
+
     # generate dsym
-    dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse.dylib
-    m_exit_on_error "cannot generate debugging information for libosxfuse."
-    dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_ino64.dylib
-    m_exit_on_error "cannot generate debugging information for libosxfuse_ino64."
+    dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i32.dylib
+    m_exit_on_error "cannot generate debugging information for libosxfuse_i32."
+    dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
+    m_exit_on_error "cannot generate debugging information for libosxfuse_i64."
 
     # Build OSXFUSE.framework
     #
