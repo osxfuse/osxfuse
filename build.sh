@@ -31,7 +31,7 @@ readonly M_PROGVERS=1.0
 readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
-readonly M_PLATFORMS="10.5 10.6"          # default is native
+readonly M_PLATFORMS="10.5 10.6 10.7"     # default is native
 readonly M_PLATFORMS_REALISTIC="10.5"
 readonly M_TARGETS="clean dist examples lib reload smalldist swconfigure"
 readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist swconfigure"
@@ -194,7 +194,7 @@ function m_set_platform()
     fi
 
     # XXX For now
-    if [ "$m_platform" == "10.6" ]
+    if [ "$m_platform" == "10.6" -o "$m_platform" == "10.7" ]
     then
         m_platform="10.5"
     fi
@@ -207,6 +207,10 @@ function m_set_platform()
     10.6*)
         m_osname="Snow Leopard"
         m_usdk_dir="/Developer/SDKs/MacOSX10.6.sdk"
+    ;;
+    10.6*)
+        m_osname="Lion"
+        m_usdk_dir="/Developer/SDKs/MacOSX10.7.sdk"
     ;;
     *)
         m_osname="Unknown"
@@ -645,7 +649,10 @@ function m_handler_dist()
         10.6)
             m_version_snowleopard=$md_tmp_release_version
         ;;
-        esac
+        10.7)
+            m_version_lion=$md_tmp_release_version
+        ;;
+    esac
 
         m_log "adding [ '$md_tmp_os_version', '$md_tmp_release_version' ]"
     done
@@ -716,11 +723,12 @@ function m_handler_dist()
     done
     IFS="$md_saved_ifs"
 
-    # XXX For now, make 10.5 also valid for 10.6
+    # XXX For now, make 10.5 also valid for 10.6 and 10.7
     #
     if [ -d "$md_install_resources/10.5" ]
     then
         ln -s "10.5" "$md_install_resources/10.6"
+        ln -s "10.5" "$md_install_resources/10.7"
     fi
 
     # Throw in the autoinstaller
@@ -845,6 +853,20 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
 <dict>
   <key>Rules</key>
   <array>
+    <dict>
+      <key>ProductID</key>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
+      <key>Predicate</key>
+      <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_version_leopard"</string>
+      <key>Version</key>
+      <string>$m_version_leopard</string>
+      <key>Codebase</key>
+      <string>$md_download_url</string>
+      <key>Hash</key>
+      <string>$md_dmg_hash</string>
+      <key>Size</key>
+      <string>$md_dmg_size</string>
+    </dict>
     <dict>
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
