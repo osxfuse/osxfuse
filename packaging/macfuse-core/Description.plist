@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IFPkgDescriptionDeleteWarning</key>
+	<string></string>
+	<key>IFPkgDescriptionDescription</key>
+	<string>FUSE for OS X (OSXFUSE) implements a mechanism that makes it possible to implement a fully functional filesystem in a userspace program on OS X. It aims to be API-compliant with the FUSE (Filesystem in Userspace) mechanism that originated on Linux. Therefore, many existing FUSE filesystems become readily usable on OS X. The core of OSXFUSE is in a dynamically loadable kernel extension and the FUSE library and headers.
+
+This package will install the runtime and development of OSXFUSE. This will enable you to develop and run your own FUSE filesystem on OS X. Please note that this core package does not contain any filesystems; those should be installed separately.
+
+Please see:
+
+http://osxfuse.github.com/
+
+for further details.</string>
+	<key>IFPkgDescriptionTitle</key>
+	<string>MacFUSE Core</string>
+	<key>IFPkgDescriptionVersion</key>
+	<string>FUSE for OS X (OSXFUSE), Copyright (c) 2011, OSXFUSE Project</string>
+</dict>
+</plist>

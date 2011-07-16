@@ -51,10 +51,12 @@ then
 fi
 
 CORE_NAME="OSXFUSE Core.pkg"
+MACFUSE_CORE_NAME="MacFUSE Core.pkg"
 
 # Determine the appropriate embedded pkg for this platform.
 OS_MAJOR_MINOR="${OS_MAJOR}.${OS_MINOR}"
 EMBEDDED_PKG="${PACKAGE_PATH}/Contents/Resources/${OS_MAJOR_MINOR}/${CORE_NAME}"
+EMBEDDED_MACFUSE_PKG="${PACKAGE_PATH}/Contents/Resources/${OS_MAJOR_MINOR}/${MACFUSE_CORE_NAME}"
 INSTALL_EMBEDDED_PKG=1          # Default to installing the embedded .pkg
 FAIL_IF_MISSING_EMBEDDED_PKG=1  # Default to fail if no embedded .pkg
 echo "Potential embedded package path: ${EMBEDDED_PKG}"
@@ -141,6 +143,24 @@ then
       echo "Embedded package was older than what is already installed (status OK)."
     else
       echo "Failed to install $EMBEDDED_PKG"
+      exit 1
+    fi
+  fi
+  echo "Attempting to install embedded package: ${EMBEDDED_MACFUSE_PKG}"
+  INSTALLER_OUTPUT=$(installer -pkg "$EMBEDDED_MACFUSE_PKG" -target "$INSTALL_VOLUME")
+  INSTALLER_RC=$?
+  echo "$INSTALLER_OUTPUT"  # So that we see it in our postflight log
+  if [ $INSTALLER_RC -ne 0 ]
+  then
+    # If the install failed due to an existing newer version then it is OK.
+    # TODO: This grep is sort of lame and dependent on installer (and lang?)
+    echo "$INSTALLER_OUTPUT" | \
+          grep "newer version of this software already exists" > /dev/null
+    if [ $? -eq 0 ]
+    then
+      echo "Embedded package was older than what is already installed (status OK)."
+    else
+      echo "Failed to install $EMBEDDED_MACFUSE_PKG"
       exit 1
     fi
   fi

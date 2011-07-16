@@ -60,6 +60,7 @@ declare m_target="$M_DEFAULT_TARGET"
 declare m_usdk_dir=""
 declare m_version_leopard=""
 declare m_version_snowleopard=""
+declare m_version_lion=""
 declare m_xcode_version=
 
 # Other implementation details
@@ -72,6 +73,7 @@ readonly M_KEXT_SYMBOLS=osxfusefs-symbols
 readonly M_LOGPREFIX=OSXFUSEBuildTool
 readonly M_OSXFUSE_PRODUCT_ID=com.github.osxfuse.osxfusefs
 readonly M_PKGNAME_CORE="OSXFUSE Core.pkg"
+readonly M_PKGNAME_MACFUSE_CORE="MacFUSE Core.pkg"
 readonly M_PKGNAME=OSXFUSE.pkg
 readonly M_WANTSU="needs the Administrator password"
 readonly M_WARNING="*** Warning"
@@ -641,6 +643,7 @@ function m_handler_dist()
         local md_tmp_os_version=${md_tmp_versions%-*}
 
         md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_CORE"
+        md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_MACFUSE_CORE"
 
         case "$md_tmp_os_version" in
         10.5)
@@ -714,8 +717,11 @@ function m_handler_dist()
             md_pkg_size=$md_tmp_new_size
         fi
 
-        mkdir "$md_tmp_pkg_dst"
-        m_exit_on_error "cannot make package subdirectory '$md_tmp_pkg_dst'."
+        if [ ! -d "$md_tmp_pkg_dst" ]
+        then
+            mkdir "$md_tmp_pkg_dst"
+            m_exit_on_error "cannot make package subdirectory '$md_tmp_pkg_dst'."
+        fi
 
         m_set_suprompt "to add platform-specific package to container"
         (sudo -p "$m_suprompt" tar -C "$md_tmp_core_pkg_dir" -cpvf - "$md_tmp_core_pkg_name" | sudo -p "$m_suprompt" tar -C "$md_tmp_pkg_dst" -xpvf - >$m_stdout 2>$m_stderr)>$m_stdout 2>$m_stderr
@@ -956,7 +962,8 @@ function m_handler_smalldist()
 
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-core-$ms_os_version-$ms_osxfuse_version"
     local ms_osxfuse_build="$ms_osxfuse_out/build/"
-    local ms_osxfuse_root="$ms_osxfuse_out/pkgroot/"
+    local ms_osxfuse_root="$ms_osxfuse_out/osxfuse/"
+    local ms_macfuse_root="$ms_osxfuse_out/macfuse/"
 
     if [ "$m_shortcircuit" != "1" ]
     then
@@ -974,7 +981,7 @@ function m_handler_smalldist()
             m_exit_on_error "failed to clean up unrecognized version of platform-specific package."
         fi
     else
-        if [ -e "$ms_osxfuse_out/$M_PKGNAME_CORE" ]
+        if [ -e "$ms_osxfuse_out/$M_PKGNAME_CORE" -a -e "$ms_osxfuse_out/$M_PKGNAME_MACFUSE_CORE" ]
         then
             echo >$m_stdout
             m_log "succeeded (shortcircuited), results in '$ms_osxfuse_out'."
@@ -1030,7 +1037,13 @@ function m_handler_smalldist()
     mkdir -p "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Frameworks/'."
 
+    mkdir -p "$ms_macfuse_root/Library/Frameworks/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Frameworks/'."
+
     mkdir -p "$ms_osxfuse_root/usr/local/lib/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/lib/'."
+
+    mkdir -p "$ms_macfuse_root/usr/local/lib/"
     m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/lib/'."
 
     mkdir -p "$ms_osxfuse_root/usr/local/include/"
@@ -1060,6 +1073,9 @@ function m_handler_smalldist()
 
     cp -pRX "$m_srcroot/packaging/osxfuse-core/uninstall-osxfuse-core.sh" "$ms_bundle_support_dir/uninstall-osxfuse-core.sh"
     m_exit_on_error "cannot copy 'uninstall-osxfuse-core.sh' to destination."
+
+    cp -pRX "$m_srcroot/packaging/macfuse-core/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
+    m_exit_on_error "cannot copy 'uninstall-macfuse-core.sh' to destination."
 
     ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_support_dir/autoinstall-osxfuse-core"
     m_exit_on_error "cannot create legacy symlink '$ms_bundle_support_dir/autoinstall-osxfuse-core'".
@@ -1148,17 +1164,17 @@ function m_handler_smalldist()
     xcodebuild -target macfuse -configuration "$m_configuration" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_osxfuse_root/usr/local/lib/"
+    cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_macfuse_root/usr/local/lib/"
     m_exit_on_error "cannot copy 'libmacfuse*.dylib' to destination."
 
-    for f in "$ms_osxfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
+    for f in "$ms_macfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
         local source=`basename "$f"`
         local target="`echo \"$f\" | sed 's/libmacfuse_i32/libfuse/'`"
         ln -s "$source" "$target"
         m_exit_on_error "cannot create symlink '$target' -> '$source'."
     done
 
-    for f in "$ms_osxfuse_root"/usr/local/lib/libmacfuse_i64*.dylib; do
+    for f in "$ms_macfuse_root"/usr/local/lib/libmacfuse_i64*.dylib; do
         local source=`basename "$f"`
         local target="`echo \"$f\" | sed 's/libmacfuse_i64/libfuse_ino64/'`"
         ln -s "$source" "$target"
@@ -1191,14 +1207,18 @@ function m_handler_smalldist()
     # Link MacFUSE.framework back to OSXFUSE.framework
     #
 
-    mkdir -p "$ms_osxfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A"
+    mkdir -p "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A"
     m_exit_on_error "cannot create directory structure of 'MacFUSE.framework'."
-    ln -s "/Library/Frameworks/OSXFUSE.framework/Versions/A/OSXFUSE" "$ms_osxfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/MacFUSE"
+    ln -s "/Library/Frameworks/OSXFUSE.framework/Versions/A/OSXFUSE" "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/MacFUSE"
     m_exit_on_error "cannot create symlink for 'MacFUSE.framework'."
 
     m_set_suprompt "to chown '$ms_osxfuse_root/*'"
     sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_root"/*
     m_exit_on_error "cannot chown '$ms_osxfuse_root/*'."
+
+    m_set_suprompt "to chown '$ms_macfuse_root/*'"
+    sudo -p "$m_suprompt" chown -R root:wheel "$ms_macfuse_root"/*
+    m_exit_on_error "cannot chown '$ms_macfuse_root/*'."
 
     m_set_suprompt "to setuid 'load_osxfusefs'"
     sudo -p "$m_suprompt" chmod u+s "$ms_bundle_support_dir/load_osxfusefs"
@@ -1208,31 +1228,61 @@ function m_handler_smalldist()
     sudo -p "$m_suprompt" chown root:admin "$ms_osxfuse_root/Library/"
     m_exit_on_error "cannot chown '$ms_osxfuse_root/Library/'."
 
+    m_set_suprompt "to chown '$ms_macfuse_root/Library/'"
+    sudo -p "$m_suprompt" chown root:admin "$ms_macfuse_root/Library/"
+    m_exit_on_error "cannot chown '$ms_macfuse_root/Library/'."
+
     m_set_suprompt "to chown '$ms_osxfuse_root/Library/Frameworks/"
     sudo -p "$m_suprompt" \
         chown -R root:admin "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot chown '$ms_osxfuse_root/Library/Frameworks/'."
 
+    m_set_suprompt "to chown '$ms_macfuse_root/Library/Frameworks/"
+    sudo -p "$m_suprompt" \
+    chown -R root:admin "$ms_macfuse_root/Library/Frameworks/"
+    m_exit_on_error "cannot chown '$ms_macfuse_root/Library/Frameworks/'."
+
     m_set_suprompt "to chmod '$ms_osxfuse_root/Library/Frameworks/'"
     sudo -p "$m_suprompt" chmod 0775 "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot chmod '$ms_osxfuse_root/Library/Frameworks/'."
 
+    m_set_suprompt "to chmod '$ms_macfuse_root/Library/Frameworks/'"
+    sudo -p "$m_suprompt" chmod 0775 "$ms_macfuse_root/Library/Frameworks/"
+    m_exit_on_error "cannot chmod '$ms_macfuse_root/Library/Frameworks/'."
+
     m_set_suprompt "to chmod '$ms_osxfuse_root/Library/'"
     sudo -p "$m_suprompt" chmod 1775 "$ms_osxfuse_root/Library/"
     m_exit_on_error "cannot chmod '$ms_osxfuse_root/Library/'."
+
+    m_set_suprompt "to chmod '$ms_macfuse_root/Library/'"
+    sudo -p "$m_suprompt" chmod 1775 "$ms_macfuse_root/Library/"
+    m_exit_on_error "cannot chmod '$ms_macfuse_root/Library/'."
 
     m_set_suprompt "to chmod files in '$ms_osxfuse_root/usr/local/lib/'"
     sudo -p "$m_suprompt" \
         chmod -h 755 `find "$ms_osxfuse_root/usr/local/lib" -type l`
     m_exit_on_error "cannot chmod files in '$ms_osxfuse_root/usr/local/lib/'."
 
+    m_set_suprompt "to chmod files in '$ms_macfuse_root/usr/local/lib/'"
+    sudo -p "$m_suprompt" \
+    chmod -h 755 `find "$ms_macfuse_root/usr/local/lib" -type l`
+    m_exit_on_error "cannot chmod files in '$ms_macfuse_root/usr/local/lib/'."
+
     m_set_suprompt "to chmod files in '$ms_osxfuse_root/Library/Frameworks/'"
     sudo -p "$m_suprompt" \
         chmod -h 755 `find "$ms_osxfuse_root/Library/Frameworks/" -type l`
     # no exit upon error
 
+    m_set_suprompt "to chmod files in '$ms_macfuse_root/Library/Frameworks/'"
+    sudo -p "$m_suprompt" \
+    chmod -h 755 `find "$ms_macfuse_root/Library/Frameworks/" -type l`
+    # no exit upon error
+
     cd "$ms_osxfuse_root"
     m_exit_on_error "cannot access directory '$ms_osxfuse_root'."
+
+    cd "$ms_macfuse_root"
+    m_exit_on_error "cannot access directory '$ms_macfuse_root'."
 
     # Create the OSXFUSE Installer Package
     #
@@ -1241,6 +1291,9 @@ function m_handler_smalldist()
 
     m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/osxfuse-core" "$ms_osxfuse_root" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
+
+    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/macfuse-core" "$ms_macfuse_root" "$M_PKGNAME_MACFUSE_CORE" "$ms_osxfuse_out"
+    m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE_CORE'."
 
     echo >$m_stdout
     m_log "succeeded, results in '$ms_osxfuse_out'."
