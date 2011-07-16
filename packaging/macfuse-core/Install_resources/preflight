@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# Copyright (C) 2006 Google. All Rights Reserved.
+#
+PACKAGE_PATH=$1
+INSTALL_PATH=$2
+INSTALL_VOLUME=$3
+SYSTEM_ROOT=$4
+
+## OSXFUSE User Library
+
+## Signal success
+
+exit 0
