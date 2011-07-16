@@ -172,7 +172,7 @@ case "$OS_RELEASE" in
     OUTER_PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/OSXFUSE.pkg"
     BOMFILE="$PACKAGE_RECEIPT/Contents/Archive.bom"
     ;;
-  10*)
+  10*|11*)
      PACKAGE_RECEIPT=""
      BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.osxfuse-core.bom"
      ;;
