@@ -923,6 +923,7 @@ function m_handler_smalldist()
 
     if [ "$m_shortcircuit" != "1" ]
     then
+        rm -rf "$lib_dir/build/"
         rm -rf "$kernel_dir/build/"
         rm -rf "$m_srcroot/sdk/build/"
     fi
@@ -1111,6 +1112,34 @@ function m_handler_smalldist()
     dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
     m_exit_on_error "cannot generate debugging information for libosxfuse_i64."
 
+    # Build MacFUSE compatibility layer for user-space OSXFUSE library
+    #
+
+    m_log "building MacFUSE compatibility layer for user-space OSXFUSE library"
+
+    cd "$lib_dir"
+    m_exit_on_error "cannot access compatibility layer directory."
+
+    xcodebuild -target macfuse -configuration "$m_configuration" "OSXFUSE_BUILD_ROOT=$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
+
+    cp -pRX build/"$m_configuration"/libmacfuse* "$ms_osxfuse_root/usr/local/lib/"
+    m_exit_on_error "cannot copy 'libmacfuse*' to destination."
+
+    for f in "$ms_osxfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
+        local source=`basename "$f"`
+        local target="`echo \"$f\" | sed 's/libmacfuse_i32/libfuse/'`"
+        ln -s "$source" "$target"
+        m_exit_on_error "cannot create symlink '$target' -> '$source'."
+    done
+
+    for f in "$ms_osxfuse_root"/usr/local/lib/libmacfuse_i64*.dylib; do
+        local source=`basename "$f"`
+        local target="`echo \"$f\" | sed 's/libmacfuse_i64/libfuse_ino64/'`"
+        ln -s "$source" "$target"
+        m_exit_on_error "cannot create symlink '$target' -> '$source'."
+    done
+
     # Build OSXFUSE.framework
     #
 
@@ -1133,6 +1162,14 @@ function m_handler_smalldist()
     m_exit_on_error "cannot create directory for Xcode templates."
     ln -s "/Library/Frameworks/OSXFUSE.framework/Resources/ProjectTemplates/" "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/OSXFUSE"
     m_exit_on_error "cannot create symlink for Xcode templates."
+
+    # Link MacFUSE.framework back to OSXFUSE.framework
+    #
+
+    mkdir -p "$ms_osxfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A"
+    m_exit_on_error "cannot create directory structure of 'MacFUSE.framework'."
+    ln -s "/Library/Frameworks/OSXFUSE.framework/Versions/A/OSXFUSE" "$ms_osxfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/MacFUSE"
+    m_exit_on_error "cannot create symlink for 'MacFUSE.framework'."
 
     m_set_suprompt "to chown '$ms_osxfuse_root/*'"
     sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_root"/*
