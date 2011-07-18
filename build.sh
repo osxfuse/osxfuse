@@ -1142,7 +1142,7 @@ function m_handler_smalldist()
     cd "$lib_dir"
     m_exit_on_error "cannot access compatibility layer directory."
 
-    xcodebuild -target macfuse -configuration "$m_configuration" "OSXFUSE_BUILD_ROOT=$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    xcodebuild -target macfuse -configuration "$m_configuration" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/libmacfuse* "$ms_osxfuse_root/usr/local/lib/"
@@ -1173,7 +1173,7 @@ function m_handler_smalldist()
     rm -rf build/
     m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
 
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE-$ms_os_version" "OSXFUSE_BUILD_ROOT=$ms_osxfuse_root" "OSXFUSE_BUNDLE_VERSION_LITERAL=$ms_osxfuse_version" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE-$ms_os_version" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
