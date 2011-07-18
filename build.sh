@@ -1148,8 +1148,8 @@ function m_handler_smalldist()
     xcodebuild -target macfuse -configuration "$m_configuration" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/libmacfuse* "$ms_osxfuse_root/usr/local/lib/"
-    m_exit_on_error "cannot copy 'libmacfuse*' to destination."
+    cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_osxfuse_root/usr/local/lib/"
+    m_exit_on_error "cannot copy 'libmacfuse*.dylib' to destination."
 
     for f in "$ms_osxfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
         local source=`basename "$f"`
