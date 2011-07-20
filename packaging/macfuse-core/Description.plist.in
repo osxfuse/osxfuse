@@ -17,6 +17,6 @@ for further details.</string>
 	<key>IFPkgDescriptionTitle</key>
 	<string>MacFUSE Core</string>
 	<key>IFPkgDescriptionVersion</key>
-	<string>FUSE for OS X (OSXFUSE), Copyright (c) 2011, OSXFUSE Project</string>
+	<string>OSXFUSE_VERSION_LITERAL</string>
 </dict>
 </plist>
