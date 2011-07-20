@@ -174,7 +174,7 @@ case "$OS_RELEASE" in
     ;;
   10*|11*)
      PACKAGE_RECEIPT=""
-     BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.osxfuse-core.bom"
+     BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.pkg.OSXFUSECore.bom"
      ;;
 esac
 
@@ -193,7 +193,7 @@ then
     exit 3
   fi
 else
-  /usr/sbin/pkgutil --pkg-info com.github.osxfuse.osxfuse-core > /dev/null 2>&1
+  /usr/sbin/pkgutil --pkg-info com.github.osxfuse.pkg.OSXFUSECore > /dev/null 2>&1
   if [ $? -ne 0 ]
   then
     log "It appears that OSXFUSE Core is not installed."
@@ -254,13 +254,13 @@ then
       remove_tree "$OUTER_PACKAGE_RECEIPT"
     fi
   else 
-    /usr/sbin/pkgutil --forget com.github.osxfuse.osxfuse-core
+    /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.OSXFUSECore
     if [ $? -ne 0 ]
     then
       IS_BOTCHED_UNINSTALL=1
     fi
     # Best effort remove of OSXFUSE.pkg.
-    /usr/sbin/pkgutil --forget com.github.osxfuse.osxfuse
+    /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.OSXFUSE
   fi
 fi
 

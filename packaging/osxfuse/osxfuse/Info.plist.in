@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>OSXFUSE</string>
+	<string>FUSE for OS X (OSXFUSE)</string>
 	<key>CFBundleGetInfoString</key>
-	<string>OSXFUSE_PKG_VERSION_LITERAL, FUSE for OS X (OSXFUSE)</string>
+	<string>OSXFUSE_PKG_VERSION_LITERAL, Copyright 2011 OSXFUSE Project</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.github.osxfuse.osxfuse</string>
+	<string>com.github.osxfuse.pkg.OSXFUSE</string>
 	<key>CFBundleShortVersionString</key>
 	<string>OSXFUSE_PKG_VERSION_LITERAL</string>
 	<key>IFMajorVersion</key>

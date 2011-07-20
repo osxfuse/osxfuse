@@ -5,7 +5,7 @@
 	<key>CFBundleName</key>
 	<string>MacFUSE Core</string>
 	<key>CFBundleGetInfoString</key>
-	<string>OSXFUSE_VERSION_LITERAL, OSXFUSE Project</string>
+	<string>OSXFUSE_VERSION_LITERAL, Copyright 2011 OSXFUSE Project</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.google.macfuse.core</string>
 	<key>CFBundleShortVersionString</key>
