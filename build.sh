@@ -72,8 +72,8 @@ readonly M_KEXT_NAME=osxfusefs.kext
 readonly M_KEXT_SYMBOLS=osxfusefs-symbols
 readonly M_LOGPREFIX=OSXFUSEBuildTool
 readonly M_OSXFUSE_PRODUCT_ID=com.github.osxfuse.OSXFUSE
-readonly M_PKGNAME_CORE="OSXFUSE Core.pkg"
-readonly M_PKGNAME_MACFUSE_CORE="MacFUSE Core.pkg"
+readonly M_PKGNAME_CORE="OSXFUSECore.pkg"
+readonly M_PKGNAME_MACFUSE_CORE="MacFUSECore.pkg"
 readonly M_PKGNAME=OSXFUSE.pkg
 readonly M_WANTSU="needs the Administrator password"
 readonly M_WARNING="*** Warning"
@@ -267,6 +267,12 @@ function m_build_pkg()
           -r "$bp_output_dir/$M_INSTALL_RESOURCES_DIR" -i "$bp_infoplist_out" \
           -d "$bp_descriptionplist_out" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create package '$bp_pkgname'."
+
+    rm -f "$bp_infoplist_out"
+    # ignore any errors
+
+    rm -f "$bp_descriptionplist_out"
+    # ignore any errors
 
     return 0
 }
@@ -774,9 +780,15 @@ function m_handler_dist()
           -d "$md_descriptionplist_out" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create container package '$M_PKGNAME'."
 
+    rm -f "$md_infoplist_out"
+    # ignore any error
+
+    rm -f "$md_descriptionplist_out"
+    # ignore any error
+
     # Create the distribution volume
     #
-    local md_volume_name="FUSE for OS X $m_release"
+    local md_volume_name="FUSE for OS X (OSXFUSE $m_release)"
     local md_scratch_dmg="$md_osxfuse_out/osxfuse-scratch.dmg"
     hdiutil create -layout NONE -megabytes 10 -fs HFS+ \
         -volname "$md_volume_name" "$md_scratch_dmg" >$m_stdout 2>$m_stderr

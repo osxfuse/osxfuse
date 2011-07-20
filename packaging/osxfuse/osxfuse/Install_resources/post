@@ -50,8 +50,8 @@ then
   exit 1
 fi
 
-CORE_NAME="OSXFUSE Core.pkg"
-MACFUSE_CORE_NAME="MacFUSE Core.pkg"
+CORE_NAME="OSXFUSECore.pkg"
+MACFUSE_CORE_NAME="MacFUSECore.pkg"
 
 # Determine the appropriate embedded pkg for this platform.
 OS_MAJOR_MINOR="${OS_MAJOR}.${OS_MINOR}"
