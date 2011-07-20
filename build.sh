@@ -1214,10 +1214,10 @@ function m_handler_smalldist()
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
 
     mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
-    mkdir -p "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
-    m_exit_on_error "cannot create directory for Xcode templates."
-    ln -s "/Library/Frameworks/OSXFUSE.framework/Resources/ProjectTemplates/" "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/OSXFUSE"
-    m_exit_on_error "cannot create symlink for Xcode templates."
+#   mkdir -p "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
+#   m_exit_on_error "cannot create directory for Xcode templates."
+#   ln -s "/Library/Frameworks/OSXFUSE.framework/Resources/ProjectTemplates/" "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/OSXFUSE"
+#   m_exit_on_error "cannot create symlink for Xcode templates."
 
     # Link MacFUSE.framework back to OSXFUSE.framework
     #
