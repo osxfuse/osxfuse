@@ -207,7 +207,7 @@ then
 fi
 
 # 1. Try to unload the kext if possible. Best effort, so ignore errors.
-kextunload -b com.github.osxfuse.osxfusefs > /dev/null 2>&1
+kextunload -b com.github.osxfuse.filesystems.osxfusefs > /dev/null 2>&1
 
 # 2. Remove files and symlinks
 OLD_IFS="$IFS"
