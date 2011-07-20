@@ -15,7 +15,7 @@ http://osxfuse.github.com/
 
 for further details.</string>
 	<key>IFPkgDescriptionTitle</key>
-	<string>MacFUSE Core</string>
+	<string>MacFUSE Core (OSXFUSE compatibility layer)</string>
 	<key>IFPkgDescriptionVersion</key>
 	<string>OSXFUSE_VERSION_LITERAL</string>
 </dict>
