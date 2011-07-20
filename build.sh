@@ -236,13 +236,21 @@ function m_build_pkg()
 
     local bp_infoplist_in="$bp_install_srcroot/Info.plist.in"
     local bp_infoplist_out="$bp_output_dir/Info.plist"
-    local bp_descriptionplist="$bp_install_srcroot/Description.plist"
+    local bp_descriptionplist_in="$bp_install_srcroot/Description.plist.in"
+    local bp_descriptionplist_out="$bp_output_dir/Description.plist"
 
     # Fix up the Info.plist
     #
     sed -e "s/OSXFUSE_VERSION_LITERAL/$bp_pkgversion/g" \
         < "$bp_infoplist_in" > "$bp_infoplist_out"
     m_exit_on_error "cannot finalize Info.plist for package '$bp_pkgname'."
+
+    # Fix up the Description.plist
+    #
+    sed -e "s/OSXFUSE_VERSION_LITERAL/$bp_pkgversion/g" \
+        < "$bp_descriptionplist_in" > "$bp_descriptionplist_out"
+    m_exit_on_error "cannot finalize Description.plist for package '$bp_pkgname'."
+
 
     # Get rid of .svn files from M_INSTALL_RESOURCES_DIR
     #
@@ -257,7 +265,7 @@ function m_build_pkg()
         packagemaker -build -p "$bp_output_dir/$bp_pkgname"    \
           -f "$bp_install_payload" -b "$M_CONF_TMPDIR" -ds -v  \
           -r "$bp_output_dir/$M_INSTALL_RESOURCES_DIR" -i "$bp_infoplist_out" \
-          -d "$bp_descriptionplist" >$m_stdout 2>$m_stderr
+          -d "$bp_descriptionplist_out" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create package '$bp_pkgname'."
 
     return 0
@@ -679,7 +687,8 @@ function m_handler_dist()
     local md_srcroot="$m_srcroot/packaging/osxfuse/osxfuse"
     local md_infoplist_in="$md_srcroot/Info.plist.in"
     local md_infoplist_out="$md_osxfuse_out/Info.plist"
-    local md_descriptionplist="$md_srcroot/Description.plist"
+    local md_descriptionplist_in="$md_srcroot/Description.plist.in"
+    local md_descriptionplist_out="$md_osxfuse_out/Description.plist"
     local md_install_resources="$md_osxfuse_out/$M_INSTALL_RESOURCES_DIR"
 
     # Get rid of .svn files from M_INSTALL_RESOURCES_DIR
@@ -749,6 +758,12 @@ function m_handler_dist()
             < "$md_infoplist_in" > "$md_infoplist_out"
     m_exit_on_error "cannot fix the Info.plist of the container package."
 
+    # Fix up the container's Description.plist
+    #
+    sed -e "s/OSXFUSE_PKG_VERSION_LITERAL/$m_release/g"  \
+        < "$md_descriptionplist_in" > "$md_descriptionplist_out"
+    m_exit_on_error "cannot fix the Description.plist of the container package."
+
     # Create the big package
     #
     m_set_suprompt "to run packagemaker for the container package"
@@ -756,7 +771,7 @@ function m_handler_dist()
         packagemaker -build -p "$md_osxfuse_out/$M_PKGNAME" \
           -f "$md_osxfuse_root" -b "$M_CONF_TMPDIR" -ds -v  \
           -r "$md_install_resources" -i "$md_infoplist_out" \
-          -d "$md_descriptionplist" >$m_stdout 2>$m_stderr
+          -d "$md_descriptionplist_out" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create container package '$M_PKGNAME'."
 
     # Create the distribution volume
