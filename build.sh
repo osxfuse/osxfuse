@@ -45,7 +45,7 @@ readonly M_XCODE_VERSION_REQUIRED=4.0.0
 #
 declare m_args=
 declare m_active_target=""
-declare m_configuration=Release
+declare m_configuration="Release"
 declare m_developer=0
 declare m_osname=""
 declare m_platform="$M_DEFAULT_PLATFORM"
@@ -65,16 +65,36 @@ declare m_xcode_version=
 
 # Other implementation details
 #
-readonly M_FSBUNDLE_NAME=osxfusefs.fs
-readonly M_INSTALL_RESOURCES_DIR=Install_resources
-readonly M_KEXT_ID=com.github.osxfuse.filesystems.osxfusefs
-readonly M_KEXT_NAME=osxfusefs.kext
-readonly M_KEXT_SYMBOLS=osxfusefs-symbols
-readonly M_LOGPREFIX=OSXFUSEBuildTool
-readonly M_OSXFUSE_PRODUCT_ID=com.github.osxfuse.OSXFUSE
-readonly M_PKGNAME_CORE="OSXFUSECore.pkg"
-readonly M_PKGNAME_MACFUSE_CORE="MacFUSECore.pkg"
-readonly M_PKGNAME=OSXFUSE.pkg
+readonly M_FSBUNDLE_NAME="osxfusefs.fs"
+readonly M_INSTALL_RESOURCES_DIR="Install_resources"
+readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
+readonly M_KEXT_NAME="osxfusefs.kext"
+readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
+readonly M_LOGPREFIX="OSXFUSEBuildTool"
+readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
+
+readonly M_PKG_VERSION="10.5"
+
+# Core
+readonly M_PKGID_CORE="com.github.osxfuse.pkg.Core"
+readonly M_PKGBASENAME_CORE="OSXFUSECore"
+readonly M_PKGNAME_CORE="${M_PKGBASENAME_CORE}.pkg"
+
+# Preference Pane
+readonly M_PKGID_PREFPANE="com.github.osxfuse.pkg.PrefPane"
+readonly M_PKGBASENAME_PREFPANE="OSXFUSEPrefPane"
+readonly M_PKGNAME_PREFPANE="${M_PKGBASENAME_PREFPANE}.pkg"
+
+# MacFUSE compatibility layer
+readonly M_PKGID_MACFUSE="com.google.macfuse.core"
+readonly M_PKGBASENAME_MACFUSE="OSXFUSEMacFUSE"
+readonly M_PKGNAME_MACFUSE="${M_PKGBASENAME_MACFUSE}.pkg"
+
+# Distribution package
+readonly M_PKGID_OSXFUSE="com.github.osxfuse.pkg.OSXFUSE"
+readonly M_PKGBASENAME_OSXFUSE="OSXFUSE"
+readonly M_PKGNAME_OSXFUSE="${M_PKGBASENAME_OSXFUSE}.pkg"
+
 readonly M_WANTSU="needs the Administrator password"
 readonly M_WARNING="*** Warning"
 
@@ -224,55 +244,41 @@ function m_set_platform()
     return $retval
 }
 
-# m_build_pkg(pkgversion, install_srcroot, install_payload, pkgname, output_dir)
+# m_build_pkg(pkgversion, install_srcroot, install_payload, pkgid, pkgname, output_dir)
 #
 function m_build_pkg()
 {
-    local bp_pkgversion=$1
-    local bp_install_srcroot=$2
-    local bp_install_payload=$3
-    local bp_pkgname=$4
-    local bp_output_dir=$5
-
-    local bp_infoplist_in="$bp_install_srcroot/Info.plist.in"
-    local bp_infoplist_out="$bp_output_dir/Info.plist"
-    local bp_descriptionplist_in="$bp_install_srcroot/Description.plist.in"
-    local bp_descriptionplist_out="$bp_output_dir/Description.plist"
-
-    # Fix up the Info.plist
-    #
-    sed -e "s/OSXFUSE_VERSION_LITERAL/$bp_pkgversion/g" \
-        < "$bp_infoplist_in" > "$bp_infoplist_out"
-    m_exit_on_error "cannot finalize Info.plist for package '$bp_pkgname'."
-
-    # Fix up the Description.plist
-    #
-    sed -e "s/OSXFUSE_VERSION_LITERAL/$bp_pkgversion/g" \
-        < "$bp_descriptionplist_in" > "$bp_descriptionplist_out"
-    m_exit_on_error "cannot finalize Description.plist for package '$bp_pkgname'."
-
-
-    # Get rid of .svn files from M_INSTALL_RESOURCES_DIR
-    #
-    (tar -C "$bp_install_srcroot" --exclude '.svn' -cpvf - \
-        "$M_INSTALL_RESOURCES_DIR" | tar -C "$bp_output_dir/" \
-            -xpvf - >$m_stdout 2>$m_stderr)>$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot migrate resources from '$M_INSTALL_RESOURCES_DIR'."
+    local bp_pkgversion="$1"
+    local bp_install_srcroot="$2"
+    local bp_install_payload="$3"
+    local bp_pkgid="$4"
+    local bp_pkgname="$5"
+    local bp_output_dir="$6"
 
     # Make the package
     m_set_suprompt "to run packagemaker"
-    sudo -p "$m_suprompt" \
-        packagemaker -build -p "$bp_output_dir/$bp_pkgname"    \
-          -f "$bp_install_payload" -b "$M_CONF_TMPDIR" -ds -v  \
-          -r "$bp_output_dir/$M_INSTALL_RESOURCES_DIR" -i "$bp_infoplist_out" \
-          -d "$bp_descriptionplist_out" >$m_stdout 2>$m_stderr
+    if [ -d "$bp_install_srcroot/Scripts" ]
+    then
+        sudo -p "$m_suprompt" \
+            packagemaker -r "$bp_install_payload" \
+            -i "$bp_pkgid" \
+            -f "$bp_install_srcroot/PackageInfo" \
+            -o "$bp_output_dir/$bp_pkgname" \
+            -n "$bp_pkgversion" \
+            -s "$bp_install_srcroot/Scripts" \
+            -g "$M_PKG_VERSION" -m -v \
+            >$m_stdout 2>$m_stderr
+    else
+        sudo -p "$m_suprompt" \
+            packagemaker -r "$bp_install_payload" \
+            -i "$bp_pkgid" \
+            -f "$bp_install_srcroot/PackageInfo" \
+            -o "$bp_output_dir/$bp_pkgname" \
+            -n "$bp_pkgversion" \
+            -g "$M_PKG_VERSION" -m -v \
+            >$m_stdout 2>$m_stderr    
+    fi
     m_exit_on_error "cannot create package '$bp_pkgname'."
-
-    rm -f "$bp_infoplist_out"
-    # ignore any errors
-
-    rm -f "$bp_descriptionplist_out"
-    # ignore any errors
 
     return 0
 }
@@ -632,7 +638,8 @@ function m_handler_dist()
 
     m_active_target="dist"
 
-    m_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h" | cut -d . -f 1,2`
+    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
+    m_release=`echo "$m_release_full" | cut -d . -f 1,2`
     m_exit_on_error "cannot get OSXFUSE release version."
 
     local md_osxfuse_out="$M_CONF_TMPDIR/osxfuse-$m_release"
@@ -657,7 +664,7 @@ function m_handler_dist()
         local md_tmp_os_version=${md_tmp_versions%-*}
 
         md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_CORE"
-        md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_MACFUSE_CORE"
+        md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_MACFUSE"
 
         case "$md_tmp_os_version" in
         10.5)
@@ -669,12 +676,12 @@ function m_handler_dist()
         10.7)
             m_version_lion=$md_tmp_release_version
         ;;
-    esac
+        esac
 
         m_log "adding [ '$md_tmp_os_version', '$md_tmp_release_version' ]"
     done
 
-    m_log "building '$M_PKGNAME'"
+    m_log "building '$M_PKGNAME_OSXFUSE'"
 
     mkdir "$md_osxfuse_out"
     m_exit_on_error "cannot create directory '$md_osxfuse_out'."
@@ -690,24 +697,18 @@ function m_handler_dist()
     m_set_suprompt "to chown '$md_osxfuse_root/'."
     sudo -p "$m_suprompt" chown -R root:wheel "$md_osxfuse_root/"
 
-    local md_srcroot="$m_srcroot/packaging/osxfuse/osxfuse"
-    local md_infoplist_in="$md_srcroot/Info.plist.in"
-    local md_infoplist_out="$md_osxfuse_out/Info.plist"
-    local md_descriptionplist_in="$md_srcroot/Description.plist.in"
-    local md_descriptionplist_out="$md_osxfuse_out/Description.plist"
-    local md_install_resources="$md_osxfuse_out/$M_INSTALL_RESOURCES_DIR"
+    # Build Preference Pane installer package
+    m_log "building installer package '$M_PKGNAME_PREFPANE'"
 
-    # Get rid of .svn files from M_INSTALL_RESOURCES_DIR
+    m_build_pkg "$m_release_full" "$m_srcroot/packaging/installer/$M_PKGBASENAME_PREFPANE" "$md_osxfuse_root" "$M_PKGID_PREFPANE" "$M_PKGNAME_PREFPANE" "$md_osxfuse_out"
+    m_exit_on_error "cannot create '$M_PKGNAME_PREFPANE'."
+
+    # Build OSXFUSE installer package
     #
-    (tar -C "$md_srcroot" --exclude '.svn' -cpvf - \
-        "$M_INSTALL_RESOURCES_DIR" | tar -C "$md_osxfuse_out" -xpvf - \
-            >$m_stdout 2>$m_stderr)>$m_stdout 2>$m_stderr
+    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
+    m_exit_on_error "cannot copy the packaging files for package '$M_PKGNAME_OSXFUSE'."
 
-    # Copy subpackage platform directories under Resources
-    #
-
-    local md_pkg_size=0
-    local md_saved_ifs="$IFS"
+    OLD_IFS="$IFS"
     IFS=","
     for i in $md_platforms
     do
@@ -720,77 +721,53 @@ function m_handler_dist()
         local md_tmp_core_pkg=${i##*=}
         local md_tmp_core_pkg_dir=$(dirname "$md_tmp_core_pkg")
         local md_tmp_core_pkg_name=$(basename "$md_tmp_core_pkg")
-        local md_tmp_pkg_dst="$md_install_resources/$md_tmp_os_version"
+        local md_tmp_pkg_dst="$md_osxfuse_out/OSXFUSE/$md_tmp_core_pkg_name"
 
-        local md_tmp_new_size=$(defaults read "$md_tmp_core_pkg/Contents/Info" IFPkgFlagInstalledSize)
-        if [ -z "$md_tmp_new_size" ]
-        then
-            m_warn "unable to read package size from '$md_tmp_core_pkg'."
-        fi
-        if [ $md_tmp_new_size -gt $md_pkg_size ]
-        then
-            md_pkg_size=$md_tmp_new_size
-        fi
-
-        if [ ! -d "$md_tmp_pkg_dst" ]
-        then
-            mkdir "$md_tmp_pkg_dst"
-            m_exit_on_error "cannot make package subdirectory '$md_tmp_pkg_dst'."
-        fi
-
-        m_set_suprompt "to add platform-specific package to container"
-        (sudo -p "$m_suprompt" tar -C "$md_tmp_core_pkg_dir" -cpvf - "$md_tmp_core_pkg_name" | sudo -p "$m_suprompt" tar -C "$md_tmp_pkg_dst" -xpvf - >$m_stdout 2>$m_stderr)>$m_stdout 2>$m_stderr
-        m_exit_on_error "cannot add package."
+        pkgutil --expand "$md_tmp_core_pkg" "$md_tmp_pkg_dst"
+        m_exit_on_error "cannot expand flat package '$md_tmp_core_pkg_name'."
     done
-    IFS="$md_saved_ifs"
+    IFS="$OLD_IFS"
 
-    # XXX For now, make 10.5 also valid for 10.6 and 10.7
-    #
-    if [ -d "$md_install_resources/10.5" ]
-    then
-        ln -s "10.5" "$md_install_resources/10.6"
-        ln -s "10.5" "$md_install_resources/10.7"
-    fi
+    pkgutil --expand "$md_osxfuse_out/$M_PKGNAME_PREFPANE" "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_PREFPANE"
+    m_exit_on_error "cannot expand flat package '$M_PKGNAME_PREFPANE'."
 
-    # Throw in the autoinstaller
-    #
-    cp "$md_ai" "$md_install_resources"
-    m_exit_on_error "cannot copy '$md_ai' to '$md_install_resources'."
+    find "$md_osxfuse_out/OSXFUSE" -name ".DS_Store" -exec rm -f '{}' \;
+    m_exit_on_error "cannot remove '.DS_Store' files from package '$M_PKGNAME_OSXFUSE'."
 
-    # Fix up the container's Info.plist
-    #
-    sed -e "s/OSXFUSE_PKG_VERSION_LITERAL/$m_release/g"  \
-        -e "s/OSXFUSE_PKG_INSTALLED_SIZE/$md_pkg_size/g" \
-            < "$md_infoplist_in" > "$md_infoplist_out"
-    m_exit_on_error "cannot fix the Info.plist of the container package."
+    local md_pkg_core_size=`grep -Po 'installKBytes="\K\d+?(?=")' "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_CORE/PackageInfo"`
+    local md_pkg_prefpane_size=`grep -Po 'installKBytes="\K\d+?(?=")' "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_PREFPANE/PackageInfo"`
+    local md_pkg_macfuse_size=`grep -Po 'installKBytes="\K\d+?(?=")' "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_MACFUSE/PackageInfo"`
 
-    # Fix up the container's Description.plist
-    #
-    sed -e "s/OSXFUSE_PKG_VERSION_LITERAL/$m_release/g"  \
-        < "$md_descriptionplist_in" > "$md_descriptionplist_out"
-    m_exit_on_error "cannot fix the Description.plist of the container package."
+    local md_distribution_in="$md_osxfuse_out/OSXFUSE/Distribution.in"
+    local md_distribution_out="$md_osxfuse_out/OSXFUSE/Distribution"
+    sed -e "s/@PKG_CORE_ID@/$M_PKGID_CORE/g" \
+        -e "s/@PKG_CORE_SIZE@/$md_pkg_core_size/g" \
+        -e "s/@PKG_CORE_VERSION@/$m_release_full/g" \
+        -e "s/@PKG_CORE_NAME@/$M_PKGNAME_CORE/g" \
+        -e "s/@PKG_PREFPANE_ID@/$M_PKGID_PREFPANE/g" \
+        -e "s/@PKG_PREFPANE_SIZE@/$md_pkg_prefpane_size/g" \
+        -e "s/@PKG_PREFPANE_VERSION@/$m_release_full/g" \
+        -e "s/@PKG_PREFPANE_NAME@/$M_PKGNAME_PREFPANE/g" \
+        -e "s/@PKG_MACFUSE_ID@/$M_PKGID_MACFUSE/g" \
+        -e "s/@PKG_MACFUSE_SIZE@/$md_pkg_macfuse_size/g" \
+        -e "s/@PKG_MACFUSE_VERSION@/$m_release_full/g" \
+        -e "s/@PKG_MACFUSE_NAME@/$M_PKGNAME_MACFUSE/g" \
+        < "$md_distribution_in" > "$md_distribution_out"
+    m_exit_on_error "cannot finalize Distribution for package '$M_PKGNAME_OSXFUSE'."
 
-    # Create the big package
-    #
-    m_set_suprompt "to run packagemaker for the container package"
-    sudo -p "$m_suprompt" \
-        packagemaker -build -p "$md_osxfuse_out/$M_PKGNAME" \
-          -f "$md_osxfuse_root" -b "$M_CONF_TMPDIR" -ds -v  \
-          -r "$md_install_resources" -i "$md_infoplist_out" \
-          -d "$md_descriptionplist_out" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot create container package '$M_PKGNAME'."
+    rm -f "$md_distribution_in"
+    m_exit_on_error "cannot remove Distribution.in for package '$M_PKGNAME_OSXFUSE'."
 
-    rm -f "$md_infoplist_out"
-    # ignore any error
+    m_log "flatten installer package '$M_PKGNAME_OSXFUSE'"
 
-    rm -f "$md_descriptionplist_out"
-    # ignore any error
+    pkgutil --flatten "$md_osxfuse_out/OSXFUSE" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
+    m_exit_on_error "cannot flatten package '$M_PKGNAME_OSXFUSE'."
 
     # Create the distribution volume
     #
-    local md_volume_name="FUSE for OS X (OSXFUSE $m_release)"
+    local md_volume_name="FUSE for OS X"
     local md_scratch_dmg="$md_osxfuse_out/osxfuse-scratch.dmg"
-    hdiutil create -layout NONE -megabytes 10 -fs HFS+ \
+    hdiutil create -layout NONE -size 10m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
         -volname "$md_volume_name" "$md_scratch_dmg" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create scratch OSXFUSE disk image."
 
@@ -799,51 +776,147 @@ function m_handler_dist()
     hdiutil attach -private -nobrowse "$md_scratch_dmg" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot attach scratch OSXFUSE disk image."
 
+    local md_volume_path="/Volumes/$md_volume_name"
+
+    # Copy over the license file
+    #
+    cp "$m_srcroot/License.rtf" "$md_volume_path"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot copy OSXFUSE license to scratch disk image."
+    fi
+
+    /Developer/Tools/SetFile -a E "$md_volume_path/License.rtf"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot hide extension of 'License.rtf'."
+    fi
+
+    # Copy over the package
+    #
+    local md_pkgname_installer="Install OSXFUSE $m_release.pkg"
+    cp -pRX "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_volume_path/$md_pkgname_installer"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot copy '$M_PKGNAME_OSXFUSE' to scratch disk image."
+    fi
+
+    /Developer/Tools/SetFile -a E "$md_volume_path/$md_pkgname_installer"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot hide extension of installer package."
+    fi
+
+    # Copy over the website link
+    #
+    cp "$m_srcroot/packaging/diskimage/OSXFUSE Website.webloc" "$md_volume_path"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot copy website link to scratch disk image."
+    fi
+
+    /Developer/Tools/SetFile -a E "$md_volume_path/OSXFUSE Website.webloc"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot hide extension of 'OXSFUSE Website.webloc'."
+    fi
+
     # Create the .engine_install file
     #
-    local md_volume_path="/Volumes/$md_volume_name"
     local md_engine_install="$md_volume_path/.engine_install"
-cat > "$md_engine_install" <<__END_ENGINE_INSTALL
+    cat > "$md_engine_install" <<__END_ENGINE_INSTALL
 #!/bin/sh -p
-/usr/sbin/installer -pkg "\$1/$M_PKGNAME" -target /
+/usr/sbin/installer -pkg "\$1/$md_pkgname_installer" -target /
 __END_ENGINE_INSTALL
 
     chmod +x "$md_engine_install"
     m_exit_on_error "cannot set permissions on autoinstaller engine file."
 
-    # For backward compatibility, we need a .keystone_install too
-    #
-    ln -s ".engine_install" "$md_volume_path/.keystone_install"
-    # ignore any errors
 
-    # Copy over the package
+    # Set the custom icon
     #
-    cp -pRX "$md_osxfuse_out/$M_PKGNAME" "$md_volume_path"
+    cp -pRX "$m_srcroot/packaging/images/osxfuse.icns" \
+        "$md_volume_path/.VolumeIcon.icns"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
         false
-        m_exit_on_error "cannot copy '$M_PKGNAME' to scratch disk image."
+        m_exit_on_error "cannot copy custom volume icon to scratch disk image."
     fi
 
-    # Set the custom icon
-    #
-    cp -pRX "$md_install_resources/.VolumeIcon.icns" \
-        "$md_volume_path/.VolumeIcon.icns"
-    m_exit_on_error "cannot copy custom volume icon to scratch disk image."
-
     /Developer/Tools/SetFile -a C "$md_volume_path"
-    m_exit_on_error "cannot set custom volume icon on scratch disk image."
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot set custom volume icon on scratch disk image."
+    fi
 
-    # Copy over the license file
+    # Set custom background
     #
-    cp "$md_install_resources/License.rtf" "$md_volume_path/License.rtf"
-    m_exit_on_error "cannot copy OSXFUSE license to scratch disk image."
+    mkdir "$md_volume_path/.background"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot make directory '.background' on scratch disk image."
+    fi
 
-    # Copy over the CHANGELOG.txt file
+    cp "$m_srcroot/packaging/diskimage/background.png" "$md_volume_path/.background/"
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot copy background picture to scratch disk image."
+    fi
+
+    # Customize scratch image
     #
-    cp "$m_srcroot/CHANGELOG.txt" "$md_volume_path/CHANGELOG.txt"
-    m_exit_on_error "cannot copy OSXFUSE CHANGELOG to scratch disk image."
+    echo '
+        tell application "Finder"
+            tell disk "'$md_volume_name'"
+                open
+                set current view of container window to icon view
+                set toolbar visible of container window to false
+                set statusbar visible of container window to false
+                set the bounds of container window to {0, 0, 500, 350}
+                set theViewOptions to the icon view options of container window
+                set arrangement of theViewOptions to not arranged
+                set icon size of theViewOptions to 128
+                set background picture of theViewOptions to file ".background:background.png"
+                set position of item "License.rtf" of container window to {100, 230}
+                set position of item "'$md_pkgname_installer'" of container window to {250, 230}
+                set position of item "OSXFUSE Website.webloc" of container window to {400, 230}
+                close
+                open
+                update without registering applications
+                close
+            end tell
+        end tell
+    ' | osascript
+    if [ $? -ne 0 ]
+    then
+        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        false
+        m_exit_on_error "cannot customize the scratch disk image."
+    fi
+
+    chmod -Rf go-w "$md_volume_path"
+    sync
+    sync
+    # ignore errors
 
     # Detach the volume.
     hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1008,7 +1081,7 @@ function m_handler_smalldist()
             m_exit_on_error "failed to clean up unrecognized version of platform-specific package."
         fi
     else
-        if [ -e "$ms_osxfuse_out/$M_PKGNAME_CORE" -a -e "$ms_osxfuse_out/$M_PKGNAME_MACFUSE_CORE" ]
+        if [ -e "$ms_osxfuse_out/$M_PKGNAME_CORE" -a -e "$ms_osxfuse_out/$M_PKGNAME_MACFUSE" ]
         then
             echo >$m_stdout
             m_log "succeeded (shortcircuited), results in '$ms_osxfuse_out'."
@@ -1098,10 +1171,10 @@ function m_handler_smalldist()
     cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_bundle_support_dir/mount_osxfusefs"
     m_exit_on_error "cannot copy 'mount_osxfusefs' to destination."
 
-    cp -pRX "$m_srcroot/packaging/osxfuse-core/uninstall-osxfuse-core.sh" "$ms_bundle_support_dir/uninstall-osxfuse-core.sh"
+    cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-osxfuse-core.sh" "$ms_bundle_support_dir/uninstall-osxfuse-core.sh"
     m_exit_on_error "cannot copy 'uninstall-osxfuse-core.sh' to destination."
 
-    cp -pRX "$m_srcroot/packaging/macfuse-core/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
+    cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
     m_exit_on_error "cannot copy 'uninstall-macfuse-core.sh' to destination."
 
     ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_support_dir/autoinstall-osxfuse-core"
@@ -1316,11 +1389,11 @@ function m_handler_smalldist()
 
     m_log "building installer package for $m_platform"
 
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/osxfuse-core" "$ms_osxfuse_root" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
 
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/macfuse-core" "$ms_macfuse_root" "$M_PKGNAME_MACFUSE_CORE" "$ms_osxfuse_out"
-    m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE_CORE'."
+    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/installer/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "$ms_osxfuse_out"
+    m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE'."
 
     echo >$m_stdout
     m_log "succeeded, results in '$ms_osxfuse_out'."
