@@ -1,0 +1,10 @@
+#!/bin/sh
+# Copyright 2011, OSXFUSE Project
+# All rights reserved.
+
+FUSE_PC="/usr/local/lib/pkgconfig/fuse.pc"
+
+# Restore link from fuse.pc to osxfuse.pc that might have been removed
+ln -sf "osxfuse.pc" "$FUSE_PC"
+
+exit 0

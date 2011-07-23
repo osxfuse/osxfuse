@@ -1,0 +1,13 @@
+#!/bin/sh
+# Copyright 2011, OSXFUSE Project
+# All rights reserved.
+
+KEXT_ID=com.github.osxfuse.filesystems.osxfusefs
+
+# Unload OSXFUSE kernel extension
+if [ -n "`kextstat -l -b $KEXT_ID`" ]
+then
+	kextunload -b $KEXT_ID 
+fi
+
+exit 0
