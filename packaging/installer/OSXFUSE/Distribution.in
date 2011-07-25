@@ -44,7 +44,7 @@
     <script>
         function installationCheck() 
         {
-            if (system.compareVersions(system.version.ProductVersion, '10.5') &lt; 0)
+            if (system.compareVersions(system.version.ProductVersion, '10.6') &lt; 0)
             {
                 my.result.type = 'Fatal';
                 my.result.message = system.localizedString('ERROR_OSXTOOOLD');
