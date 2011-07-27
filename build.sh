@@ -1281,6 +1281,9 @@ function m_handler_smalldist()
         m_exit_on_error "cannot create symlink '$target' -> '$source'."
     done
 
+    ln -s libmacfuse_i32.dylib "$ms_macfuse_root/usr/local/lib/libfuse.0.dylib"
+    m_exit_on_error "cannot create compatibility symlink 'libfuse.0.dylib'."
+
     # Build OSXFUSE.framework
     #
 
