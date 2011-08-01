@@ -67,7 +67,7 @@ declare m_xcode_version=
 #
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
-readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
+readonly M_KEXT_ID="com.github.osxfuse.osxfusefs"
 readonly M_KEXT_NAME="osxfusefs.kext"
 readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
@@ -400,7 +400,7 @@ function m_handler_reload()
 
     m_log "rebuilding kext"
 
-    xcodebuild -configuration Debug -target fusefs >$m_stdout 2>$m_stderr
+    xcodebuild -configuration Debug -target osxfusefs >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
  
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
