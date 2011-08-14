@@ -230,7 +230,7 @@ function m_set_platform()
         m_osname="Snow Leopard"
         m_usdk_dir="/Developer/SDKs/MacOSX10.6.sdk"
     ;;
-    10.6*)
+    10.7*)
         m_osname="Lion"
         m_usdk_dir="/Developer/SDKs/MacOSX10.7.sdk"
     ;;
