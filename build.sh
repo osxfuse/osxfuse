@@ -1,13 +1,13 @@
-#! /bin/bash
-# Copyright (C) 2008-2009 Google. All Rights Reserved.
+#!/bin/bash
+# OSXFUSE build tool
 #
-# Amit Singh <singh@>
-# Repurposes code from several earlier scripts by Ted Bonkenburg.
+# Copyright 2011, OSXFUSE Project
+# All rights reserved.
 #
+# Copyright 2008-2009, Google
+# All rights reserved.
 
-PATH=/Developer/usr/sbin:/Developer/usr/bin:/Developer/Tools:/Developer/Applications:/sbin:/usr/sbin:/bin:/usr/bin
-
-export PATH
+export PATH=/Developer/usr/sbin:/Developer/usr/bin:/Developer/Tools:/Developer/Applications:/sbin:/usr/sbin:/bin:/usr/bin
 
 # Configurables
 #
@@ -31,15 +31,15 @@ readonly M_PROGVERS=1.0
 readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
-readonly M_PLATFORMS="10.5 10.6 10.7"     # default is native
-readonly M_PLATFORMS_REALISTIC="10.5"
+readonly M_PLATFORMS="10.6 10.7"          # default is native
+readonly M_PLATFORMS_REALISTIC="10.6 10.7"
 readonly M_TARGETS="clean dist examples lib reload smalldist swconfigure"
 readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist swconfigure"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
 readonly M_DEFAULT_TARGET="$M_DEFAULT_VALUE"
 
-readonly M_XCODE_VERSION_REQUIRED=4.0.0
+readonly M_XCODE_VERSION_REQUIRED=4.1.0
 
 # Globals
 #
@@ -49,6 +49,7 @@ declare m_configuration="Release"
 declare m_developer=0
 declare m_osname=""
 declare m_platform="$M_DEFAULT_PLATFORM"
+declare m_archs=""
 declare m_release=""
 declare m_shortcircuit=0
 declare m_srcroot=""
@@ -72,6 +73,15 @@ readonly M_KEXT_NAME="osxfusefs.kext"
 readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
 readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
+
+readonly M_SDK_DIR_LEOPARD="/Developer/SDKs/MacOSX10.5.sdk"
+readonly M_ARCHS_LEOPARD="ppc ppc64 i386 x86_64"
+readonly M_SDK_DIR_SNOWLEOPARD="/Developer/SDKs/MacOSX10.6.sdk"
+readonly M_ARCHS_SNOWLEOPARD="i386 x86_64"
+readonly M_SDK_DIR_LION="/Developer/SDKs/MacOSX10.7.sdk"
+readonly M_ARCHS_LION="i386 x86_64"
+
+readonly M_MACFUSE_MODE=1;
 
 readonly M_PKG_VERSION="10.5"
 
@@ -215,28 +225,26 @@ function m_set_platform()
        m_platform=`sw_vers -productVersion | cut -d . -f 1,2`
     fi
 
-    # XXX For now
-    if [ "$m_platform" == "10.6" -o "$m_platform" == "10.7" ]
-    then
-        m_platform="10.5"
-    fi
-
     case "$m_platform" in
     10.5*)
         m_osname="Leopard"
-        m_usdk_dir="/Developer/SDKs/MacOSX10.5.sdk"
+        m_usdk_dir="$M_SDK_DIR_LEOPARD"
+        m_archs="$M_ARCHS_LEOPARD"
     ;;
     10.6*)
         m_osname="Snow Leopard"
-        m_usdk_dir="/Developer/SDKs/MacOSX10.6.sdk"
+        m_usdk_dir="$M_SDK_DIR_SNOWLEOPARD"
+        m_archs="$M_ARCHS_SNOWLEOPARD"
     ;;
     10.7*)
         m_osname="Lion"
-        m_usdk_dir="/Developer/SDKs/MacOSX10.7.sdk"
+        m_usdk_dir="$M_SDK_DIR_LION"
+        m_archs="$M_ARCHS_LION"
     ;;
     *)
         m_osname="Unknown"
         m_usdk_dir=""
+        m_archs=""
         retval=1
     ;;
     esac
@@ -327,7 +335,7 @@ function m_handler_lib()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     m_log "running make"
@@ -400,7 +408,7 @@ function m_handler_reload()
 
     m_log "rebuilding kext"
 
-    xcodebuild -configuration Debug -target osxfusefs >$m_stdout 2>$m_stderr
+    xcodebuild -configuration Debug -target osxfusefs ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET=$m_platform >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
  
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
@@ -477,7 +485,7 @@ function m_handler_examples()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 OSXFUSE_MACFUSE_MODE=$M_MACFUSE_MODE ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     cd example
@@ -574,8 +582,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
-    xcodebuild -configuration "$m_configuration" -target "Build All" \
-        >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "Build All" ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
@@ -618,8 +625,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the prefpane source."
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" \
-        >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget prefpane."
     popd >/dev/null 2>/dev/null
 
@@ -708,6 +714,8 @@ function m_handler_dist()
     cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
     m_exit_on_error "cannot copy the packaging files for package '$M_PKGNAME_OSXFUSE'."
 
+    local md_dist_choices_outline;
+
     OLD_IFS="$IFS"
     IFS=","
     for i in $md_platforms
@@ -721,7 +729,14 @@ function m_handler_dist()
         local md_tmp_core_pkg=${i##*=}
         local md_tmp_core_pkg_dir=$(dirname "$md_tmp_core_pkg")
         local md_tmp_core_pkg_name=$(basename "$md_tmp_core_pkg")
-        local md_tmp_pkg_dst="$md_osxfuse_out/OSXFUSE/$md_tmp_core_pkg_name"
+        local md_tmp_pkg_dst_dir="$md_osxfuse_out/OSXFUSE/$md_tmp_os_version"
+        local md_tmp_pkg_dst="$md_tmp_pkg_dst_dir/$md_tmp_core_pkg_name"
+
+        if [ ! -d "$md_tmp_pkg_dst_dir" ]
+        then
+            mkdir "$md_tmp_pkg_dst_dir"
+            m_exit_on_error "cannot make directory '$md_tmp_pkg_dst_dir'."
+        fi
 
         pkgutil --expand "$md_tmp_core_pkg" "$md_tmp_pkg_dst"
         m_exit_on_error "cannot expand flat package '$md_tmp_core_pkg_name'."
@@ -734,29 +749,202 @@ function m_handler_dist()
     find "$md_osxfuse_out/OSXFUSE" -name ".DS_Store" -exec rm -f '{}' \;
     m_exit_on_error "cannot remove '.DS_Store' files from package '$M_PKGNAME_OSXFUSE'."
 
-    local md_pkg_core_size=`grep -Po 'installKBytes="\K\d+?(?=")' "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_CORE/PackageInfo"`
-    local md_pkg_prefpane_size=`grep -Po 'installKBytes="\K\d+?(?=")' "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_PREFPANE/PackageInfo"`
-    local md_pkg_macfuse_size=`grep -Po 'installKBytes="\K\d+?(?=")' "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_MACFUSE/PackageInfo"`
+    local md_dist_out="$md_osxfuse_out/OSXFUSE/Distribution"
+    local md_dist_choices="${M_PKGBASENAME_CORE}:${M_PKGNAME_CORE};${M_PKGBASENAME_PREFPANE}:${M_PKGNAME_PREFPANE};${M_PKGBASENAME_MACFUSE}:${M_PKGNAME_MACFUSE}"
 
-    local md_distribution_in="$md_osxfuse_out/OSXFUSE/Distribution.in"
-    local md_distribution_out="$md_osxfuse_out/OSXFUSE/Distribution"
-    sed -e "s/@PKG_CORE_ID@/$M_PKGID_CORE/g" \
-        -e "s/@PKG_CORE_SIZE@/$md_pkg_core_size/g" \
-        -e "s/@PKG_CORE_VERSION@/$m_release_full/g" \
-        -e "s/@PKG_CORE_NAME@/$M_PKGNAME_CORE/g" \
-        -e "s/@PKG_PREFPANE_ID@/$M_PKGID_PREFPANE/g" \
-        -e "s/@PKG_PREFPANE_SIZE@/$md_pkg_prefpane_size/g" \
-        -e "s/@PKG_PREFPANE_VERSION@/$m_release_full/g" \
-        -e "s/@PKG_PREFPANE_NAME@/$M_PKGNAME_PREFPANE/g" \
-        -e "s/@PKG_MACFUSE_ID@/$M_PKGID_MACFUSE/g" \
-        -e "s/@PKG_MACFUSE_SIZE@/$md_pkg_macfuse_size/g" \
-        -e "s/@PKG_MACFUSE_VERSION@/$m_release_full/g" \
-        -e "s/@PKG_MACFUSE_NAME@/$M_PKGNAME_MACFUSE/g" \
-        < "$md_distribution_in" > "$md_distribution_out"
-    m_exit_on_error "cannot finalize Distribution for package '$M_PKGNAME_OSXFUSE'."
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+<?xml version="1.0" encoding="UTF-8"?>
+<installer-gui-script minSpecVersion="1.0">          
+    <title>FUSE for OS X (OSXFUSE)</title>
+    <background file="background.png" scaling="none" alignment="center"/>
+    <welcome file="Welcome.rtf"/>
+    <license file="License.rtf"/>
+    <options customize="always" rootVolumeOnly="true"/>
+    <choices-outline>
+__END_DISTRIBUTION
+    m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
 
-    rm -f "$md_distribution_in"
-    m_exit_on_error "cannot remove Distribution.in for package '$M_PKGNAME_OSXFUSE'."
+    OLD_IFS="$IFS"
+    IFS=";"
+    for i in $md_dist_choices
+    do
+        local md_dist_choice_name="${i%%:*}"
+        
+        IFS=" "
+        for platform in $M_PLATFORMS
+        do
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+        <line choice="$platform\$$md_dist_choice_name"/>
+__END_DISTRIBUTION
+            m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
+        done
+        IFS=";"
+    done
+    IFS="$OLD_IFS"
+
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+    </choices-outline>
+__END_DISTRIBUTION
+    m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
+
+    OLD_IFS="$IFS"
+    IFS=";"
+    for i in $md_dist_choices
+    do
+        local md_dist_choice_name="${i%%:*}"
+        local md_dist_choice_packages="${i##*:}"
+
+        local md_dist_choice_name_uc=`echo "$md_dist_choice_name" | tr '[:lower:]' '[:upper:]'`
+
+        IFS=" "
+        for platform in $M_PLATFORMS
+        do
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+    <choice id="$platform\$$md_dist_choice_name"
+        title="${md_dist_choice_name_uc}_TITLE"
+        description="${md_dist_choice_name_uc}_DESCRIPTION"
+        start_selected="isChoiceSelected('$platform', '$md_dist_choice_name')"
+        start_enabled="isChoiceEnabled('$platform', '$md_dist_choice_name')"
+        visible="isChoiceVisible('$platform', '$md_dist_choice_name')">
+__END_DISTRIBUTION
+            m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
+
+            IFS=","
+            for package in $md_dist_choice_packages
+            do
+                local md_dist_choice_pkg_path
+                local md_dist_choice_pkg_relpath
+                if [ -e "$md_osxfuse_out/OSXFUSE/$platform/$package" ]
+                then
+                    md_dist_choice_pkg_path="$md_osxfuse_out/OSXFUSE/$platform/$package"
+                    md_dist_choice_pkg_relpath="#$platform/$package"
+                elif [ -e "$md_osxfuse_out/OSXFUSE/$package" ]
+                then
+                    md_dist_choice_pkg_path="$md_osxfuse_out/OSXFUSE/$package"
+                    md_dist_choice_pkg_relpath="#$package"
+                else
+                    false
+                    m_exit_on_error "cannot find package '$package' for platform '$platform'."
+                fi
+
+                local md_dist_choice_pkg_id=`grep -Po '<pkg-info[^>]*\sidentifier="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
+                m_exit_on_error "cannot extract property 'id' of '$package' for platform '$platform'."
+
+                local md_dist_choice_pkg_size=`grep -Po '<payload[^>]*\sinstallKBytes="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
+                m_exit_on_error "cannot extract property 'size' of '$package' for platform '$platform'."
+
+                local md_dist_choice_pkg_version=`grep -Po '<pkg-info[^>]*\sversion="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
+                m_exit_on_error "cannot extract property 'version' of '$package' for platform '$platform'."
+
+                local md_dist_choice_pkg_auth=`grep -Po '<pkg-info[^>]*\sauth="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
+                m_exit_on_error "cannot extract property 'auth' of '$package' for platform '$platform'."
+
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+        <pkg-ref id="$md_dist_choice_pkg_id"
+            installKBytes="$md_dist_choice_pkg_size"
+            version="$md_dist_choice_pkg_version"
+            auth="$md_dist_choice_pkg_auth">$md_dist_choice_pkg_relpath</pkg-ref>
+__END_DISTRIBUTION
+                m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
+            done
+            IFS=" "
+
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+    </choice>
+__END_DISTRIBUTION
+            m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
+        done
+        IFS=";"
+    done
+    IFS="$OLD_IFS"
+
+    local md_dist_productversion
+    for platform in $M_PLATFORMS
+    do
+        md_dist_productversion=${md_dist_productversion:+"$md_dist_productversion || "}"isProductVersion('$platform')"
+    done
+
+cat >> "$md_dist_out" <<__END_DISTRIBUTION
+    <installation-check script='installationCheck()'/>
+    <script><![CDATA[
+        function isProductVersion(version)
+        {
+            return system.version.ProductVersion.slice(0, version.length) == version;
+        }
+        function getChoice(version, package)
+        {
+            return choices[version + '$' + package];
+        }
+
+        function installationCheck() 
+        {
+            if ($md_dist_productversion) return true;
+        
+            my.result.type = 'Fatal';
+            my.result.message = system.localizedString('ERROR_OSXVERSION');
+            return false;
+        }
+        function choiceRequiredCheck(version, package)
+        {
+            if (package == '$M_PKGBASENAME_MACFUSE')
+            {
+                return !system.files.fileExistsAtPath(
+                           '/Library/Filesystems/fusefs.fs/Contents/Info.plist');
+            }
+            return true;
+        }
+
+        function isInstalled(version)
+        {
+            return getChoice(version, '$M_PKGBASENAME_CORE').packageUpgradeAction != 'clean';
+        }
+
+        function isChoiceDefaultSelected(version, package)
+        {
+            switch (package)
+            {
+                case '$M_PKGBASENAME_CORE': return true;
+                case '$M_PKGBASENAME_PREFPANE': return true;
+                default: return false;
+            }
+        }
+        function isChoiceDefaultEnabled(version, package)
+        {
+            switch (package)
+            {
+                case '$M_PKGBASENAME_CORE': return false;
+                default: return true;
+            } 
+        }
+        function isChoiceInstalled(version, package)
+        {
+            if (!isInstalled(version)) return false;
+            return getChoice(version, package).packageUpgradeAction != 'clean';
+        }
+        function isChoiceRequired(version, package)
+        {
+            return isChoiceInstalled(version, package) &&
+                   choiceRequiredCheck(version, package);
+        }
+        function isChoiceSelected(version, package)
+        {
+            if (!isProductVersion(version)) return false;
+            return (!isInstalled(version) && isChoiceDefaultSelected(version, package)) || 
+                   isChoiceRequired(version, package);
+        }
+        function isChoiceEnabled(version, package)
+        {
+            if (!isProductVersion(version)) return false;
+            return isChoiceDefaultEnabled(version, package) && !isChoiceRequired(version, package);
+        }
+        function isChoiceVisible(version, package)
+        {
+            return isProductVersion(version);
+        }
+    ]]></script>
+</installer-gui-script>
+__END_DISTRIBUTION
+    m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
 
     m_log "flatten installer package '$M_PKGNAME_OSXFUSE'"
 
@@ -963,7 +1151,7 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_version_leopard"</string>
+      <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_version_lion"</string>
       <key>Version</key>
       <string>$m_version_leopard</string>
       <key>Codebase</key>
@@ -977,7 +1165,7 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_version_leopard"</string>
+      <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_version_snowleopard"</string>
       <key>Version</key>
       <string>$m_version_leopard</string>
       <key>Codebase</key>
@@ -1106,9 +1294,9 @@ function m_handler_smalldist()
 
     if [ "$m_developer" == "0" ]
     then
-        xcodebuild -configuration "$m_configuration" -target All >$m_stdout 2>$m_stderr
+        xcodebuild -configuration "$m_configuration" -target All ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET=$m_platform >$m_stdout 2>$m_stderr
     else
-        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target All >$m_stdout 2>$m_stderr
+        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target All ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET=$m_platform >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
@@ -1191,7 +1379,7 @@ function m_handler_smalldist()
     cd "$ms_osxfuse_build"/fuse
     m_exit_on_error "cannot access OSXFUSE library source in '$ms_osxfuse_build/fuse'."
 
-    ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 OSXFUSE_MACFUSE_MODE=$M_MACFUSE_MODE ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     make -j2 >$m_stdout 2>$m_stderr
@@ -1261,7 +1449,7 @@ function m_handler_smalldist()
     cd "$lib_dir"
     m_exit_on_error "cannot access compatibility layer directory."
 
-    xcodebuild -target macfuse -configuration "$m_configuration" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    xcodebuild -target libmacfuse -configuration "$m_configuration" ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_macfuse_root/usr/local/lib/"
@@ -1295,7 +1483,7 @@ function m_handler_smalldist()
     rm -rf build/
     m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
 
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE-$ms_os_version" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" ARCHS="$M_ARCHS_SNOWLEOPARD" SDKROOT="$M_SDK_DIR_SNOWLEOPARD" MACOSX_DEPLOYMENT_TARGET=10.6 OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
@@ -1392,10 +1580,10 @@ function m_handler_smalldist()
 
     m_log "building installer package for $m_platform"
 
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
 
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/installer/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE'."
 
     echo >$m_stdout
@@ -1629,6 +1817,8 @@ function m_validate_input()
        echo "Cleaning cannot be shortcircuited!"
        exit 2
     fi
+
+    export OSXFUSE_MACFUSE_MODE=$M_MACFUSE_MODE 
 
     return 0
 }
