@@ -30,16 +30,32 @@ readonly M_PROGVERS=1.0
 
 readonly M_DEFAULT_VALUE=__default__
 
+readonly M_ACTUAL_PLATFORM=`sw_vers -productVersion | cut -d . -f 1,2`
+
+case $M_ACTUAL_PLATFORM in
+    10.6)
+        readonly M_XCODE_VERSION_REQUIRED=4.0.0
+        readonly M_PLATFORMS="10.6"
+        readonly M_PLATFORMS_REALISTIC="10.6"
+        ;;
+    10.7)
+        readonly M_XCODE_VERSION_REQUIRED=4.1.0
+        readonly M_PLATFORMS="10.6 10.7"
+        readonly M_PLATFORMS_REALISTIC="10.6 10.7"
+        ;;
+    *)
+        false
+        m_exit_on_error "cannot build OSXFUSE on this platform."
+        ;;
+esac
+
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
-readonly M_PLATFORMS="10.6 10.7"          # default is native
-readonly M_PLATFORMS_REALISTIC="10.6 10.7"
+
 readonly M_TARGETS="clean dist examples lib reload smalldist swconfigure"
 readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist swconfigure"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
 readonly M_DEFAULT_TARGET="$M_DEFAULT_VALUE"
-
-readonly M_XCODE_VERSION_REQUIRED=4.1.0
 
 # Globals
 #
@@ -222,7 +238,7 @@ function m_set_platform()
 
     if [ "$m_platform" == "$M_DEFAULT_PLATFORM" ]
     then
-       m_platform=`sw_vers -productVersion | cut -d . -f 1,2`
+       m_platform=$M_ACTUAL_PLATFORM
     fi
 
     case "$m_platform" in
