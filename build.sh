@@ -128,6 +128,7 @@ function m_help()
 {
     cat <<__END_HELP_CONTENT
 $M_PROGDESC version $M_PROGVERS
+Copyright (C) 2011 OSXFUSE Project. All Rights Reserved.
 Copyright (C) 2008 Google. All Rights Reserved.
 Usage:
   $M_PROGNAME [-dhqsv] [-c configuration] [-p platform] -t target
