@@ -1169,7 +1169,7 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
       <key>Predicate</key>
       <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_version_lion"</string>
       <key>Version</key>
-      <string>$m_version_leopard</string>
+      <string>$m_version_lion</string>
       <key>Codebase</key>
       <string>$md_download_url</string>
       <key>Hash</key>
@@ -1183,21 +1183,7 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
       <key>Predicate</key>
       <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_version_snowleopard"</string>
       <key>Version</key>
-      <string>$m_version_leopard</string>
-      <key>Codebase</key>
-      <string>$md_download_url</string>
-      <key>Hash</key>
-      <string>$md_dmg_hash</string>
-      <key>Size</key>
-      <string>$md_dmg_size</string>
-    </dict>
-    <dict>
-      <key>ProductID</key>
-      <string>$M_OSXFUSE_PRODUCT_ID</string>
-      <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.5" AND Ticket.version != "$m_version_leopard"</string>
-      <key>Version</key>
-      <string>$m_version_leopard</string>
+      <string>$m_version_snowleopard</string>
       <key>Codebase</key>
       <string>$md_download_url</string>
       <key>Hash</key>
