@@ -1515,10 +1515,14 @@ function m_handler_smalldist()
     # Link MacFUSE.framework back to OSXFUSE.framework
     #
 
-    mkdir -p "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A"
-    m_exit_on_error "cannot create directory structure of 'MacFUSE.framework'."
-    ln -s "/Library/Frameworks/OSXFUSE.framework/Versions/A/OSXFUSE" "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/MacFUSE"
-    m_exit_on_error "cannot create symlink for 'MacFUSE.framework'."
+    cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/" 
+    m_exit_on_error "cannot copy 'MacFUSE.framework' to destination."
+
+    sed -e "s/OSXFUSE_CORE_VERSION/$ms_osxfuse_version/" "MacFUSE.framework/Versions/A/Resources/Info.plist" > "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/Resources/Info.plist"
+    m_exit_on_error "failed to process Info.plist of 'MacFUSE.framework'."
+
+    # Change owner and mode of files and directory in package root
+    #
 
     m_set_suprompt "to chown '$ms_osxfuse_root/*'"
     sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_root"/*
