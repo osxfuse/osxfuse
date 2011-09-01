@@ -168,16 +168,11 @@ fi
 OS_RELEASE=`/usr/bin/uname -r`
 case "$OS_RELEASE" in 
   9*)
-    PACKAGE_RECEIPT_CORE="$INSTALL_VOLUME/Library/Receipts/OSXFUSECore.pkg"
-    PACKAGE_RECEIPT_PREFPANE="$INSTALL_VOLUME/Library/Receipts/OSXFUSEPrefPane.pkg"
-    OUTER_PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/OSXFUSE.pkg"
-    BOMFILE_CORE="$PACKAGE_RECEIPT_CORE/Contents/Archive.bom"
-    BOMFILE_PREFPANE="$PACKAGE_RECEIPT_PREFPANE/Contents/Archive.bom"
-    BOMFILE_MACFUSE="$INSTALL_VOLUME/Library/Receipts/OSXFUSEMacFUSE.pkg/Contents/Archive.bom"
+    BOMFILE_CORE="$INSTALL_VOLUME/Library/Receipts/boms/com.github.osxfuse.pkg.Core.bom"
+    BOMFILE_PREFPANE="$INSTALL_VOLUME/Library/Receipts/boms/com.github.osxfuse.pkg.PrefPane.bom"
+    BOMFILE_MACFUSE="$INSTALL_VOLUME/Library/Receipts/boms/com.google.macfuse.core.bom"
     ;;
   10*|11*)
-    PACKAGE_RECEIPT_CORE=""
-    PACKAGE_RECEIPT_PREFPANE=""
     BOMFILE_CORE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.pkg.Core.bom"
     BOMFILE_PREFPANE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.pkg.PrefPane.bom"
     BOMFILE_MACFUSE="$INSTALL_VOLUME/var/db/receipts/com.google.macfuse.core.bom"
@@ -190,25 +185,16 @@ if [ ! -d "$INSTALL_VOLUME" ]; then
   exit 2
 fi
 
-# Make sure that OSXFUSE Core is installed and the Archive.bom is present.
-if [ ! -z "$PACKAGE_RECEIPT_CORE" ]
-then 
-  if [ ! -d "$PACKAGE_RECEIPT_CORE" ]
-  then
-    log "It appears that OSXFUSE Core is not installed."
-    exit 3
-  fi
-else
-  /usr/sbin/pkgutil --pkg-info com.github.osxfuse.pkg.Core > /dev/null 2>&1
-  if [ $? -ne 0 ]
-  then
-    log "It appears that OSXFUSE Core is not installed."
-    exit 3    
-  fi
+# Make sure that OSXFUSE Core is installed and the bom file is present.
+/usr/sbin/pkgutil --pkg-info com.github.osxfuse.pkg.Core > /dev/null 2>&1
+if [ $? -ne 0 ]
+then
+  log "It appears that OSXFUSE Core is not installed."
+  exit 3    
 fi
 if [ ! -f "$BOMFILE_CORE" ]
 then
-  log "Can not find the Archive.bom for OSXFUSE Core package."
+  log "Can not find bom file for OSXFUSE Core package."
   exit 4
 fi
 
@@ -216,7 +202,7 @@ fi
 kextunload -b com.github.osxfuse.filesystems.osxfusefs > /dev/null 2>&1
 
 # 2. Remove MacFUSE compatibility layer
-if [ -e "$BOMFILE_MACFUSE" ]
+if [ -f "$BOMFILE_MACFUSE" ]
 then
   if /usr/bin/lsbom "$BOMFILE_MACFUSE" | grep libmacfuse > /dev/null
   then
@@ -275,43 +261,21 @@ IFS="$OLD_IFS"
 # 6. Remove the Receipt.
 if [ $IS_BOTCHED_UNINSTALL -eq 0 ]
 then
-  if [ ! -z "$PACKAGE_RECEIPT_CORE" ]
+  /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.Core
+  if [ $? -ne 0 ]
   then
-    remove_tree "$PACKAGE_RECEIPT_CORE"
-    if [ $? -ne 0 ]
-    then
-      IS_BOTCHED_UNINSTALL=1
-    fi
-    if [ -d "$PACKAGE_RECEIPT_PREFPANE" ]
-    then
-      remove_tree "$PACKAGE_RECEIPT_PREFPANE"
-      if [ $? -ne 0 ]
-      then
-        IS_BOTCHED_UNINSTALL=1
-      fi
-    fi
-    # Best effort remove of OSXFUSE.pkg
-    if [ ! -z "$OUTER_PACKAGE_RECEIPT" ]
-    then
-      remove_tree "$OUTER_PACKAGE_RECEIPT"
-    fi
-  else 
-    /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.Core
-    if [ $? -ne 0 ]
-    then
-      IS_BOTCHED_UNINSTALL=1
-    fi
-    if [ -e "$BOMFILE_PREFPANE" ]
-    then
-      /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.PrefPane
-      if [ $? -ne 0 ]
-      then
-        IS_BOTCHED_UNINSTALL=1
-      fi
-    fi
-    # Best effort remove of OSXFUSE.pkg.
-    /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.OSXFUSE
+    IS_BOTCHED_UNINSTALL=1
   fi
+  if [ -e "$BOMFILE_PREFPANE" ]
+  then
+    /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.PrefPane
+    if [ $? -ne 0 ]
+    then
+      IS_BOTCHED_UNINSTALL=1
+    fi
+  fi
+  # Best effort remove of OSXFUSE.pkg.
+  /usr/sbin/pkgutil --forget com.github.osxfuse.pkg.OSXFUSE
 fi
 
 exit $IS_BOTCHED_UNINSTALL

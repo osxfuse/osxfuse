@@ -159,13 +159,11 @@ fi
 OS_RELEASE=`/usr/bin/uname -r`
 case "$OS_RELEASE" in 
   9*)
-    PACKAGE_RECEIPT="$INSTALL_VOLUME/Library/Receipts/MacFUSE Core.pkg"
-    BOMFILE="$PACKAGE_RECEIPT/Contents/Archive.bom"
+    BOMFILE="$INSTALL_VOLUME/Library/Receipts/boms/com.google.macfuse.core.bom"
     ;;
   10*|11*)
-     PACKAGE_RECEIPT=""
-     BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.google.macfuse.core.bom"
-     ;;
+    BOMFILE="$INSTALL_VOLUME/var/db/receipts/com.google.macfuse.core.bom"
+    ;;
 esac
 
 # Make sure the INSTALL_VOLUME is ok.
@@ -175,24 +173,15 @@ if [ ! -d "$INSTALL_VOLUME" ]; then
 fi
 
 # Make sure that OSXFUSE Core is installed and the Archive.bom is present.
-if [ ! -z "$PACKAGE_RECEIPT" ]
-then 
-  if [ ! -d "$PACKAGE_RECEIPT" ]
-  then
-    log "It appears that MacFUSE Core is not installed."
-    exit 3
-  fi
-else
-  /usr/sbin/pkgutil --pkg-info com.google.macfuse.core > /dev/null 2>&1
-  if [ $? -ne 0 ]
-  then
-    log "It appears that MacFUSE Core is not installed."
-    exit 3    
-  fi
+/usr/sbin/pkgutil --pkg-info com.google.macfuse.core > /dev/null 2>&1
+if [ $? -ne 0 ]
+then
+  log "It appears that MacFUSE Core is not installed."
+  exit 3    
 fi
 if [ ! -f "$BOMFILE" ]
 then
-  log "Can not find the Archive.bom for MacFUSE Core package."
+  log "Can not find the bom file for MacFUSE Core package."
   exit 4
 fi
 
@@ -225,19 +214,10 @@ IFS="$OLD_IFS"
 # 5. Remove the Receipt.
 if [ $IS_BOTCHED_UNINSTALL -eq 0 ]
 then
-  if [ ! -z "$PACKAGE_RECEIPT" ]
+  /usr/sbin/pkgutil --forget com.google.macfuse.core
+  if [ $? -ne 0 ]
   then
-    remove_tree "$PACKAGE_RECEIPT"
-    if [ $? -ne 0 ]
-    then
-      IS_BOTCHED_UNINSTALL=1
-    fi
-  else 
-    /usr/sbin/pkgutil --forget com.google.macfuse.core
-    if [ $? -ne 0 ]
-    then
-      IS_BOTCHED_UNINSTALL=1
-    fi
+    IS_BOTCHED_UNINSTALL=1
   fi
 fi
 
