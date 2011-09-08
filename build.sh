@@ -1180,7 +1180,7 @@ __END_ENGINE_INSTALL
 
     # Convert to a read-only compressed dmg
     #
-    local md_dmg_name="OSXFUSE-$m_release.dmg"
+    local md_dmg_name="OSXFUSE-$m_release_full.dmg"
     local md_dmg_path="$md_osxfuse_out/$md_dmg_name"
     hdiutil convert -imagekey zlib-level=9 -format UDZO "$md_scratch_dmg" \
         -o "$md_dmg_path" >$m_stdout 2>$m_stderr
@@ -1197,11 +1197,11 @@ __END_ENGINE_INSTALL
     local md_dmg_size=$(stat -f%z "$md_dmg_path")
 
     local md_rules_plist="$md_osxfuse_out/DeveloperRelease.plist"
-    local md_download_url="http://osxfuse.github.com/releases/developer/$md_dmg_name"
+    local md_download_url="https://github.com/downloads/osxfuse/osxfuse/$md_dmg_name"
     if [ "$m_developer" == "0" ]
     then
         md_rules_plist="$md_osxfuse_out/CurrentRelease.plist"
-        md_download_url="http://osxfuse.github.com/releases/$md_dmg_name"
+        md_download_url="https://github.com/downloads/osxfuse/osxfuse/$md_dmg_name"
     fi
 
 cat > "$md_rules_plist" <<__END_RULES_PLIST
