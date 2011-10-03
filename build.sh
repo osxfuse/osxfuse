@@ -599,7 +599,7 @@ function m_handler_dist()
     then
         md_sdk="$M_SDK_106"
         md_sdk_archs="$M_SDK_106_ARCHS"
-        md_sdk_xcodebuild="$M_SDK_106_XCODE/usr/bin/xcodebuildD"
+        md_sdk_xcodebuild="$M_SDK_106_XCODE/usr/bin/xcodebuild"
         md_deploymenttarget="10.6"
     elif [ -n "$M_SDK_107" ]
     then
