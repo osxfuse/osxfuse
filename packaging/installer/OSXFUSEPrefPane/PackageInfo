@@ -1,6 +1,2 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<pkg-info format-version="2"
-	      install-location="/"
-	      auth="root"
-	      overwrite-permissions="false"
-	      followSymLinks="true"/>
+<pkg-info auth="root" followSymLinks="true"/>
