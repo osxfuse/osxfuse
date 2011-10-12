@@ -321,7 +321,7 @@ function m_build_pkg()
             -g "$M_PKG_VERSION" \
             -h system \
             -m -w -v \
-            >$m_stdout 2>$m_stderr    
+            >$m_stdout 2>$m_stderr
     fi
     m_exit_on_error "cannot create package '$bp_pkgname'."
 
@@ -428,7 +428,7 @@ function m_handler_reload()
     if [ "$1" == "clean" ]
     then
         rm -rf "$kernel_dir/build/"
-        local retval=$? 
+        local retval=$?
         m_log "cleaned (platform $m_platform)"
         return $retval
     fi
@@ -452,7 +452,7 @@ function m_handler_reload()
 
     "$m_xcodebuild" -configuration Debug -target osxfusefs ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
- 
+
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
     m_exit_on_error "cannot create directory for OSXFUSE kext symbols."
 
@@ -827,7 +827,7 @@ function m_handler_dist()
 
 cat >> "$md_dist_out" <<__END_DISTRIBUTION
 <?xml version="1.0" encoding="UTF-8"?>
-<installer-gui-script minSpecVersion="1.0">          
+<installer-gui-script minSpecVersion="1.0">
     <title>FUSE for OS X (OSXFUSE)</title>
     <background file="background.png" scaling="none" alignment="center"/>
     <welcome file="Welcome.rtf"/>
@@ -842,7 +842,7 @@ __END_DISTRIBUTION
     for i in $md_dist_choices
     do
         local md_dist_choice_name="${i%%:*}"
-        
+
         IFS=" "
         for platform in $M_PLATFORMS
         do
@@ -949,10 +949,10 @@ cat >> "$md_dist_out" <<__END_DISTRIBUTION
             return choices[version + '$' + package];
         }
 
-        function installationCheck() 
+        function installationCheck()
         {
             if ($md_dist_productversion) return true;
-        
+
             my.result.type = 'Fatal';
             my.result.message = system.localizedString('ERROR_OSXVERSION');
             return false;
@@ -987,7 +987,7 @@ cat >> "$md_dist_out" <<__END_DISTRIBUTION
             {
                 case '$M_PKGBASENAME_CORE': return false;
                 default: return true;
-            } 
+            }
         }
         function isChoiceInstalled(version, package)
         {
@@ -1002,7 +1002,7 @@ cat >> "$md_dist_out" <<__END_DISTRIBUTION
         function isChoiceSelected(version, package)
         {
             if (!isProductVersion(version)) return false;
-            return (!isInstalled(version) && isChoiceDefaultSelected(version, package)) || 
+            return (!isInstalled(version) && isChoiceDefaultSelected(version, package)) ||
                    isChoiceRequired(version, package);
         }
         function isChoiceEnabled(version, package)
@@ -1210,7 +1210,7 @@ __END_ENGINE_INSTALL
     cp "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_redist_pkgsrc/Scripts/OSXFUSE.pkg"
     m_exit_on_error "cannot copy OSXFUSE distribution package to '$md_redist_pkgsrc/Scripts'."
 
-    mkdir -p "$md_redist_root"    
+    mkdir -p "$md_redist_root"
     m_exit_on_error "cannot make directory '$md_redist_root'."
 
     m_set_suprompt "to chown '$md_redist_root/'."
@@ -1319,7 +1319,7 @@ __END_RULES_PLIST
 
     # Sign the output rules
     #
-  
+
     m_log "signing autoinstaller rules"
 
     m_set_suprompt "to sign the rules file"
@@ -1626,7 +1626,7 @@ function m_handler_smalldist()
     # Link MacFUSE.framework back to OSXFUSE.framework
     #
 
-    cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/" 
+    cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'MacFUSE.framework' to destination."
 
     sed -e "s/OSXFUSE_CORE_VERSION/$ms_osxfuse_version/" "MacFUSE.framework/Versions/A/Resources/Info.plist" > "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/Resources/Info.plist"
@@ -1775,7 +1775,7 @@ function m_handler_swconfigure()
         m_log "Configuring Universal build of gettext for Mac OS X \"$m_osname\""
         CFLAGS="$final_cflags -D_POSIX_C_SOURCE=200112L" LDFLAGS="$final_ldflags -fno-common" ./configure --prefix=/usr/local --disable-dependency-tracking --with-libiconv-prefix="$m_usdk_dir"/usr
         retval=$?
-        ;; 
+        ;;
 
     glib*)
         m_log "Configuring Universal build of glib for Mac OS X \"$m_osname\""
@@ -1903,7 +1903,7 @@ function m_validate_input()
        exit 2
     fi
 
-    export OSXFUSE_MACFUSE_MODE=$M_MACFUSE_MODE 
+    export OSXFUSE_MACFUSE_MODE=$M_MACFUSE_MODE
 
     return 0
 }
@@ -1944,7 +1944,7 @@ function m_read_input()
         -q)
             m_stderr=/dev/null
             m_stdout=/dev/null
-            shift 
+            shift
             ;;
         -s)
             m_shortcircuit="1"
@@ -2069,12 +2069,12 @@ function m_handler()
         then
             continue
         fi
-        
+
         m_xcode_version=`"$m_xcodebuild" -version | grep "Xcode" | cut -f 2 -d " "`
-        
+
         case $m_xcode_version in
             3.2*)
-                m_version_compare $M_XCODE32_VERSION $m_xcode_version 
+                m_version_compare $M_XCODE32_VERSION $m_xcode_version
                 if [[ $? != 2 ]]
                 then
                     M_XCODE32="$m_xcode_root"
@@ -2082,7 +2082,7 @@ function m_handler()
                 fi
                 ;;
             4.0*)
-                m_version_compare $M_XCODE40_VERSION $m_xcode_version 
+                m_version_compare $M_XCODE40_VERSION $m_xcode_version
                 if [[ $? != 2 ]]
                 then
                     M_XCODE40="$m_xcode_root"
@@ -2090,7 +2090,7 @@ function m_handler()
                 fi
                 ;;
             4.1*)
-                m_version_compare $M_XCODE41_VERSION $m_xcode_version 
+                m_version_compare $M_XCODE41_VERSION $m_xcode_version
                 if [[ $? != 2 ]]
                 then
                     M_XCODE41="$m_xcode_root"
@@ -2152,7 +2152,7 @@ function m_handler()
     m_log "supported platforms: $M_PLATFORMS"
 
     export PATH="$m_xcode_latest/usr/sbin:$m_xcode_latest/usr/bin:$m_xcode_latest/Tools:$m_xcode_latest/Applications:$PATH"
-    
+
     m_validate_input
     m_handler
     exit $?
