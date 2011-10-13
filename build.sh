@@ -56,6 +56,7 @@ declare m_stdout=/dev/stdout
 declare m_suprompt=" invalid "
 declare m_target="$M_DEFAULT_TARGET"
 declare m_usdk_dir=""
+declare m_compiler=""
 declare m_xcode_dir=""
 declare m_xcodebuild="/usr/bin/false"
 declare m_version_leopard=""
@@ -67,10 +68,16 @@ declare m_xcode_version=
 #
 declare M_XCODE32=""
 declare M_XCODE32_VERSION=3.2
+readonly M_XCODE32_COMPILER="4.2"
 declare M_XCODE40=""
 declare M_XCODE40_VERSION=4.0
+readonly M_XCODE40_COMPILER="4.2"
 declare M_XCODE41=""
 declare M_XCODE41_VERSION=4.1
+readonly M_XCODE41_COMPILER="4.2"
+declare M_XCODE42=""
+declare M_XCODE42_VERSION=4.2
+readonly M_XCODE42_COMPILER="com.apple.compilers.llvmgcc42"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -82,16 +89,19 @@ declare M_XCODE_VERSION_REQUIRED=""
 readonly M_SDK_105_ARCHS="ppc ppc64 i386 x86_64"
 declare M_SDK_105=""
 declare M_SDK_105_XCODE=""
+declare M_SDK_105_COMPILER=""
 
 # SDK 10.6
 readonly M_SDK_106_ARCHS="i386 x86_64"
 declare M_SDK_106=""
 declare M_SDK_106_XCODE=""
+declare M_SDK_106_COMPILER=""
 
 # SDK 10.7
 readonly M_SDK_107_ARCHS="i386 x86_64"
 declare M_SDK_107=""
 declare M_SDK_107_XCODE=""
+declare M_SDK_107_COMPILER=""
 
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
@@ -256,6 +266,7 @@ function m_set_platform()
         m_xcode_dir="$M_SDK_105_XCODE"
         m_xcodebuild="$m_xcode_dir/usr/bin/xcodebuild"
         m_usdk_dir="$M_SDK_105"
+        m_compiler="$M_SDK_105_COMPILER"
         m_archs="$M_SDK_105_ARCHS"
     ;;
     10.6*)
@@ -263,6 +274,7 @@ function m_set_platform()
         m_xcode_dir="$M_SDK_106_XCODE"
         m_xcodebuild="$m_xcode_dir/usr/bin/xcodebuild"
         m_usdk_dir="$M_SDK_106"
+        m_compiler="$M_SDK_106_COMPILER"
         m_archs="$M_SDK_106_ARCHS"
     ;;
     10.7*)
@@ -270,6 +282,7 @@ function m_set_platform()
         m_xcode_dir="$M_SDK_107_XCODE"
         m_xcodebuild="$m_xcode_dir/usr/bin/xcodebuild"
         m_usdk_dir="$M_SDK_107"
+        m_compiler="$M_SDK_107_COMPILER"
         m_archs="$M_SDK_107_ARCHS"
     ;;
     *)
@@ -277,6 +290,7 @@ function m_set_platform()
         m_xcode_dir=""
         m_xcodebuild="/usr/bin/false"
         m_usdk_dir=""
+        m_compiler=""
         m_archs=""
         retval=1
     ;;
@@ -375,7 +389,7 @@ function m_handler_lib()
     export PATH="$m_xcode_dir/usr/sbin:$m_xcode_dir/usr/bin:$PATH"
 
     m_log "configuring library source"
-    ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     m_log "running make"
@@ -450,7 +464,7 @@ function m_handler_reload()
 
     m_log "rebuilding kext"
 
-    "$m_xcodebuild" -configuration Debug -target osxfusefs ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    "$m_xcodebuild" -configuration Debug -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
 
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
@@ -530,7 +544,7 @@ function m_handler_examples()
     export PATH="$m_xcode_dir/usr/sbin:$m_xcode_dir/usr/bin:$PATH"
 
     m_log "configuring library source"
-    ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     cd example
@@ -595,23 +609,27 @@ function m_handler_dist()
     fi
 
     local md_sdk
+    local md_sdk_compiler
     local md_sdk_archs
     local md_sdk_xcodebuild
     if [ -n "$M_SDK_105" ]
     then
         md_sdk="$M_SDK_105"
+        md_sdk_compiler="$M_SDK_105_COMPILER"
         md_sdk_archs="$M_SDK_105_ARCHS"
         md_sdk_xcodebuild="$M_SDK_105_XCODE/usr/bin/xcodebuild"
         md_deploymenttarget="10.5"
     elif [ -n "$M_SDK_106" ]
     then
         md_sdk="$M_SDK_106"
+        md_sdk_compiler="$M_SDK_106_COMPILER"
         md_sdk_archs="$M_SDK_106_ARCHS"
         md_sdk_xcodebuild="$M_SDK_106_XCODE/usr/bin/xcodebuild"
         md_deploymenttarget="10.6"
     elif [ -n "$M_SDK_107" ]
     then
         md_sdk="$M_SDK_107"
+        md_sdk_compiler="$M_SDK_107_COMPILER"
         md_sdk_archs="$M_SDK_107_ARCHS"
         md_sdk_xcodebuild="$M_SDK_107_XCODE/usr/bin/xcodebuild"
         md_deploymenttarget="10.7"
@@ -655,7 +673,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
-    "$md_sdk_xcodebuild" -configuration "$m_configuration" -target "Build All" ARCHS="$md_sdk_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$md_sdk" MACOSX_DEPLOYMENT_TARGET="$md_deploymenttarget" >$m_stdout 2>$m_stderr
+    "$md_sdk_xcodebuild" -configuration "$m_configuration" -target "Build All" GCC_VERSION="$md_sdk_compiler" ARCHS="$md_sdk_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$md_sdk" MACOSX_DEPLOYMENT_TARGET="$md_deploymenttarget" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
@@ -698,7 +716,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the prefpane source."
-    "$md_sdk_xcodebuild" -configuration "$m_configuration" -target "OSXFUSE" ARCHS="$md_sdk_archs" SDKROOT="$md_sdk" MACOSX_DEPLOYMENT_TARGET="$md_deploymenttarget" >$m_stdout 2>$m_stderr
+    "$md_sdk_xcodebuild" -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$md_sdk_compiler" ARCHS="$md_sdk_archs" SDKROOT="$md_sdk" MACOSX_DEPLOYMENT_TARGET="$md_deploymenttarget" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget prefpane."
     popd >/dev/null 2>/dev/null
 
@@ -1417,9 +1435,9 @@ function m_handler_smalldist()
 
     if [ "$m_developer" == "0" ]
     then
-        "$m_xcodebuild" -configuration "$m_configuration" -target All ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        "$m_xcodebuild" -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     else
-        "$m_xcodebuild" OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target All ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        "$m_xcodebuild" OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
@@ -1505,7 +1523,7 @@ function m_handler_smalldist()
     cd "$ms_osxfuse_build"/fuse
     m_exit_on_error "cannot access OSXFUSE library source in '$ms_osxfuse_build/fuse'."
 
-    ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     make -j2 >$m_stdout 2>$m_stderr
@@ -1577,7 +1595,7 @@ function m_handler_smalldist()
     cd "$lib_dir"
     m_exit_on_error "cannot access compatibility layer directory."
 
-    "$m_xcodebuild" -target libmacfuse -configuration "$m_configuration" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    "$m_xcodebuild" -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_macfuse_root/usr/local/lib/"
@@ -1611,7 +1629,7 @@ function m_handler_smalldist()
     rm -rf build/
     m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
 
-    "$m_xcodebuild" -configuration "$m_configuration" -target "OSXFUSE" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
+    "$m_xcodebuild" -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
@@ -2097,6 +2115,14 @@ function m_handler()
                     M_XCODE41_VERSION=$m_xcode_version
                 fi
                 ;;
+            4.2*)
+                m_version_compare $M_XCODE42_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE42="$m_xcode_root"
+                    M_XCODE42_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2112,18 +2138,21 @@ function m_handler()
 
         M_SDK_105="$M_XCODE32/SDKs/MacOSX10.5.sdk"
         M_SDK_105_XCODE="$M_XCODE32"
+        M_SDK_105_COMPILER="$M_XCODE32_COMPILER"
         m_platform_add "10.5"
 
         M_SDK_106="$M_XCODE32/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE32"
+        M_SDK_106_COMPILER="$M_XCODE32_COMPILER"
         m_platform_add "10.6"
     fi
     if [[ -n "$M_XCODE40" ]]
     then
-       m_xcode_latest="$M_XCODE40"
+        m_xcode_latest="$M_XCODE40"
 
         M_SDK_106="$M_XCODE40/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE40"
+        M_SDK_106_COMPILER="$M_XCODE40_COMPILER"
         m_platform_add "10.6"
     fi
     if [[ -n "$M_XCODE41" ]]
@@ -2132,10 +2161,26 @@ function m_handler()
 
         M_SDK_106="$M_XCODE41/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE41"
+        M_SDK_106_COMPILER="$M_XCODE41_COMPILER"
         m_platform_add "10.6"
 
         M_SDK_107="$M_XCODE41/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE41"
+        M_SDK_107_COMPILER="$M_XCODE41_COMPILER"
+        m_platform_add "10.7"
+    fi
+    if [[ -n "$M_XCODE42" ]]
+    then
+        m_xcode_latest="$M_XCODE42"
+
+        M_SDK_106="$M_XCODE42/SDKs/MacOSX10.6.sdk"
+        M_SDK_106_XCODE="$M_XCODE42"
+        M_SDK_106_COMPILER="$M_XCODE42_COMPILER"
+        m_platform_add "10.6"
+
+        M_SDK_107="$M_XCODE42/SDKs/MacOSX10.7.sdk"
+        M_SDK_107_XCODE="$M_XCODE42"
+        M_SDK_107_COMPILER="$M_XCODE42_COMPILER"
         m_platform_add "10.7"
     fi
 
