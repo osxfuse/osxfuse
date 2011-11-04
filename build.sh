@@ -1382,7 +1382,7 @@ function m_handler_smalldist()
     then
         rm -rf "$lib_dir/build/"
         rm -rf "$kernel_dir/build/"
-        rm -rf "$m_srcroot/sdk/build/"
+        rm -rf "$m_srcroot/framework/build/"
     fi
 
     local ms_os_version="$m_platform"
@@ -1621,10 +1621,10 @@ function m_handler_smalldist()
     # Build OSXFUSE.framework
     #
 
-    m_log "building OSXFUSE Objective-C SDK"
+    m_log "building OSXFUSE Objective-C framework"
 
-    cd "$ms_project_dir/../sdk"
-    m_exit_on_error "cannot access Objective-C SDK directory."
+    cd "$ms_project_dir/../framework"
+    m_exit_on_error "cannot access Objective-C framework directory."
 
     rm -rf build/
     m_exit_on_error "cannot remove previous build of OSXFUSE.framework."

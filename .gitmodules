@@ -1,3 +1,6 @@
+[submodule "framework"]
+        path = framework
+        url = ../framework.git
 [submodule "fuse"]
 	path = fuse
 	url = ../fuse.git
@@ -7,6 +10,3 @@
 [submodule "prefpane"]
 	path = prefpane
 	url = ../prefpane.git
-[submodule "sdk"]
-        path = sdk
-        url = ../framework.git
