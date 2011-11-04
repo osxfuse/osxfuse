@@ -1059,7 +1059,7 @@ __END_DISTRIBUTION
 
     # Copy over the license file
     #
-    cp "$m_srcroot/License.rtf" "$md_volume_path"
+    cp "$m_srcroot/packaging/diskimage/License.rtf" "$md_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
