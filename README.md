@@ -1,7 +1,7 @@
-FUSE for OS X
-=============
+FUSE for Mac OS X
+=================
 
-FUSE for OS X allows you to extend Mac OS X via third party file systems. 
+FUSE for Mac OS X allows you to extend Mac OS X via third party file systems. 
 
 About OSXFUSE
 -------------
