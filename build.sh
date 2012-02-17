@@ -1517,6 +1517,10 @@ function m_handler_smalldist()
 
     m_log "building user-space OSXFUSE library"
 
+    ms_deployment_target="$m_platform"
+    m_platform="${M_PLATFORMS_REALISTIC%% *}"
+    m_set_platform
+
     local ms_old_path="$PATH"
     export PATH="$m_xcode_dir/usr/sbin:$m_xcode_dir/usr/bin:$PATH"
 
@@ -1732,6 +1736,9 @@ function m_handler_smalldist()
     #
 
     m_log "building installer package for $m_platform"
+
+    m_platform="$ms_deployment_target"
+    m_set_platform
 
     m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
