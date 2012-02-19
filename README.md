@@ -17,11 +17,9 @@ For more information visit the [website of the OSXFUSE project](http://osxfuse.g
 Build Instructions
 ------------------
 
-To clone the source repository into a newly created subdirectory named `osxfuse` of the current working directory, run the following commands in Terminal:
+To clone the source repository into a newly created subdirectory named `osxfuse` in the current working directory, run the following command in Terminal:
 
-    git clone git://github.com/osxfuse/osxfuse.git osxfuse
-    cd osxfuse
-    git submodule update --init
+    git clone --recursive git://github.com/osxfuse/osxfuse.git osxfuse
 
 The build script locates automatically all supported installations of Xcode in the top level of the Mac OS X startup volume and builds a distribution package compatible with as many versions of Mac OS X as possible (depending on the versions of Xcode that are installed).
 
