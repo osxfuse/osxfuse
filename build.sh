@@ -7,8 +7,6 @@
 # Copyright 2008-2009, Google
 # All rights reserved.
 
-export PATH=/sbin:/usr/sbin:/bin:/usr/bin
-
 # Configurables
 #
 # Beware: GNU libtool cannot handle directory names containing whitespace.
@@ -58,11 +56,14 @@ declare m_target="$M_DEFAULT_TARGET"
 declare m_usdk_dir=""
 declare m_compiler=""
 declare m_xcode_dir=""
-declare m_xcodebuild="/usr/bin/false"
 declare m_version_leopard=""
 declare m_version_snowleopard=""
 declare m_version_lion=""
-declare m_xcode_version=
+declare m_xcode_version=""
+declare m_xcode_latest=""
+
+declare mp_package_maker=""
+declare mp_package_maker_version=""
 
 # Other implementation details
 #
@@ -78,6 +79,9 @@ readonly M_XCODE41_COMPILER="4.2"
 declare M_XCODE42=""
 declare M_XCODE42_VERSION=4.2
 readonly M_XCODE42_COMPILER="com.apple.compilers.llvmgcc42"
+declare M_XCODE43=""
+declare M_XCODE43_VERSION=4.3
+readonly M_XCODE43_COMPILER="com.apple.compilers.llvmgcc42"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -264,7 +268,6 @@ function m_set_platform()
     10.5*)
         m_osname="Leopard"
         m_xcode_dir="$M_SDK_105_XCODE"
-        m_xcodebuild="$m_xcode_dir/usr/bin/xcodebuild"
         m_usdk_dir="$M_SDK_105"
         m_compiler="$M_SDK_105_COMPILER"
         m_archs="$M_SDK_105_ARCHS"
@@ -272,7 +275,6 @@ function m_set_platform()
     10.6*)
         m_osname="Snow Leopard"
         m_xcode_dir="$M_SDK_106_XCODE"
-        m_xcodebuild="$m_xcode_dir/usr/bin/xcodebuild"
         m_usdk_dir="$M_SDK_106"
         m_compiler="$M_SDK_106_COMPILER"
         m_archs="$M_SDK_106_ARCHS"
@@ -280,7 +282,6 @@ function m_set_platform()
     10.7*)
         m_osname="Lion"
         m_xcode_dir="$M_SDK_107_XCODE"
-        m_xcodebuild="$m_xcode_dir/usr/bin/xcodebuild"
         m_usdk_dir="$M_SDK_107"
         m_compiler="$M_SDK_107_COMPILER"
         m_archs="$M_SDK_107_ARCHS"
@@ -288,13 +289,14 @@ function m_set_platform()
     *)
         m_osname="Unknown"
         m_xcode_dir=""
-        m_xcodebuild="/usr/bin/false"
         m_usdk_dir=""
         m_compiler=""
         m_archs=""
         retval=1
     ;;
     esac
+
+    export DEVELOPER_DIR="$m_xcode_dir"
 
     return $retval
 }
@@ -310,12 +312,39 @@ function m_build_pkg()
     local bp_pkgname="$5"
     local bp_output_dir="$6"
 
+    if [ -z "$mp_package_maker" ]
+    then
+        # Find PackageMaker.app
+        local _IFS="$IFS"; IFS=$'\n'
+        m_package_maker_installed=(`mdfind 'kMDItemCFBundleIdentifier == "com.apple.PackageMaker"'`)
+        IFS="$_IFS"
+        if [[ ${#m_package_maker_installed[@]} -eq 0 ]]
+        then
+            false
+            m_exit_on_error "PackageMaker.app not found"
+        fi
+
+        # Use most recent version of PackageMaker.app
+        for m_pm in "${m_package_maker_installed[@]}";
+        do
+            m_pm_version=`mdls -name kMDItemVersion "$m_pm" | grep -Po "kMDItemVersion = \"\K[^\"]*?(?=\")"`
+            m_version_compare "$mp_package_maker_version" "$m_pm_version"
+            if [[ $? -ne 2 ]]
+            then
+                mp_package_maker="$m_pm"
+                mp_package_maker_version="$m_pm_version"
+            fi
+        done
+        m_log "package maker: $mp_package_maker (version $mp_package_maker_version)"
+        mp_package_maker="$mp_package_maker/Contents/MacOS/PackageMaker"
+    fi
+
     # Make the package
     m_set_suprompt "to run packagemaker"
     if [ -d "$bp_install_srcroot/Scripts" ]
     then
         sudo -p "$m_suprompt" \
-            packagemaker -r "$bp_install_payload" \
+            "$mp_package_maker" -r "$bp_install_payload" \
             -i "$bp_pkgid" \
             -f "$bp_install_srcroot/PackageInfo" \
             -o "$bp_output_dir/$bp_pkgname" \
@@ -327,7 +356,7 @@ function m_build_pkg()
             >$m_stdout 2>$m_stderr
     else
         sudo -p "$m_suprompt" \
-            packagemaker -r "$bp_install_payload" \
+            "$mp_package_maker" -r "$bp_install_payload" \
             -i "$bp_pkgid" \
             -f "$bp_install_srcroot/PackageInfo" \
             -o "$bp_output_dir/$bp_pkgname" \
@@ -385,22 +414,17 @@ function m_handler_lib()
     cd "$M_CONF_TMPDIR/$package_name"
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
-    local ml_old_path="$PATH"
-    export PATH="$m_xcode_dir/usr/sbin:$m_xcode_dir/usr/bin:$PATH"
-
     m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    DEVELOPER_DIR=/Developer-3.2 COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     m_log "running make"
-    make -j2 >$m_stdout 2>$m_stderr
+    xcrun make -j4 >$m_stdout 2>$m_stderr
     m_exit_on_error "make failed while compiling the OSXFUSE library."
 
     echo >$m_stdout
     m_log "succeeded, results in '$M_CONF_TMPDIR/$package_name'."
     echo >$m_stdout
-
-    export PATH="$ml_old_path"
 
     return 0
 }
@@ -464,7 +488,7 @@ function m_handler_reload()
 
     m_log "rebuilding kext"
 
-    "$m_xcodebuild" -configuration Debug -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration Debug -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
 
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
@@ -540,9 +564,6 @@ function m_handler_examples()
     cd "$M_CONF_TMPDIR/$package_name"
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
-    local me_old_path="$PATH"
-    export PATH="$m_xcode_dir/usr/sbin:$m_xcode_dir/usr/bin:$PATH"
-
     m_log "configuring library source"
     COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
@@ -556,14 +577,12 @@ function m_handler_examples()
     m_exit_on_error "failed to prepare example source for build."
 
     m_log "running make"
-    make -j2 >$m_stdout 2>$m_stderr
+    xcrun make -j4 >$m_stdout 2>$m_stderr
     m_exit_on_error "make failed while compiling the OSXFUSE examples."
 
     echo >$m_stdout
     m_log "succeeded, results in '$M_CONF_TMPDIR/$package_name/example'."
     echo >$m_stdout
-
-    export PATH="$me_old_path"
 
     return 0
 }
@@ -608,37 +627,35 @@ function m_handler_dist()
         return 0
     fi
 
-    local md_sdk
-    local md_sdk_compiler
-    local md_sdk_archs
-    local md_sdk_xcodebuild
+    m_log "initiating Universal build of OSXFUSE"
+
+    # Create platform-Specific OSXFUSE subpackages
+    #
+    for m_p in $M_PLATFORMS_REALISTIC
+    do
+        pushd . >/dev/null 2>/dev/null
+        m_active_target="dist"
+        m_platform="$m_p"
+        m_log "building platform $m_platform"
+        m_handler_smalldist
+        popd >/dev/null 2>/dev/null
+    done
+
+    m_active_target="dist"
+
     if [ -n "$M_SDK_105" ]
     then
-        md_sdk="$M_SDK_105"
-        md_sdk_compiler="$M_SDK_105_COMPILER"
-        md_sdk_archs="$M_SDK_105_ARCHS"
-        md_sdk_xcodebuild="$M_SDK_105_XCODE/usr/bin/xcodebuild"
-        md_deploymenttarget="10.5"
+        m_platform="10.5"
     elif [ -n "$M_SDK_106" ]
     then
-        md_sdk="$M_SDK_106"
-        md_sdk_compiler="$M_SDK_106_COMPILER"
-        md_sdk_archs="$M_SDK_106_ARCHS"
-        md_sdk_xcodebuild="$M_SDK_106_XCODE/usr/bin/xcodebuild"
-        md_deploymenttarget="10.6"
+        m_platform="10.6"
     elif [ -n "$M_SDK_107" ]
     then
-        md_sdk="$M_SDK_107"
-        md_sdk_compiler="$M_SDK_107_COMPILER"
-        md_sdk_archs="$M_SDK_107_ARCHS"
-        md_sdk_xcodebuild="$M_SDK_107_XCODE/usr/bin/xcodebuild"
-        md_deploymenttarget="10.7"
+        m_platform="10.7"
     else
         false
         m_exit_on_error "no supported SDK found"
     fi
-
-    m_log "initiating Universal build of OSXFUSE"
 
     m_set_platform
     m_set_srcroot "$m_platform"
@@ -673,7 +690,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
-    "$md_sdk_xcodebuild" -configuration "$m_configuration" -target "Build All" GCC_VERSION="$md_sdk_compiler" ARCHS="$md_sdk_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$md_sdk" MACOSX_DEPLOYMENT_TARGET="$md_deploymenttarget" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
@@ -690,18 +707,6 @@ function m_handler_dist()
         m_exit_on_error "cannot find plist signer '$md_plistsigner'."
     fi
 
-    # Create platform-Specific OSXFUSE subpackages
-    #
-    for m_p in $M_PLATFORMS_REALISTIC
-    do
-        pushd . >/dev/null 2>/dev/null
-        m_active_target="dist"
-        m_platform="$m_p"
-        m_log "building platform $m_platform"
-        m_handler_smalldist
-        popd >/dev/null 2>/dev/null
-    done
-
     # Build the preference pane
     #
     local md_pp_builddir="$m_srcroot/prefpane/build"
@@ -716,7 +721,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the prefpane source."
-    "$md_sdk_xcodebuild" -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$md_sdk_compiler" ARCHS="$md_sdk_archs" SDKROOT="$md_sdk" MACOSX_DEPLOYMENT_TARGET="$md_deploymenttarget" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget prefpane."
     popd >/dev/null 2>/dev/null
 
@@ -732,8 +737,6 @@ function m_handler_dist()
 
     # Build the container
     #
-
-    m_active_target="dist"
 
     m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
     m_release=`echo "$m_release_full" | cut -d . -f 1,2`
@@ -1435,9 +1438,9 @@ function m_handler_smalldist()
 
     if [ "$m_developer" == "0" ]
     then
-        "$m_xcodebuild" -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     else
-        "$m_xcodebuild" OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
@@ -1521,9 +1524,6 @@ function m_handler_smalldist()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    local ms_old_path="$PATH"
-    export PATH="$m_xcode_dir/usr/sbin:$m_xcode_dir/usr/bin:$PATH"
-
     cp -pRX "$lib_dir" "$ms_osxfuse_build"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
@@ -1533,10 +1533,10 @@ function m_handler_smalldist()
     COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
-    make -j2 >$m_stdout 2>$m_stderr
+    xcrun make -j4 >$m_stdout 2>$m_stderr
     m_exit_on_error "make failed while compiling the OSXFUSE library."
 
-    make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    xcrun make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot prepare library build for installation."
 
     rm -f "ms_osxfuse_root"/usr/local/lib/*ulockmgr*
@@ -1553,7 +1553,7 @@ function m_handler_smalldist()
     cd "$ms_osxfuse_build"/fuse/lib
     m_exit_on_error "cannot access OSXFUSE library (ino64) source in '$ms_osxfuse_build/fuse/lib'."
 
-    make clean >$m_stdout 2>$m_stderr
+    xcrun make clean >$m_stdout 2>$m_stderr
     m_exit_on_error "make failed while compiling the OSXFUSE library (ino64)."
 
     perl -pi -e 's#libosxfuse_i32#libosxfuse_i64#g' Makefile
@@ -1562,10 +1562,10 @@ function m_handler_smalldist()
     perl -pi -e 's#-D__DARWIN_64_BIT_INO_T=0#-D__DARWIN_64_BIT_INO_T=1#g' Makefile
     m_exit_on_error "failed to prepare OSXFUSE library (ino64) for compilation."
 
-    make -j2 >$m_stdout 2>$m_stderr
+    xcrun make -j4 >$m_stdout 2>$m_stderr
     m_exit_on_error "make failed while compiling the OSXFUSE library (ino64)."
 
-    make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    xcrun make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot prepare OSXFUSE library (ino64) build for installation."
 
     rm -f "$ms_osxfuse_root"/usr/local/lib/*ulockmgr*
@@ -1592,8 +1592,6 @@ function m_handler_smalldist()
     dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
     m_exit_on_error "cannot generate debugging information for libosxfuse_i64."
 
-    export PATH="$ms_old_path"
-
     # Build MacFUSE compatibility layer for user-space OSXFUSE library
     #
 
@@ -1602,7 +1600,7 @@ function m_handler_smalldist()
     cd "$lib_dir"
     m_exit_on_error "cannot access compatibility layer directory."
 
-    "$m_xcodebuild" -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
+    xcodebuild -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_macfuse_root/usr/local/lib/"
@@ -1636,7 +1634,7 @@ function m_handler_smalldist()
     rm -rf build/
     m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
 
-    "$m_xcodebuild" -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
@@ -1790,10 +1788,6 @@ function m_handler_swconfigure()
     local final_ldflags="$common_ldflags"
 
     local retval=1
-
-    # For pkg-config and such
-    PATH=$PATH:/usr/local/sbin:/usr/local/bin
-    export PATH
 
     # We have some special cases for current_product
 
@@ -2090,7 +2084,7 @@ function m_handler()
     m_exit_on_error "cannot determine actual platform"
 
     # Locace Xcode installations
-    for m_xcodebuild in /*/usr/bin/xcodebuild
+    for m_xcodebuild in /*/usr/bin/xcodebuild /Applications/*.app/Contents/Developer/usr/bin/xcodebuild
     do
         m_xcode_root="${m_xcodebuild%/usr/bin/xcodebuild}"
         if [[ "$m_xcode_root" =~ " " || -L "$m_xcode_root" ]]
@@ -2098,7 +2092,7 @@ function m_handler()
             continue
         fi
 
-        m_xcode_version=`"$m_xcodebuild" -version | grep "Xcode" | cut -f 2 -d " "`
+        m_xcode_version=`DEVELOPER_DIR="$m_xcode_root" xcodebuild -version | grep "Xcode" | cut -f 2 -d " "`
 
         case $m_xcode_version in
             3.2*)
@@ -2133,13 +2127,19 @@ function m_handler()
                     M_XCODE42_VERSION=$m_xcode_version
                 fi
                 ;;
+            4.3*)
+                m_version_compare $M_XCODE43_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE43="$m_xcode_root"
+                    M_XCODE43_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
         esac
     done
-
-    m_xcode_latest="";
 
     # Use most recent version of Xcode for each SDK
     if [[ -n "$M_XCODE32" ]]
@@ -2193,6 +2193,20 @@ function m_handler()
         M_SDK_107_COMPILER="$M_XCODE42_COMPILER"
         m_platform_add "10.7"
     fi
+    if [[ -n "$M_XCODE43" ]]
+    then
+        m_xcode_latest="$M_XCODE43"
+
+        M_SDK_106="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.6.sdk"
+        M_SDK_106_XCODE="$M_XCODE43"
+        M_SDK_106_COMPILER="$M_XCODE43_COMPILER"
+        m_platform_add "10.6"
+
+        M_SDK_107="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
+        M_SDK_107_XCODE="$M_XCODE43"
+        M_SDK_107_COMPILER="$M_XCODE43_COMPILER"
+        m_platform_add "10.7"
+    fi
 
     M_PLATFORMS_REALISTIC=$M_PLATFORMS
 
@@ -2205,8 +2219,6 @@ function m_handler()
     fi
 
     m_log "supported platforms: $M_PLATFORMS"
-
-    export PATH="$m_xcode_latest/usr/sbin:$m_xcode_latest/usr/bin:$m_xcode_latest/Tools:$m_xcode_latest/Applications:$PATH"
 
     m_validate_input
     m_handler
