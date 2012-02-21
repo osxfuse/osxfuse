@@ -59,6 +59,7 @@ declare m_xcode_dir=""
 declare m_version_leopard=""
 declare m_version_snowleopard=""
 declare m_version_lion=""
+declare m_version_mountainlion=""
 declare m_xcode_version=""
 declare m_xcode_latest=""
 
@@ -281,6 +282,13 @@ function m_set_platform()
     ;;
     10.7*)
         m_osname="Lion"
+        m_xcode_dir="$M_SDK_107_XCODE"
+        m_usdk_dir="$M_SDK_107"
+        m_compiler="$M_SDK_107_COMPILER"
+        m_archs="$M_SDK_107_ARCHS"
+    ;;
+    10.8*)
+        m_osname="Mountain Lion"
         m_xcode_dir="$M_SDK_107_XCODE"
         m_usdk_dir="$M_SDK_107"
         m_compiler="$M_SDK_107_COMPILER"
@@ -755,7 +763,7 @@ function m_handler_dist()
     m_log "initiating distribution build"
 
     local md_platforms=""
-    local md_platform_dirs=`ls -d "$M_CONF_TMPDIR"/osxfuse-core-*${m_release}.* | paste -s -`
+    local md_platform_dirs=`ls -d "$M_CONF_TMPDIR"/osxfuse-core-*${m_release_full} | paste -s -`
     m_log "found payloads $md_platform_dirs"
     for i in $md_platform_dirs
     do
@@ -775,6 +783,9 @@ function m_handler_dist()
         ;;
         10.7)
             m_version_lion=$md_tmp_release_version
+        ;;
+        10.8)
+            m_version_mountainlion=$md_tmp_release_version
         ;;
         esac
 
@@ -885,14 +896,31 @@ __END_DISTRIBUTION
     IFS=";"
     for i in $md_dist_choices
     do
+        IFS="$OLD_IFS"
+
         local md_dist_choice_name="${i%%:*}"
         local md_dist_choice_packages="${i##*:}"
 
         local md_dist_choice_name_uc=`echo "$md_dist_choice_name" | tr '[:lower:]' '[:upper:]'`
 
-        IFS=" "
-        for platform in $M_PLATFORMS
+        local -a md_plr=($M_PLATFORMS_REALISTIC)
+        local -a md_pl=($M_PLATFORMS)
+        j=0
+        k=0
+        while [[ $k -lt ${#md_pl[@]} ]]
         do
+            if [[ $(( j+1 )) -lt ${#md_plr[@]} ]]
+            then
+                m_version_compare "${md_plr[$(( j+1 ))]}" "${md_pl[$k]}"
+                if [[ $? -ne 2 ]]
+                then
+                    (( j++ ))
+                fi
+            fi
+
+            platform="${md_pl[$k]}"
+            platform_realistic="${md_plr[$j]}"
+
 cat >> "$md_dist_out" <<__END_DISTRIBUTION
     <choice id="$platform\$$md_dist_choice_name"
         title="${md_dist_choice_name_uc}_TITLE"
@@ -908,10 +936,10 @@ __END_DISTRIBUTION
             do
                 local md_dist_choice_pkg_path
                 local md_dist_choice_pkg_relpath
-                if [ -e "$md_osxfuse_out/OSXFUSE/$platform/$package" ]
+                if [ -e "$md_osxfuse_out/OSXFUSE/$platform_realistic/$package" ]
                 then
-                    md_dist_choice_pkg_path="$md_osxfuse_out/OSXFUSE/$platform/$package"
-                    md_dist_choice_pkg_relpath="#$platform/$package"
+                    md_dist_choice_pkg_path="$md_osxfuse_out/OSXFUSE/$platform_realistic/$package"
+                    md_dist_choice_pkg_relpath="#$platform_realistic/$package"
                 elif [ -e "$md_osxfuse_out/OSXFUSE/$package" ]
                 then
                     md_dist_choice_pkg_path="$md_osxfuse_out/OSXFUSE/$package"
@@ -941,12 +969,14 @@ cat >> "$md_dist_out" <<__END_DISTRIBUTION
 __END_DISTRIBUTION
                 m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
             done
-            IFS=" "
+            IFS="$OLD_IFS"
 
 cat >> "$md_dist_out" <<__END_DISTRIBUTION
     </choice>
 __END_DISTRIBUTION
             m_exit_on_error "cannot file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
+
+            (( k++ ))
         done
         IFS=";"
     done
@@ -1271,6 +1301,26 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
   <key>Rules</key>
   <array>
 __END_RULES_PLIST
+
+    if [[ "$M_PLATFORMS" =~ "10.8" ]]
+    then
+cat >> "$md_rules_plist" <<__END_RULES_PLIST
+    <dict>
+      <key>ProductID</key>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
+      <key>Predicate</key>
+      <string>SystemVersion.ProductVersion beginswith "10.8" AND Ticket.version != "$m_version_mountainlion"</string>
+      <key>Version</key>
+      <string>$m_version_mountainlion</string>
+      <key>Codebase</key>
+      <string>$md_download_url</string>
+      <key>Hash</key>
+      <string>$md_dmg_hash</string>
+      <key>Size</key>
+      <string>$md_dmg_size</string>
+    </dict>
+__END_RULES_PLIST
+    fi
 
     if [[ "$M_PLATFORMS" =~ "10.7" ]]
     then
@@ -2007,7 +2057,8 @@ function m_version_compare()
         (( last=${#version1[@]}-1 ))
     fi
 
-    for i in seq 0 $last
+    local i
+    for i in `seq 0 $last`
     do
         local t1=${version1[$i]:-0}
         local t2=${version2[$i]:-0}
@@ -2016,6 +2067,25 @@ function m_version_compare()
         [[ $t1 -gt $t2 ]] && return 2
     done
     return 0
+}
+
+function m_platform_realistic_add()
+{
+    local platform="$1"
+
+    local _IFS="$IFS"; IFS=" "
+    for p in $M_PLATFORMS_REALISTIC
+    do
+        if [[ "$p" = "$platform" ]]
+        then
+            IFS="$_IFS"
+            return
+        fi
+    done
+    IFS="$_IFS"
+
+    M_PLATFORMS_REALISTIC=${M_PLATFORMS_REALISTIC:+"$M_PLATFORMS_REALISTIC "}"$platform"
+    m_platform_add "$platform"
 }
 
 function m_platform_add()
@@ -2149,12 +2219,12 @@ function m_handler()
         M_SDK_105="$M_XCODE32/SDKs/MacOSX10.5.sdk"
         M_SDK_105_XCODE="$M_XCODE32"
         M_SDK_105_COMPILER="$M_XCODE32_COMPILER"
-        m_platform_add "10.5"
+        m_platform_realistic_add "10.5"
 
         M_SDK_106="$M_XCODE32/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE32"
         M_SDK_106_COMPILER="$M_XCODE32_COMPILER"
-        m_platform_add "10.6"
+        m_platform_realistic_add "10.6"
     fi
     if [[ -n "$M_XCODE40" ]]
     then
@@ -2163,7 +2233,7 @@ function m_handler()
         M_SDK_106="$M_XCODE40/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE40"
         M_SDK_106_COMPILER="$M_XCODE40_COMPILER"
-        m_platform_add "10.6"
+        m_platform_realistic_add "10.6"
     fi
     if [[ -n "$M_XCODE41" ]]
     then
@@ -2172,12 +2242,12 @@ function m_handler()
         M_SDK_106="$M_XCODE41/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE41"
         M_SDK_106_COMPILER="$M_XCODE41_COMPILER"
-        m_platform_add "10.6"
+        m_platform_realistic_add "10.6"
 
         M_SDK_107="$M_XCODE41/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE41"
         M_SDK_107_COMPILER="$M_XCODE41_COMPILER"
-        m_platform_add "10.7"
+        m_platform_realistic_add "10.7"
     fi
     if [[ -n "$M_XCODE42" ]]
     then
@@ -2186,12 +2256,13 @@ function m_handler()
         M_SDK_106="$M_XCODE42/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE42"
         M_SDK_106_COMPILER="$M_XCODE42_COMPILER"
-        m_platform_add "10.6"
+        m_platform_realistic_add "10.6"
 
         M_SDK_107="$M_XCODE42/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE42"
         M_SDK_107_COMPILER="$M_XCODE42_COMPILER"
-        m_platform_add "10.7"
+        m_platform_realistic_add "10.7"
+        m_platform_add "10.8"
     fi
     if [[ -n "$M_XCODE43" ]]
     then
@@ -2200,15 +2271,14 @@ function m_handler()
         M_SDK_106="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.6.sdk"
         M_SDK_106_XCODE="$M_XCODE43"
         M_SDK_106_COMPILER="$M_XCODE43_COMPILER"
-        m_platform_add "10.6"
+        m_platform_realistic_add "10.6"
 
         M_SDK_107="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE43"
         M_SDK_107_COMPILER="$M_XCODE43_COMPILER"
-        m_platform_add "10.7"
+        m_platform_realistic_add "10.7"
+        m_platform_add "10.8"
     fi
-
-    M_PLATFORMS_REALISTIC=$M_PLATFORMS
 
     m_read_input $*
 

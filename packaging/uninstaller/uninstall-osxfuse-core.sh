@@ -172,7 +172,7 @@ case "$OS_RELEASE" in
     BOMFILE_PREFPANE="$INSTALL_VOLUME/Library/Receipts/boms/com.github.osxfuse.pkg.PrefPane.bom"
     BOMFILE_MACFUSE="$INSTALL_VOLUME/Library/Receipts/boms/com.google.macfuse.core.bom"
     ;;
-  10*|11*)
+  10*|11*|12*)
     BOMFILE_CORE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.pkg.Core.bom"
     BOMFILE_PREFPANE="$INSTALL_VOLUME/var/db/receipts/com.github.osxfuse.pkg.PrefPane.bom"
     BOMFILE_MACFUSE="$INSTALL_VOLUME/var/db/receipts/com.google.macfuse.core.bom"
