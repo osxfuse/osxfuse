@@ -17,20 +17,28 @@ For more information visit the [website of the OSXFUSE project](http://osxfuse.g
 Build Instructions
 ------------------
 
-To clone the source repository into a newly created subdirectory named `osxfuse` in the current working directory, run the following command in Terminal:
-
-    git clone --recursive git://github.com/osxfuse/osxfuse.git osxfuse
-
-The build script locates automatically all supported installations of Xcode in the top level of the Mac OS X startup volume and builds a distribution package compatible with as many versions of Mac OS X as possible (depending on the versions of Xcode that are installed).
+The build script locates automatically all supported installations of Xcode in the top level of the Mac OS X startup volume and the Applications folder. It builds a distribution package compatible with as many versions of Mac OS X as possible (depending on the versions of Xcode that are installed).
 
 * Building OSXFUSE on Mac OS X 10.6:
   - Building OSXFUSE for Mac OS X 10.5 requires Xcode 3.2
-  - Building OSXFUSE for Mac OS X 10.6 requires either Xcode 3.2 or Xcode 4.0
+  - Building OSXFUSE for Mac OS X 10.6 requires Xcode 3.2 / 4.0
   - Building OSXFUSE for Mac OS X 10.7 is not supported
 * Building OSXFUSE on Mac OS X 10.7:
   - Building OSXFUSE for Mac OS X 10.5 requires Xcode 3.2
-  - Building OSXFUSE for Mac OS X 10.6 requires either Xcode 3.2, Xcode 4.1 or Xcode 4.2
-  - Building OSXFUSE for Mac OS X 10.7 requires either Xcode 4.1 or Xcode 4.2
+  - Building OSXFUSE for Mac OS X 10.6 requires Xcode 3.2 / 4.1 / 4.2 / 4.3
+  - Building OSXFUSE for Mac OS X 10.7 requires Xcode 4.1 / 4.2 / 4.3
+
+---
+
+**Note:** Xcode 4.3 does no longer include autotools (aclocal, autoconf, autoheader, automake, autoreconf) and libtool (glibtoolize), that are needed to build `libosxfuse`. Install MacPorts and run the following command in Terminal to install the required tools, if the build fails:
+
+    sudo port install autoconf automake libtool
+
+---
+
+To clone the source repository into a newly created subdirectory named `osxfuse` in the current working directory, run the following command in Terminal:
+
+    git clone --recursive git://github.com/osxfuse/osxfuse.git osxfuse
 
 Run the following command in the cloned repository to build OSXFUSE from source:
 
