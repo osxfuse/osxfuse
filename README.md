@@ -30,9 +30,13 @@ The build script locates automatically all supported installations of Xcode in t
 
 ---
 
-**Note:** Xcode 4.3 does no longer include autotools (aclocal, autoconf, autoheader, automake, autoreconf) and libtool (glibtoolize), that are needed to build `libosxfuse`. Install MacPorts and run the following command in Terminal to install the required tools, if the build fails:
+**Note:**
 
-    sudo port install autoconf automake libtool
+* Xcode 4.3 does no longer include autotools (aclocal, autoconf, autoheader, automake, autoreconf) and libtool (glibtoolize), that are needed to build `libosxfuse`. Install MacPorts and run the following command in Terminal to install the required tools, if the build fails:
+
+        sudo port install autoconf automake libtool
+
+* PackageMaker.app has been moved to the "Auxiliary Tools for Xcode" package in Xcode 4.3 and has to be installed separably. The package can be obtained at https://developer.apple.com/downloads (free Apple Developer ID required).
 
 ---
 
