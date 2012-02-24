@@ -30,8 +30,8 @@ readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
 
-readonly M_TARGETS="clean dist examples lib reload smalldist swconfigure"
-readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist swconfigure"
+readonly M_TARGETS="clean dist examples lib reload smalldist"
+readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
 readonly M_DEFAULT_TARGET="$M_DEFAULT_VALUE"
@@ -83,6 +83,9 @@ readonly M_XCODE42_COMPILER="com.apple.compilers.llvmgcc42"
 declare M_XCODE43=""
 declare M_XCODE43_VERSION=4.3
 readonly M_XCODE43_COMPILER="com.apple.compilers.llvmgcc42"
+declare M_XCODE44=""
+declare M_XCODE44_VERSION=4.4
+readonly M_XCODE44_COMPILER="com.apple.compilers.llvmgcc42"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -107,6 +110,12 @@ readonly M_SDK_107_ARCHS="i386 x86_64"
 declare M_SDK_107=""
 declare M_SDK_107_XCODE=""
 declare M_SDK_107_COMPILER=""
+
+# SDK 10.8
+readonly M_SDK_108_ARCHS="i386 x86_64"
+declare M_SDK_108=""
+declare M_SDK_108_XCODE=""
+declare M_SDK_108_COMPILER=""
 
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
@@ -168,7 +177,6 @@ The target keywords mean the following:
     lib         build the user-space library (e.g. to run fusexmp_fh)
     reload      rebuild and reload the kernel extension
     smalldist   create a platform-specific distribution package
-    swconfigure configure software (e.g. sshfs) for compilation
 
 Other options are:
     -d  create a developer prerelease package instead of a regular release
@@ -289,10 +297,10 @@ function m_set_platform()
     ;;
     10.8*)
         m_osname="Mountain Lion"
-        m_xcode_dir="$M_SDK_107_XCODE"
-        m_usdk_dir="$M_SDK_107"
-        m_compiler="$M_SDK_107_COMPILER"
-        m_archs="$M_SDK_107_ARCHS"
+        m_xcode_dir="$M_SDK_108_XCODE"
+        m_usdk_dir="$M_SDK_108"
+        m_compiler="$M_SDK_108_COMPILER"
+        m_archs="$M_SDK_108_ARCHS"
     ;;
     *)
         m_osname="Unknown"
@@ -423,7 +431,7 @@ function m_handler_lib()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    DEVELOPER_DIR=/Developer-3.2 COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     m_log "running make"
@@ -1100,7 +1108,7 @@ __END_DISTRIBUTION
         m_exit_on_error "cannot copy OSXFUSE license to scratch disk image."
     fi
 
-    /Developer/Tools/SetFile -a E "$md_volume_path/License.rtf"
+    xcrun SetFile -a E "$md_volume_path/License.rtf"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1119,7 +1127,7 @@ __END_DISTRIBUTION
         m_exit_on_error "cannot copy '$M_PKGNAME_OSXFUSE' to scratch disk image."
     fi
 
-    /Developer/Tools/SetFile -a E "$md_volume_path/$md_pkgname_installer"
+    xcrun SetFile -a E "$md_volume_path/$md_pkgname_installer"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1137,7 +1145,7 @@ __END_DISTRIBUTION
         m_exit_on_error "cannot copy website link to scratch disk image."
     fi
 
-    /Developer/Tools/SetFile -a E "$md_volume_path/OSXFUSE Website.webloc"
+    xcrun SetFile -a E "$md_volume_path/OSXFUSE Website.webloc"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1168,7 +1176,7 @@ __END_ENGINE_INSTALL
         m_exit_on_error "cannot copy custom volume icon to scratch disk image."
     fi
 
-    /Developer/Tools/SetFile -a C "$md_volume_path"
+    xcrun SetFile -a C "$md_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1637,9 +1645,9 @@ function m_handler_smalldist()
     m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
 
     # generate dsym
-    dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i32.dylib
+    xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i32.dylib
     m_exit_on_error "cannot generate debugging information for libosxfuse_i32."
-    dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
+    xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
     m_exit_on_error "cannot generate debugging information for libosxfuse_i64."
 
     # Build MacFUSE compatibility layer for user-space OSXFUSE library
@@ -1800,82 +1808,6 @@ function m_handler_smalldist()
 
     return 0
 }
-
-function m_handler_swconfigure()
-{
-    m_active_target="swconfigure"
-
-    m_set_platform
-
-    m_set_srcroot "$m_platform"
-
-    local lib_dir="$m_srcroot"/fuse
-    if [ ! -d "$lib_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$lib_dir'."
-    fi
-
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
-
-    local current_dir=`pwd`
-    local current_product=`basename "$current_dir"`
-
-    local extra_cflags=""
-    local architectures=""
-
-    architectures="-arch i386 -arch x86_64"
-
-    local common_cflags="-O0 -g $architectures -isysroot $m_usdk_dir -I/usr/local/include"
-    local common_ldflags="-Wl,-syslibroot,$m_usdk_dir $architectures -L/usr/local/lib"
-
-    local final_cflags="$common_cflags $extra_cflags"
-    local final_ldflags="$common_ldflags"
-
-    local retval=1
-
-    # We have some special cases for current_product
-
-    case "$current_product" in
-
-    gettext*)
-        m_log "Configuring Universal build of gettext for Mac OS X \"$m_osname\""
-        CFLAGS="$final_cflags -D_POSIX_C_SOURCE=200112L" LDFLAGS="$final_ldflags -fno-common" ./configure --prefix=/usr/local --disable-dependency-tracking --with-libiconv-prefix="$m_usdk_dir"/usr
-        retval=$?
-        ;;
-
-    glib*)
-        m_log "Configuring Universal build of glib for Mac OS X \"$m_osname\""
-        CFLAGS="$final_cflags" LDFLAGS="$final_ldflags" ./configure --prefix=/usr/local --disable-dependency-tracking --enable-static
-        retval=$?
-        ;;
-
-    pkg-config*)
-        m_log "Configuring Universal build of pkg-config for Mac OS X \"$m_osname\""
-        CFLAGS="$final_cflags" LDFLAGS="$final_ldflags" ./configure --prefix=/usr/local --disable-dependency-tracking
-        ;;
-
-    *sshfs*)
-        m_log "Configuring Universal build of sshfs for Mac OS X \"$m_osname\""
-        CFLAGS="$final_cflags -D__FreeBSD__=10 -DDARWIN_SEMAPHORE_COMPAT -DSSH_NODELAY_WORKAROUND" LDFLAGS="$final_ldflags" ./configure --prefix=/usr/local --disable-dependency-tracking
-        ;;
-
-    *)
-        m_log "Configuring Universal build of generic software for Mac OS X \"$m_osname\""
-        CFLAGS="$final_cflags" LDFLAGS="$final_ldflags" ./configure --prefix=/usr/local --disable-dependency-tracking
-        ;;
-
-    esac
-
-    return $retval
-}
-
-# --
 
 function m_validate_input()
 {
@@ -2137,10 +2069,6 @@ function m_handler()
         m_handler_smalldist
     ;;
 
-    "swconfigure")
-        m_handler_swconfigure
-    ;;
-
     *)
         echo "Try $0 -h for help."
     ;;
@@ -2157,7 +2085,7 @@ function m_handler()
     for m_xcodebuild in /*/usr/bin/xcodebuild /Applications/*.app/Contents/Developer/usr/bin/xcodebuild
     do
         m_xcode_root="${m_xcodebuild%/usr/bin/xcodebuild}"
-        if [[ "$m_xcode_root" =~ " " || -L "$m_xcode_root" ]]
+        if [[ "$m_xcode_root" =~ "*"|" " || -L "$m_xcode_root" ]]
         then
             continue
         fi
@@ -2205,6 +2133,14 @@ function m_handler()
                     M_XCODE43_VERSION=$m_xcode_version
                 fi
                 ;;
+            4.4*)
+                m_version_compare $M_XCODE44_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE44="$m_xcode_root"
+                    M_XCODE44_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2248,6 +2184,8 @@ function m_handler()
         M_SDK_107_XCODE="$M_XCODE41"
         M_SDK_107_COMPILER="$M_XCODE41_COMPILER"
         m_platform_realistic_add "10.7"
+
+        m_platform_add "10.8"
     fi
     if [[ -n "$M_XCODE42" ]]
     then
@@ -2262,6 +2200,7 @@ function m_handler()
         M_SDK_107_XCODE="$M_XCODE42"
         M_SDK_107_COMPILER="$M_XCODE42_COMPILER"
         m_platform_realistic_add "10.7"
+
         m_platform_add "10.8"
     fi
     if [[ -n "$M_XCODE43" ]]
@@ -2277,7 +2216,22 @@ function m_handler()
         M_SDK_107_XCODE="$M_XCODE43"
         M_SDK_107_COMPILER="$M_XCODE43_COMPILER"
         m_platform_realistic_add "10.7"
+
         m_platform_add "10.8"
+    fi
+    if [[ -n "$M_XCODE44" ]]
+    then
+        m_xcode_latest="$M_XCODE44"
+
+        M_SDK_107="$M_XCODE44/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
+        M_SDK_107_XCODE="$M_XCODE44"
+        M_SDK_107_COMPILER="$M_XCODE44_COMPILER"
+        m_platform_realistic_add "10.7"
+
+        M_SDK_108="$M_XCODE44/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
+        M_SDK_108_XCODE="$M_XCODE44"
+        M_SDK_108_COMPILER="$M_XCODE44_COMPILER"
+        m_platform_realistic_add "10.8"
     fi
 
     m_read_input $*
