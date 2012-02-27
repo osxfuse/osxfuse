@@ -1431,6 +1431,12 @@ function m_handler_smalldist()
         false
         m_exit_on_error "cannot access directory '$lib_dir'."
     fi
+    local lib_dir_mf="$m_srcroot"/macfuse
+    if [ ! -d "$lib_dir_mf" ]
+    then
+        false
+        m_exit_on_error "cannot access directory '$lib_dir_mf'."
+    fi
 
     local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
@@ -1441,7 +1447,7 @@ function m_handler_smalldist()
 
     if [ "$m_shortcircuit" != "1" ]
     then
-        rm -rf "$lib_dir/build/"
+        rm -rf "$lib_dir_mf/build/"
         rm -rf "$kernel_dir/build/"
         rm -rf "$m_srcroot/framework/build/"
     fi
@@ -1655,7 +1661,7 @@ function m_handler_smalldist()
 
     m_log "building MacFUSE compatibility layer for user-space OSXFUSE library"
 
-    cd "$lib_dir"
+    cd "$lib_dir_mf"
     m_exit_on_error "cannot access compatibility layer directory."
 
     xcodebuild -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
