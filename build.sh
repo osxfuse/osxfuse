@@ -125,7 +125,7 @@ readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
 readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
 
-readonly M_MACFUSE_MODE=1;
+readonly M_MACFUSE_MODE=0;
 
 readonly M_PKG_VERSION="10.5"
 
@@ -581,15 +581,15 @@ function m_handler_examples()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     cd example
     m_exit_on_error "cannot access examples source."
 
-    local me_installed_lib="/usr/local/lib/libosxfuse_i64.la"
+    local me_installed_lib="/usr/local/lib/libosxfuse.la"
 
-    perl -pi -e "s#../lib/libosxfuse_i32.la#$me_installed_lib#g" Makefile
+    perl -pi -e "s#../lib/libosxfuse.la#$me_installed_lib#g" Makefile
     m_exit_on_error "failed to prepare example source for build."
 
     m_log "running make"
@@ -1447,7 +1447,6 @@ function m_handler_smalldist()
 
     if [ "$m_shortcircuit" != "1" ]
     then
-        rm -rf "$lib_dir_mf/build/"
         rm -rf "$kernel_dir/build/"
         rm -rf "$m_srcroot/framework/build/"
     fi
@@ -1594,7 +1593,7 @@ function m_handler_smalldist()
     cd "$ms_osxfuse_build"/fuse
     m_exit_on_error "cannot access OSXFUSE library source in '$ms_osxfuse_build/fuse'."
 
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     xcrun make -j4 >$m_stdout 2>$m_stderr
@@ -1603,54 +1602,50 @@ function m_handler_smalldist()
     xcrun make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot prepare library build for installation."
 
-    for f in "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64*.dylib; do
+    for f in "$ms_osxfuse_root"/usr/local/lib/libosxfuse*.dylib; do
         local source=`basename "$f"`
-        local target="`echo \"$f\" | sed 's/libosxfuse_i64/libosxfuse/'`"
+        local target="`echo \"$f\" | sed 's/libosxfuse/libosxfuse_i64/'`"
         ln -s "$source" "$target"
         m_exit_on_error "cannot create symlink '$target' -> '$source'."
     done
-    ln -s libosxfuse_i64.la "$ms_osxfuse_root/usr/local/lib/libosxfuse.la"
+    ln -s libosxfuse.la "$ms_osxfuse_root/usr/local/lib/libosxfuse_i64.la"
     m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/libosxfuse.la' -> 'libosxfuse_i64.la'."
 
     ln -s osxfuse.pc "$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc"
     m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
 
     # generate dsym
-    xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i32.dylib
-    m_exit_on_error "cannot generate debugging information for libosxfuse_i32."
-    xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
-    m_exit_on_error "cannot generate debugging information for libosxfuse_i64."
+    xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse.dylib
+    m_exit_on_error "cannot generate debugging information for libosxfuse."
 
-    # Build MacFUSE compatibility layer for user-space OSXFUSE library
+    # Build the user-space MacFUSE library
     #
 
-    m_log "building MacFUSE compatibility layer for user-space OSXFUSE library"
+    m_log "building user-space MacFUSE library"
 
-    cd "$lib_dir_mf"
-    m_exit_on_error "cannot access compatibility layer directory."
+    cp -pRX "$lib_dir_mf" "$ms_osxfuse_build"
+    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir_mf'."
 
-    xcodebuild -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
-    m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
+    cd "$ms_osxfuse_build"/macfuse
+    m_exit_on_error "cannot access MacFUSE library source in '$ms_osxfuse_build/macfuse'."
 
-    cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_macfuse_root/usr/local/lib/"
-    m_exit_on_error "cannot copy 'libmacfuse*.dylib' to destination."
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot configure MacFUSE library source for compilation."
 
-    for f in "$ms_macfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
-        local source=`basename "$f"`
-        local target="`echo \"$f\" | sed 's/libmacfuse_i32/libfuse/'`"
-        ln -s "$source" "$target"
-        m_exit_on_error "cannot create symlink '$target' -> '$source'."
-    done
+    xcrun make -j4 >$m_stdout 2>$m_stderr
+    m_exit_on_error "make failed while compiling the MacFUSE library."
 
-    for f in "$ms_macfuse_root"/usr/local/lib/libmacfuse_i64*.dylib; do
-        local source=`basename "$f"`
-        local target="`echo \"$f\" | sed 's/libmacfuse_i64/libfuse_ino64/'`"
-        ln -s "$source" "$target"
-        m_exit_on_error "cannot create symlink '$target' -> '$source'."
-    done
+    xcrun make install DESTDIR="$ms_macfuse_root" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot prepare library build for installation."
 
-    ln -s libmacfuse_i32.dylib "$ms_macfuse_root/usr/local/lib/libfuse.0.dylib"
+    ln -s libfuse.dylib "$ms_macfuse_root/usr/local/lib/libfuse.0.dylib"
     m_exit_on_error "cannot create compatibility symlink 'libfuse.0.dylib'."
+
+    # generate dsym
+#   xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse.dylib
+#   m_exit_on_error "cannot generate debugging information for libfuse."
+#   xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse_ino64.dylib
+#   m_exit_on_error "cannot generate debugging information for libfuse_ino64."
 
     # Build OSXFUSE.framework
     #

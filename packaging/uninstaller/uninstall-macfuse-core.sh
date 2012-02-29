@@ -33,9 +33,10 @@ function is_safe_prefix() {
       return 0;
       ;; 
     "$INSTALL_VOLUME"/./usr/local/lib/*                        |  \
+    "$INSTALL_VOLUME"/./usr/local/include/*                    |  \
     "$INSTALL_VOLUME"/./Library/Frameworks/MacFUSE.framework   |  \
     "$INSTALL_VOLUME"/./Library/Frameworks/MacFUSE.framework/* |  \
-    "$INSTALL_VOLUME"/Library/Receipts/OSXFUSEMacFUSE.pkg       |  \
+    "$INSTALL_VOLUME"/Library/Receipts/OSXFUSEMacFUSE.pkg      |  \
     "$INSTALL_VOLUME"/Library/Receipts/OSXFUSEMacFUSE.pkg/*)
       # These are all ok to process.
       return 1;
