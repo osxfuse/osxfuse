@@ -1603,41 +1603,6 @@ function m_handler_smalldist()
     xcrun make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot prepare library build for installation."
 
-    rm -f "ms_osxfuse_root"/usr/local/lib/*ulockmgr*
-    # ignore any errors
-
-    rm -f "ms_osxfuse_root"/usr/local/include/*ulockmgr*
-    # ignore any errors
-
-    # Now build again, if necessary, with 64-bit inode support
-    #
-
-    m_log "building user-space OSXFUSE library (ino64)"
-
-    cd "$ms_osxfuse_build"/fuse/lib
-    m_exit_on_error "cannot access OSXFUSE library (ino64) source in '$ms_osxfuse_build/fuse/lib'."
-
-    xcrun make clean >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the OSXFUSE library (ino64)."
-
-    perl -pi -e 's#libosxfuse_i32#libosxfuse_i64#g' Makefile
-    m_exit_on_error "failed to prepare OSXFUSE library (ino64) for compilation."
-
-    perl -pi -e 's#-D__DARWIN_64_BIT_INO_T=0#-D__DARWIN_64_BIT_INO_T=1#g' Makefile
-    m_exit_on_error "failed to prepare OSXFUSE library (ino64) for compilation."
-
-    xcrun make -j4 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the OSXFUSE library (ino64)."
-
-    xcrun make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot prepare OSXFUSE library (ino64) build for installation."
-
-    rm -f "$ms_osxfuse_root"/usr/local/lib/*ulockmgr*
-    # ignore any errors
-
-    rm -f "$ms_osxfuse_root"/usr/local/include/*ulockmgr*
-    # ignore any errors
-
     for f in "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64*.dylib; do
         local source=`basename "$f"`
         local target="`echo \"$f\" | sed 's/libosxfuse_i64/libosxfuse/'`"
