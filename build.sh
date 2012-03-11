@@ -581,7 +581,7 @@ function m_handler_examples()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure_ino64.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="$M_MACFUSE_MODE" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     cd example
@@ -589,7 +589,7 @@ function m_handler_examples()
 
     local me_installed_lib="/usr/local/lib/libosxfuse_i64.la"
 
-    perl -pi -e "s#../lib/libosxfuse_i32.la#$me_installed_lib#g" Makefile
+    perl -pi -e "s#../lib/libosxfuse_i64.la#$me_installed_lib#g" Makefile
     m_exit_on_error "failed to prepare example source for build."
 
     m_log "running make"
