@@ -119,7 +119,7 @@ declare M_SDK_108_COMPILER=""
 
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
-readonly M_KEXT_ID="com.github.osxfuse.osxfusefs"
+readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
 readonly M_KEXT_NAME="osxfusefs.kext"
 readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
