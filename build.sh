@@ -119,7 +119,7 @@ declare M_SDK_108_COMPILER=""
 
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
-readonly M_KEXT_ID="com.github.osxfuse.osxfusefs"
+readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
 readonly M_KEXT_NAME="osxfusefs.kext"
 readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
@@ -459,34 +459,18 @@ function m_handler_reload()
 
     m_set_srcroot "$m_platform"
 
-    local kernel_dir="$m_srcroot/kext"
+    local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
         false
         m_exit_on_error "cannot access directory '$kernel_dir'."
     fi
 
-    if [ -e "$M_CONF_TMPDIR/$M_KEXT_NAME" ]
-    then
-        m_set_suprompt "to remove old OSXFUSE kext"
-        sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/$M_KEXT_NAME"
-        m_exit_on_error "cannot remove old copy of OSXFUSE kext."
-    fi
+    local ms_os_version="$m_platform"
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
-    if [ -e "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" ]
-    then
-        m_set_suprompt "to remove old copy of OSXFUSE kext symbols"
-        sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
-        m_exit_on_error "cannot remove old copy of OSXFUSE kext symbols."
-    fi
-
-    if [ "$1" == "clean" ]
-    then
-        rm -rf "$kernel_dir/build/"
-        local retval=$?
-        m_log "cleaned (platform $m_platform)"
-        return $retval
-    fi
+    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
 
     m_log "initiating kernel extension rebuild/reload for $m_platform"
 
@@ -500,31 +484,21 @@ function m_handler_reload()
         m_exit_on_error "cannot unload kext '$M_KEXT_ID'."
     fi
 
-    cd "$kernel_dir"
-    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
-
     m_log "rebuilding kext"
 
-    xcodebuild -configuration Debug -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
-    m_exit_on_error "xcodebuild cannot build configuration Debug for target fusefs."
+    m_shortcircuit="0"
+    m_configuration="Debug"
+    m_handler_kext "$1"
+    m_exit_on_error "failed to build kernel extension."
 
-    mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
-    m_exit_on_error "cannot create directory for OSXFUSE kext symbols."
-
-    cp -R "$kernel_dir/build/Debug/$M_KEXT_NAME" "$M_CONF_TMPDIR/$M_KEXT_NAME"
-    m_exit_on_error "cannot copy newly built OSXFUSE kext."
-
-    m_set_suprompt "to set permissions on newly built OSXFUSE kext"
-    sudo -p "$m_suprompt" chown -R root:wheel "$M_CONF_TMPDIR/$M_KEXT_NAME"
-    m_exit_on_error "cannot set permissions on newly built OSXFUSE kext."
-
+    m_active_target="reload"
     m_log "reloading kext"
 
-    m_set_suprompt "to load newly built OSXFUSE kext"
+    m_set_suprompt "to load newly built kernel extension"
     sudo -p "$m_suprompt" \
-        kextutil -s "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" \
-            -v "$M_CONF_TMPDIR/$M_KEXT_NAME" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot load newly built OSXFUSE kext."
+        kextutil -s "$ms_osxfuse_out" \
+            -v "$ms_osxfuse_out/$M_KEXT_NAME" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot load newly built kernel extension."
 
     echo >$m_stdout
     m_log "checking status of kernel extension"
@@ -532,7 +506,7 @@ function m_handler_reload()
     echo >$m_stdout
 
     echo >$m_stdout
-    m_log "succeeded, results in '$M_CONF_TMPDIR'."
+    m_log "succeeded, results in '$ms_osxfuse_out'."
     echo >$m_stdout
 
     return 0
@@ -2122,7 +2096,6 @@ function m_handler()
         done
         m_handler_examples clean
         m_handler_lib clean
-        m_handler_reload clean
         m_handler_dist clean
     ;;
 
