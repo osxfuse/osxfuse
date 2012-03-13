@@ -30,8 +30,8 @@ readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
 
-readonly M_TARGETS="clean dist examples lib reload smalldist"
-readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist"
+readonly M_TARGETS="clean dist kext examples lib reload smalldist"
+readonly M_TARGETS_WITH_PLATFORM="kext examples lib smalldist"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
 readonly M_DEFAULT_TARGET="$M_DEFAULT_VALUE"
@@ -173,6 +173,7 @@ Usage:
 The target keywords mean the following:
     clean       clean all targets
     dist        create a multiplatform distribution package
+    kext        build kernel extension
     examples    build example file systems (e.g. fusexmp_fh and hello)
     lib         build the user-space library (e.g. to run fusexmp_fh)
     reload      rebuild and reload the kernel extension
@@ -1414,6 +1415,111 @@ __END_RULES_PLIST
     return 0
 }
 
+# Build kernel extension
+#
+function m_handler_kext()
+{
+    m_active_target="kext"
+
+    m_set_platform
+
+    m_set_srcroot "$m_platform"
+
+    local kernel_dir="$m_srcroot"/kext
+    if [ ! -d "$kernel_dir" ]
+    then
+        false
+        m_exit_on_error "cannot access directory '$kernel_dir'."
+    fi
+
+    if [ "$m_shortcircuit" != "1" ]
+    then
+        rm -rf "$kernel_dir/build/"
+    fi
+
+    local ms_os_version="$m_platform"
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    m_exit_on_error "cannot get platform-specific OSXFUSE version."
+
+    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
+
+    if [ "$m_shortcircuit" != "1" ]
+    then
+        if [ -e "$ms_osxfuse_out" ]
+        then
+            m_set_suprompt "to remove a previously built platform-specific package"
+            sudo -p "$m_suprompt" rm -rf "$ms_osxfuse_out"
+            m_exit_on_error "failed to clean up previous platform-specific OSXFUSE build."
+        fi
+        if [ -e "$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-"* ]
+        then
+            m_warn "removing unrecognized version of platform-specific package"
+            m_set_suprompt "to remove unrecognized version of platform-specific package"
+            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-"*
+            m_exit_on_error "failed to clean up unrecognized version of platform-specific package."
+        fi
+    else
+        if [ -e "$ms_osxfuse_out/$M_KEXT_NAME" ]
+        then
+            echo >$m_stdout
+            m_log "succeeded (shortcircuited), results in '$ms_osxfuse_out'."
+            echo >$m_stdout
+            return 0
+        fi
+    fi
+
+    if [ "$1" == "clean" ]
+    then
+        local retval=$?
+        m_log "cleaned (platform $m_platform)"
+        return $retval
+    fi
+
+    m_log "initiating Universal build for $m_platform"
+
+    cd "$kernel_dir"
+    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
+
+    m_log "building OSXFUSE kernel extension"
+
+    if [ "$m_developer" == "0" ]
+    then
+        xcodebuild -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    else
+        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    fi
+
+    m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
+
+    # Go for it
+
+    local ms_project_dir="$kernel_dir"
+
+    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
+    if [ ! -d "$ms_built_products_dir" ]
+    then
+        m_exit_on_error "cannot find built products directory."
+    fi
+
+    mkdir -p "$ms_osxfuse_out"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_out'."
+
+    cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
+    m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
+
+    cp -pRX "$ms_built_products_dir/$M_KEXT_NAME.dSYM" "$ms_osxfuse_out/$M_KEXT_NAME.dSYM"
+    m_exit_on_error "cannot copy '$M_KEXT_NAME.dSYM' to destination."
+
+    m_set_suprompt "to set permissions on newly built kernel extension"
+    sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_out/$M_KEXT_NAME"
+    m_exit_on_error "cannot set permissions on newly built kernel extension."
+
+    echo >$m_stdout
+    m_log "succeeded, results in '$ms_osxfuse_out'."
+    echo >$m_stdout
+
+    return 0
+}
 
 # Build a platform-specific distribution package
 #
@@ -2009,6 +2115,11 @@ function m_handler()
     case "$m_target" in
 
     "clean")
+        for m_p in $M_PLATFORMS_REALISTIC
+        do
+            m_platform="$m_p"
+            m_handler_kext clean
+        done
         m_handler_examples clean
         m_handler_lib clean
         m_handler_reload clean
@@ -2017,6 +2128,10 @@ function m_handler()
 
     "dist")
         m_handler_dist
+    ;;
+
+    "kext")
+        m_handler_kext
     ;;
 
     "examples")
