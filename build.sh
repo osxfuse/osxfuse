@@ -318,7 +318,7 @@ function m_set_platform()
     return $retval
 }
 
-# m_build_pkg(pkgversion, install_srcroot, install_payload, pkgid, pkgname, output_dir)
+# m_build_pkg(pkgversion, install_srcroot, install_payload, pkgid, pkgname, install_to, output_dir)
 #
 function m_build_pkg()
 {
@@ -327,7 +327,8 @@ function m_build_pkg()
     local bp_install_payload="$3"
     local bp_pkgid="$4"
     local bp_pkgname="$5"
-    local bp_output_dir="$6"
+    local bp_install_to="$6"
+    local bp_output_dir="$7"
 
     if [ -z "$mp_package_maker" ]
     then
@@ -366,6 +367,7 @@ function m_build_pkg()
             -f "$bp_install_srcroot/PackageInfo" \
             -o "$bp_output_dir/$bp_pkgname" \
             -n "$bp_pkgversion" \
+            -l "$bp_install_to" \
             -s "$bp_install_srcroot/Scripts" \
             -g "$M_PKG_VERSION" \
             -h system \
@@ -378,6 +380,7 @@ function m_build_pkg()
             -f "$bp_install_srcroot/PackageInfo" \
             -o "$bp_output_dir/$bp_pkgname" \
             -n "$bp_pkgversion" \
+            -l "$bp_install_to" \
             -g "$M_PKG_VERSION" \
             -h system \
             -m -w -v \
@@ -794,7 +797,7 @@ function m_handler_dist()
     # Build Preference Pane installer package
     m_log "building installer package '$M_PKGNAME_PREFPANE'"
 
-    m_build_pkg "$m_release_full" "$m_srcroot/packaging/installer/$M_PKGBASENAME_PREFPANE" "$md_osxfuse_root" "$M_PKGID_PREFPANE" "$M_PKGNAME_PREFPANE" "$md_osxfuse_out"
+    m_build_pkg "$m_release_full" "$m_srcroot/packaging/installer/$M_PKGBASENAME_PREFPANE" "$md_osxfuse_root" "$M_PKGID_PREFPANE" "$M_PKGNAME_PREFPANE" "/" "$md_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_PREFPANE'."
 
     # Build OSXFUSE installer package
@@ -1251,7 +1254,7 @@ __END_ENGINE_INSTALL
     sudo -p "$m_suprompt" chown -R root:wheel "$md_redist_root/"
     m_exit_on_error "cannot chown '$md_redist_root'."
 
-    m_build_pkg "$m_release_full" "$md_redist_pkgsrc" "$md_redist_root" "$M_PKGID_REDIST" "$M_PKGNAME_REDIST" "$md_osxfuse_out"
+    m_build_pkg "$m_release_full" "$md_redist_pkgsrc" "$md_redist_root" "$M_PKGID_REDIST" "$M_PKGNAME_REDIST" "/" "$md_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_REDIST'."
 
     m_set_suprompt "to remove directory '$md_redist_root'."
@@ -1842,10 +1845,10 @@ function m_handler_smalldist()
     m_platform="$ms_deployment_target"
     m_set_platform
 
-    m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "/" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
 
-    m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version.$m_platform" "$m_srcroot/packaging/installer/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "/" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE'."
 
     echo >$m_stdout
