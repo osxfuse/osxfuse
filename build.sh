@@ -30,7 +30,7 @@ readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
 
-readonly M_TARGETS="clean dist osxfusefs kext examples lib reload smalldist"
+readonly M_TARGETS="clean dist core osxfusefs kext examples lib reload"
 readonly M_TARGETS_WITH_PLATFORM="kext examples lib"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
@@ -173,12 +173,12 @@ Usage:
 The target keywords mean the following:
     clean       clean all targets
     dist        create a multiplatform distribution package
+    core        create a multiplatform core package
     osxfusefs   build file system bundle
     kext        build kernel extension
     examples    build example file systems (e.g. fusexmp_fh and hello)
     lib         build the user-space library (e.g. to run fusexmp_fh)
     reload      rebuild and reload the kernel extension
-    smalldist   create a platform-specific distribution package
 
 Other options are:
     -d  create a developer prerelease package instead of a regular release
@@ -590,7 +590,7 @@ function m_handler_dist()
 
     if [ "$1" == "clean" ]
     then
-        m_handler_smalldist clean
+        m_handler_core clean
 
         m_active_target="dist"
 
@@ -625,7 +625,7 @@ function m_handler_dist()
 
     pushd . >/dev/null 2>/dev/null
 
-    m_handler_smalldist
+    m_handler_core
 
     popd >/dev/null 2>/dev/null
 
@@ -1552,9 +1552,9 @@ function m_handler_kext()
 
 # Build a platform-specific distribution package
 #
-function m_handler_smalldist()
+function m_handler_core()
 {
-    m_active_target="smalldist"
+    m_active_target="core"
 
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
@@ -1645,7 +1645,7 @@ function m_handler_smalldist()
 
     # Go for it
 
-    m_active_target="smalldist"
+    m_active_target="core"
 
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
@@ -2155,8 +2155,8 @@ function m_handler()
         m_handler_reload
     ;;
 
-    "smalldist")
-        m_handler_smalldist
+    "core")
+        m_handler_core
     ;;
 
     *)
