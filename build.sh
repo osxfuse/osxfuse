@@ -1,10 +1,9 @@
 #!/bin/bash
+
 # OSXFUSE build tool
-#
-# Copyright 2011, OSXFUSE Project
-# All rights reserved.
-#
-# Copyright 2008-2009, Google
+
+# Copyright (c) 2008-2009 Google Inc.
+# Copyright (c) 2011-2012 Benjamin Fleischer
 # All rights reserved.
 
 # Configurables
@@ -24,13 +23,13 @@ fi
 #
 readonly M_PROGDESC="OSXFUSE build tool"
 readonly M_PROGNAME=build
-readonly M_PROGVERS=1.0
+readonly M_PROGVERS=2.0
 
 readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
 
-readonly M_TARGETS="clean dist core osxfusefs kext examples lib reload"
+readonly M_TARGETS="clean release dist core osxfusefs kext examples lib reload"
 readonly M_TARGETS_WITH_PLATFORM="kext examples lib"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
@@ -48,7 +47,6 @@ declare m_archs=""
 declare m_release=""
 declare m_shortcircuit=0
 declare m_srcroot=""
-declare m_srcroot_platformdir=""
 declare m_stderr=/dev/stderr
 declare m_stdout=/dev/stdout
 declare m_suprompt=" invalid "
@@ -160,8 +158,11 @@ function m_help()
 {
     cat <<__END_HELP_CONTENT
 $M_PROGDESC version $M_PROGVERS
-Copyright (C) 2011 OSXFUSE Project. All Rights Reserved.
-Copyright (C) 2008 Google. All Rights Reserved.
+
+Copyright (C) 2008 Google Inc.
+Copyright (C) 2011-2012 Benjamin Fleischer
+All Rights Reserved.
+
 Usage:
   $M_PROGNAME [-dhqsv] [-c configuration] [-p platform] -t target
 
@@ -172,6 +173,7 @@ Usage:
 
 The target keywords mean the following:
     clean       clean all targets
+    release     create release disk image and updater files
     dist        create a multiplatform distribution package
     core        create a multiplatform core package
     osxfusefs   build file system bundle
@@ -588,6 +590,43 @@ function m_handler_dist()
 {
     m_active_target="dist"
 
+    m_platform="${M_PLATFORMS_REALISTIC%% *}"
+    m_set_platform
+
+    m_set_srcroot
+
+    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
+    m_release=`echo "$m_release_full" | cut -d . -f 1,2`
+    m_exit_on_error "cannot get OSXFUSE release version."
+
+    local md_osxfuse_out="$M_CONF_TMPDIR/osxfuse-dist-$m_release_full"
+    local md_osxfuse_root="$md_osxfuse_out/pkgroot/"
+
+    if [ "$m_shortcircuit" != "1" ]
+    then
+        if [ -e "$md_osxfuse_out" ]
+        then
+            m_set_suprompt "to remove a previously built distribution package"
+            sudo -p "$m_suprompt" rm -rf "$md_osxfuse_out"
+            m_exit_on_error "failed to clean up previous distribution package."
+        fi
+        if [ -e "$M_CONF_TMPDIR/osxfuse-dist-"* ]
+        then
+            m_warn "removing unrecognized version of distribution package"
+            m_set_suprompt "to remove unrecognized version of platform-specific package"
+            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-dist-"*
+            m_exit_on_error "failed to clean up unrecognized version of distribution package."
+        fi
+    else
+        if [ -e "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" ]
+        then
+            echo >$m_stdout
+            m_log "succeeded (shortcircuited), results in '$md_osxfuse_out'."
+            echo >$m_stdout
+            return 0
+        fi
+    fi
+
     if [ "$1" == "clean" ]
     then
         m_handler_core clean
@@ -603,17 +642,6 @@ function m_handler_dist()
 
         rm -rf "$m_srcroot/prefpane/build"
         m_log "cleaned internal subtarget prefpane"
-
-        m_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
-        if [ ! -z "$m_release" ]
-        then
-            if [ -e "$M_CONF_TMPDIR/osxfuse-$m_release" ]
-            then
-                m_set_suprompt "to remove previous output packages"
-                sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-$m_release"
-                m_log "cleaned any previous output packages in '$M_CONF_TMPDIR'"
-            fi
-        fi
 
         return 0
     fi
@@ -642,13 +670,6 @@ function m_handler_dist()
         m_log "packaging flavor is 'Mainstream'"
     else
         m_log "packaging flavor is 'Developer Prerelease'"
-    fi
-
-    m_log "locating OSXFUSE private key"
-    if [ ! -f "$M_CONF_PRIVKEY" ]
-    then
-        false
-        m_exit_on_error "cannot find OSXFUSE private key in '$M_CONF_PRIVKEY'."
     fi
 
     # Autoinstaller
@@ -714,26 +735,12 @@ function m_handler_dist()
     # Build the container
     #
 
-    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
-    m_release=`echo "$m_release_full" | cut -d . -f 1,2`
-    m_exit_on_error "cannot get OSXFUSE release version."
-
-    local md_osxfuse_out="$M_CONF_TMPDIR/osxfuse-$m_release_full"
-    local md_osxfuse_root="$md_osxfuse_out/pkgroot/"
-
-    if [ -e "$md_osxfuse_out" ]
-    then
-        m_set_suprompt "to remove a previously built container package"
-        sudo -p "$m_suprompt" rm -rf "$md_osxfuse_out"
-        # ignore any errors
-    fi
-
     m_log "building '$M_PKGNAME_OSXFUSE'"
 
-    mkdir "$md_osxfuse_out"
+    mkdir -p "$md_osxfuse_out"
     m_exit_on_error "cannot create directory '$md_osxfuse_out'."
 
-    mkdir "$md_osxfuse_root"
+    mkdir -p "$md_osxfuse_root"
     m_exit_on_error "cannot create directory '$md_osxfuse_root'."
 
     m_log "copying generic container package payload"
@@ -962,121 +969,214 @@ __END_DISTRIBUTION
     pkgutil --flatten "$md_osxfuse_out/OSXFUSE" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
     m_exit_on_error "cannot flatten package '$M_PKGNAME_OSXFUSE'."
 
+    echo >$m_stdout
+    m_log "succeeded, results in '$md_osxfuse_out'."
+    echo >$m_stdout
+
+    return 0
+}
+
+function m_handler_release()
+{
+    m_active_target="release"
+
+    m_platform="$M_DEFAULT_PLATFORM"
+    m_set_platform
+
+    m_set_srcroot
+
+    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
+    m_release=`echo "$m_release_full" | cut -d . -f 1,2`
+    m_exit_on_error "cannot get OSXFUSE release version."
+
+    local mr_osxfuse_out="$M_CONF_TMPDIR/osxfuse-release-$m_release_full"
+
+    local mr_dmg_name="OSXFUSE-$m_release_full.dmg"
+    local mr_dmg_path="$mr_osxfuse_out/$mr_dmg_name"
+
+    if [ "$m_shortcircuit" != "1" ]
+    then
+        if [ -e "$mr_osxfuse_out" ]
+        then
+            m_set_suprompt "to remove a previously built release diskimage"
+            sudo -p "$m_suprompt" rm -rf "$mr_osxfuse_out"
+            m_exit_on_error "failed to clean up previous built release diskimage."
+        fi
+        if [ -e "$M_CONF_TMPDIR/osxfuse-release-"* ]
+        then
+            m_warn "removing unrecognized version of release diskimage"
+            m_set_suprompt "to remove unrecognized version of release diskimage"
+            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-release-"*
+            m_exit_on_error "failed to clean up unrecognized version of release diskimagee."
+        fi
+    else
+        if [ -e "$mr_dmg_path" ]
+        then
+            echo >$m_stdout
+            m_log "succeeded (shortcircuited), results in '$mr_osxfuse_out'."
+            echo >$m_stdout
+            return 0
+        fi
+    fi
+
+    if [ "$1" == "clean" ]
+    then
+        m_handler_dist clean
+        return 0
+    fi
+
+    m_handler_dist
+
+    m_platform="$M_DEFAULT_PLATFORM"
+    m_set_platform
+
+    m_set_srcroot
+
+    local mr_dist_out="$M_CONF_TMPDIR/osxfuse-dist-$m_release_full"
+
+    # Locate plistsigner and private key
+    #
+
+    m_log "locating plistsigner and private key"
+
+    local mr_ai_builddir="$m_srcroot/prefpane/autoinstaller/build"
+    local mr_ai="$mr_ai_builddir/$m_configuration/autoinstall-osxfuse-core"
+    if [ ! -x "$mr_ai" ]
+    then
+        false
+        m_exit_on_error "cannot find autoinstaller '$mr_ai'."
+    fi
+    local mr_plistsigner="$mr_ai_builddir/$m_configuration/plist_signer"
+    if [ ! -x "$mr_plistsigner" ]
+    then
+        false
+        m_exit_on_error "cannot find plist signer '$mr_plistsigner'."
+    fi
+
+    if [ ! -f "$M_CONF_PRIVKEY" ]
+    then
+        false
+        m_exit_on_error "cannot find OSXFUSE private key in '$M_CONF_PRIVKEY'."
+    fi
+
+    mkdir -p "$mr_osxfuse_out"
+    m_exit_on_error "cannot make directory '$mr_osxfuse_out'."
+
     # Create the distribution volume
     #
-    local md_volume_name="FUSE for OS X"
-    local md_scratch_dmg="$md_osxfuse_out/osxfuse-scratch.dmg"
+    local mr_volume_name="FUSE for OS X"
+    local mr_scratch_dmg="$mr_osxfuse_out/osxfuse-scratch.dmg"
     hdiutil create -layout NONE -size 10m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
-        -volname "$md_volume_name" "$md_scratch_dmg" >$m_stdout 2>$m_stderr
+        -volname "$mr_volume_name" "$mr_scratch_dmg" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create scratch OSXFUSE disk image."
 
     # Attach/mount the volume
     #
-    hdiutil attach -private -nobrowse "$md_scratch_dmg" >$m_stdout 2>$m_stderr
+    hdiutil attach -private -nobrowse "$mr_scratch_dmg" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot attach scratch OSXFUSE disk image."
 
-    local md_volume_path="/Volumes/$md_volume_name"
+    local mr_volume_path="/Volumes/$mr_volume_name"
 
     # Copy over the license file
     #
-    cp "$m_srcroot/packaging/diskimage/License.rtf" "$md_volume_path"
+    cp "$m_srcroot/packaging/diskimage/License.rtf" "$mr_volume_path"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot copy OSXFUSE license to scratch disk image."
     fi
 
-    xcrun SetFile -a E "$md_volume_path/License.rtf"
+    xcrun SetFile -a E "$mr_volume_path/License.rtf"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot hide extension of 'License.rtf'."
     fi
 
     # Copy over the package
     #
-    local md_pkgname_installer="Install OSXFUSE $m_release.pkg"
-    cp -pRX "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_volume_path/$md_pkgname_installer"
+    local mr_pkgname_installer="Install OSXFUSE $m_release.pkg"
+    cp -pRX "$mr_dist_out/$M_PKGNAME_OSXFUSE" "$mr_volume_path/$mr_pkgname_installer"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot copy '$M_PKGNAME_OSXFUSE' to scratch disk image."
     fi
 
-    xcrun SetFile -a E "$md_volume_path/$md_pkgname_installer"
+    xcrun SetFile -a E "$mr_volume_path/$mr_pkgname_installer"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot hide extension of installer package."
     fi
 
     # Copy over the website link
     #
-    cp "$m_srcroot/packaging/diskimage/OSXFUSE Website.webloc" "$md_volume_path"
+    cp "$m_srcroot/packaging/diskimage/OSXFUSE Website.webloc" "$mr_volume_path"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot copy website link to scratch disk image."
     fi
 
-    xcrun SetFile -a E "$md_volume_path/OSXFUSE Website.webloc"
+    xcrun SetFile -a E "$mr_volume_path/OSXFUSE Website.webloc"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot hide extension of 'OXSFUSE Website.webloc'."
     fi
 
     # Create the .engine_install file
     #
-    local md_engine_install="$md_volume_path/.engine_install"
-    cat > "$md_engine_install" <<__END_ENGINE_INSTALL
+    local mr_engine_install="$mr_volume_path/.engine_install"
+    cat > "$mr_engine_install" <<__END_ENGINE_INSTALL
 #!/bin/sh -p
-/usr/sbin/installer -pkg "\$1/$md_pkgname_installer" -target /
+/usr/sbin/installer -pkg "\$1/$mr_pkgname_installer" -target /
 __END_ENGINE_INSTALL
 
-    chmod +x "$md_engine_install"
+    chmod +x "$mr_engine_install"
     m_exit_on_error "cannot set permissions on autoinstaller engine file."
 
 
     # Set the custom icon
     #
     cp -pRX "$m_srcroot/packaging/images/osxfuse.icns" \
-        "$md_volume_path/.VolumeIcon.icns"
+        "$mr_volume_path/.VolumeIcon.icns"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot copy custom volume icon to scratch disk image."
     fi
 
-    xcrun SetFile -a C "$md_volume_path"
+    xcrun SetFile -a C "$mr_volume_path"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot set custom volume icon on scratch disk image."
     fi
 
     # Set custom background
     #
-    mkdir "$md_volume_path/.background"
+    mkdir "$mr_volume_path/.background"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot make directory '.background' on scratch disk image."
     fi
 
-    cp "$m_srcroot/packaging/diskimage/background.png" "$md_volume_path/.background/"
+    cp "$m_srcroot/packaging/diskimage/background.png" "$mr_volume_path/.background/"
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot copy background picture to scratch disk image."
     fi
@@ -1085,7 +1185,7 @@ __END_ENGINE_INSTALL
     #
     echo '
         tell application "Finder"
-            tell disk "'$md_volume_name'"
+            tell disk "'$mr_volume_name'"
                 open
                 set current view of container window to icon view
                 set toolbar visible of container window to false
@@ -1095,7 +1195,7 @@ __END_ENGINE_INSTALL
                 set icon size of theViewOptions to 128
                 set background picture of theViewOptions to file ".background:background.png"
                 set position of item "License.rtf" of container window to {100, 230}
-                set position of item "'$md_pkgname_installer'" of container window to {250, 230}
+                set position of item "'$mr_pkgname_installer'" of container window to {250, 230}
                 set position of item "OSXFUSE Website.webloc" of container window to {400, 230}
                 close
                 open
@@ -1106,33 +1206,31 @@ __END_ENGINE_INSTALL
     ' | osascript
     if [ $? -ne 0 ]
     then
-        hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
         m_exit_on_error "cannot customize the scratch disk image."
     fi
 
-    chmod -Rf go-w "$md_volume_path"
+    chmod -Rf go-w "$mr_volume_path"
     sync
     sync
     # ignore errors
 
     # Detach the volume.
-    hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+    hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
     if [ $? -ne 0 ]
     then
         false
-        m_exit_on_error "cannot detach volume '$md_volume_path'."
+        m_exit_on_error "cannot detach volume '$mr_volume_path'."
     fi
 
     # Convert to a read-only compressed dmg
     #
-    local md_dmg_name="OSXFUSE-$m_release_full.dmg"
-    local md_dmg_path="$md_osxfuse_out/$md_dmg_name"
-    hdiutil convert -imagekey zlib-level=9 -format UDZO "$md_scratch_dmg" \
-        -o "$md_dmg_path" >$m_stdout 2>$m_stderr
+    hdiutil convert -imagekey zlib-level=9 -format UDZO "$mr_scratch_dmg" \
+        -o "$mr_dmg_path" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot finalize OSXFUSE distribution disk image."
 
-    rm -f "$md_scratch_dmg"
+    rm -f "$mr_scratch_dmg"
     # ignore any errors
 
     m_log "building redistribution package"
@@ -1140,47 +1238,47 @@ __END_ENGINE_INSTALL
     # Build redistribution package
     #
 
-    local md_redist_pkgsrc="$md_osxfuse_out/redistpkgsrc"
-    local md_redist_root="$md_osxfuse_out/redistroot"
+    local mr_redist_pkgsrc="$mr_osxfuse_out/redistpkgsrc"
+    local mr_redist_root="$mr_osxfuse_out/redistroot"
 
-    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_REDIST" "$md_redist_pkgsrc"
-    m_exit_on_error "cannot copy redistribution package source to '$md_redist_pkgsrc'."
-    cp "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_redist_pkgsrc/Scripts/OSXFUSE.pkg"
-    m_exit_on_error "cannot copy OSXFUSE distribution package to '$md_redist_pkgsrc/Scripts'."
+    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_REDIST" "$mr_redist_pkgsrc"
+    m_exit_on_error "cannot copy redistribution package source to '$mr_redist_pkgsrc'."
+    cp "$mr_dist_out/$M_PKGNAME_OSXFUSE" "$mr_redist_pkgsrc/Scripts/OSXFUSE.pkg"
+    m_exit_on_error "cannot copy OSXFUSE distribution package to '$mr_redist_pkgsrc/Scripts'."
 
-    mkdir -p "$md_redist_root"
-    m_exit_on_error "cannot make directory '$md_redist_root'."
+    mkdir -p "$mr_redist_root"
+    m_exit_on_error "cannot make directory '$mr_redist_root'."
 
-    m_set_suprompt "to chown '$md_redist_root/'."
-    sudo -p "$m_suprompt" chown -R root:wheel "$md_redist_root/"
-    m_exit_on_error "cannot chown '$md_redist_root'."
+    m_set_suprompt "to chown '$mr_redist_root/'."
+    sudo -p "$m_suprompt" chown -R root:wheel "$mr_redist_root/"
+    m_exit_on_error "cannot chown '$mr_redist_root'."
 
-    m_build_pkg "$m_release_full" "$md_redist_pkgsrc" "$md_redist_root" "$M_PKGID_REDIST" "$M_PKGNAME_REDIST" "/" "$md_osxfuse_out"
+    m_build_pkg "$m_release_full" "$mr_redist_pkgsrc" "$mr_redist_root" "$M_PKGID_REDIST" "$M_PKGNAME_REDIST" "/" "$mr_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_REDIST'."
 
-    m_set_suprompt "to remove directory '$md_redist_root'."
-    sudo -p "$m_suprompt" rm -rf "$md_redist_root"
+    m_set_suprompt "to remove directory '$mr_redist_root'."
+    sudo -p "$m_suprompt" rm -rf "$mr_redist_root"
     # ignore any errors
 
-    rm -rf "$md_redist_pkgsrc"
+    rm -rf "$mr_redist_pkgsrc"
     # ignore any errors
 
     m_log "creating autoinstaller rules"
 
     # Make autoinstaller rules file
     #
-    local md_dmg_hash=$(openssl sha1 -binary "$md_dmg_path" | openssl base64)
-    local md_dmg_size=$(stat -f%z "$md_dmg_path")
+    local mr_dmg_hash=$(openssl sha1 -binary "$mr_dmg_path" | openssl base64)
+    local mr_dmg_size=$(stat -f%z "$mr_dmg_path")
 
-    local md_rules_plist="$md_osxfuse_out/DeveloperRelease.plist"
-    local md_download_url="https://github.com/downloads/osxfuse/osxfuse/$md_dmg_name"
+    local mr_rules_plist="$mr_osxfuse_out/DeveloperRelease.plist"
+    local mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$mr_dmg_name"
     if [ "$m_developer" == "0" ]
     then
-        md_rules_plist="$md_osxfuse_out/CurrentRelease.plist"
-        md_download_url="https://github.com/downloads/osxfuse/osxfuse/$md_dmg_name"
+        mr_rules_plist="$mr_osxfuse_out/CurrentRelease.plist"
+        mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$mr_dmg_name"
     fi
 
-cat > "$md_rules_plist" <<__END_RULES_PLIST
+cat > "$mr_rules_plist" <<__END_RULES_PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -1189,87 +1287,27 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
   <array>
 __END_RULES_PLIST
 
-    if [[ "$M_PLATFORMS" =~ "10.8" ]]
-    then
-cat >> "$md_rules_plist" <<__END_RULES_PLIST
+    for m_p in $M_PLATFORMS
+    do
+cat >> "$mr_rules_plist" <<__END_RULES_PLIST
     <dict>
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.8" AND Ticket.version != "$m_version_mountainlion"</string>
+      <string>SystemVersion.ProductVersion beginswith "$m_p" AND Ticket.version != "$m_release_full"</string>
       <key>Version</key>
       <string>$m_version_mountainlion</string>
       <key>Codebase</key>
-      <string>$md_download_url</string>
+      <string>$mr_download_url</string>
       <key>Hash</key>
-      <string>$md_dmg_hash</string>
+      <string>$mr_dmg_hash</string>
       <key>Size</key>
-      <string>$md_dmg_size</string>
+      <string>$mr_dmg_size</string>
     </dict>
 __END_RULES_PLIST
-    fi
+    done
 
-    if [[ "$M_PLATFORMS" =~ "10.7" ]]
-    then
-cat >> "$md_rules_plist" <<__END_RULES_PLIST
-    <dict>
-      <key>ProductID</key>
-      <string>$M_OSXFUSE_PRODUCT_ID</string>
-      <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_version_lion"</string>
-      <key>Version</key>
-      <string>$m_version_lion</string>
-      <key>Codebase</key>
-      <string>$md_download_url</string>
-      <key>Hash</key>
-      <string>$md_dmg_hash</string>
-      <key>Size</key>
-      <string>$md_dmg_size</string>
-    </dict>
-__END_RULES_PLIST
-    fi
-
-    if [[ "$M_PLATFORMS" =~ "10.6" ]]
-    then
-cat >> "$md_rules_plist" <<__END_RULES_PLIST
-    <dict>
-      <key>ProductID</key>
-      <string>$M_OSXFUSE_PRODUCT_ID</string>
-      <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_version_snowleopard"</string>
-      <key>Version</key>
-      <string>$m_version_snowleopard</string>
-      <key>Codebase</key>
-      <string>$md_download_url</string>
-      <key>Hash</key>
-      <string>$md_dmg_hash</string>
-      <key>Size</key>
-      <string>$md_dmg_size</string>
-    </dict>
-__END_RULES_PLIST
-    fi
-
-    if [[ "$M_PLATFORMS" =~ "10.5" ]]
-    then
-cat >> "$md_rules_plist" <<__END_RULES_PLIST
-    <dict>
-      <key>ProductID</key>
-      <string>$M_OSXFUSE_PRODUCT_ID</string>
-      <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.5" AND Ticket.version != "$m_version_leopard"</string>
-      <key>Version</key>
-      <string>$m_version_leopard</string>
-      <key>Codebase</key>
-      <string>$md_download_url</string>
-      <key>Hash</key>
-      <string>$md_dmg_hash</string>
-      <key>Size</key>
-      <string>$md_dmg_size</string>
-    </dict>
-__END_RULES_PLIST
-    fi
-
-cat >> "$md_rules_plist" <<__END_RULES_PLIST
+cat >> "$mr_rules_plist" <<__END_RULES_PLIST
   </array>
 </dict>
 </plist>
@@ -1282,12 +1320,12 @@ __END_RULES_PLIST
 
     m_set_suprompt "to sign the rules file"
     sudo -p "$m_suprompt" \
-        "$md_plistsigner" --sign --key "$M_CONF_PRIVKEY" \
-            "$md_rules_plist" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot sign the rules file '$md_rules_plist' with key '$M_CONF_PRIVKEY'."
+        "$mr_plistsigner" --sign --key "$M_CONF_PRIVKEY" \
+            "$mr_rules_plist" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot sign the rules file '$mr_rules_plist' with key '$M_CONF_PRIVKEY'."
 
     echo >$m_stdout
-    m_log "succeeded, results in '$md_osxfuse_out'."
+    m_log "succeeded, results in '$mr_osxfuse_out'."
     echo >$m_stdout
 
     return 0
@@ -2128,7 +2166,11 @@ function m_handler()
     "clean")
         m_handler_examples clean
         m_handler_lib clean
-        m_handler_dist clean
+        m_handler_release clean
+    ;;
+
+    "release")
+        m_handler_release
     ;;
 
     "dist")

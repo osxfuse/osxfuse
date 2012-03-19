@@ -50,6 +50,6 @@ To clone the source repository into a newly created subdirectory named `osxfuse`
 
 Run the following command in the cloned repository to build OSXFUSE from source:
 
-    OSXFUSE_PRIVATE_KEY=prefpane/autoinstaller/TestKeys/private_key.der ./build.sh -t dist
+    ./build.sh -t dist
 
 Note: The specified test key is used to sign the file `CurrentRelease.plist` or `DeveloperRelease.plist` (in case of a beta release). These files represent the server-side of the update mechanism. Using a different private key has no impact on the resulting binaries or the ability to update OSXFUSE.
