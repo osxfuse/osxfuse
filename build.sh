@@ -174,8 +174,8 @@ Usage:
 The target keywords mean the following:
     clean       clean all targets
     release     create release disk image and updater files
-    dist        create a multiplatform distribution package
-    core        create a multiplatform core package
+    dist        create a multi-platform distribution package
+    core        create a multi-platform core package
     osxfusefs   build file system bundle
     kext        build kernel extension
     examples    build example file systems (e.g. fusexmp_fh and hello)
@@ -1022,7 +1022,12 @@ function m_handler_release()
     if [ "$1" == "clean" ]
     then
         m_handler_dist clean
-        return 0
+        local retval=$?
+
+        m_active_target="release"
+
+        m_log "cleaned"
+        return $retval
     fi
 
     m_handler_dist
@@ -1346,7 +1351,7 @@ function m_handler_osxfusefs()
         m_active_target="osxfusefs"
         rm -rf "$kernel_dir/build/"
 
-        m_log "cleaned (platform $m_platform)"
+        m_log "cleaned"
         return 0
     fi
 
@@ -1608,7 +1613,6 @@ function m_handler_core()
 
     if [ "$m_shortcircuit" != "1" ]
     then
-        m_handler_osxfusefs clean
         if [ -e "$ms_osxfuse_out" ]
         then
             m_set_suprompt "to remove a previously built core package"
@@ -1634,8 +1638,12 @@ function m_handler_core()
 
     if [ "$1" == "clean" ]
     then
+        m_handler_osxfusefs clean
         local retval=$?
-        m_log "cleaned (platform $m_platform)"
+
+        m_active_target="core"
+
+        m_log "cleaned"
         return $retval
     fi
 
