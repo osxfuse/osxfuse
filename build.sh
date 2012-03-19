@@ -1235,34 +1235,6 @@ __END_ENGINE_INSTALL
 
     m_log "building redistribution package"
 
-    # Build redistribution package
-    #
-
-    local mr_redist_pkgsrc="$mr_osxfuse_out/redistpkgsrc"
-    local mr_redist_root="$mr_osxfuse_out/redistroot"
-
-    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_REDIST" "$mr_redist_pkgsrc"
-    m_exit_on_error "cannot copy redistribution package source to '$mr_redist_pkgsrc'."
-    cp "$mr_dist_out/$M_PKGNAME_OSXFUSE" "$mr_redist_pkgsrc/Scripts/OSXFUSE.pkg"
-    m_exit_on_error "cannot copy OSXFUSE distribution package to '$mr_redist_pkgsrc/Scripts'."
-
-    mkdir -p "$mr_redist_root"
-    m_exit_on_error "cannot make directory '$mr_redist_root'."
-
-    m_set_suprompt "to chown '$mr_redist_root/'."
-    sudo -p "$m_suprompt" chown -R root:wheel "$mr_redist_root/"
-    m_exit_on_error "cannot chown '$mr_redist_root'."
-
-    m_build_pkg "$m_release_full" "$mr_redist_pkgsrc" "$mr_redist_root" "$M_PKGID_REDIST" "$M_PKGNAME_REDIST" "/" "$mr_osxfuse_out"
-    m_exit_on_error "cannot create '$M_PKGNAME_REDIST'."
-
-    m_set_suprompt "to remove directory '$mr_redist_root'."
-    sudo -p "$m_suprompt" rm -rf "$mr_redist_root"
-    # ignore any errors
-
-    rm -rf "$mr_redist_pkgsrc"
-    # ignore any errors
-
     m_log "creating autoinstaller rules"
 
     # Make autoinstaller rules file
