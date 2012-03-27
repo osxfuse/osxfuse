@@ -204,7 +204,7 @@ kextunload -b com.github.osxfuse.filesystems.osxfusefs > /dev/null 2>&1
 # 2. Remove MacFUSE compatibility layer
 if [ -f "$BOMFILE_MACFUSE" ]
 then
-  if /usr/bin/lsbom "$BOMFILE_MACFUSE" | grep libmacfuse > /dev/null
+  if /usr/bin/lsbom "$BOMFILE_MACFUSE" | grep "macfuse.pc" > /dev/null
   then
     `dirname "$0"`/uninstall-macfuse-core.sh
   fi
