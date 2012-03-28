@@ -13,18 +13,13 @@
 #         Therefore, do not set M_CONF_TMPDIR to such a directory.
 #
 readonly M_CONF_TMPDIR=/tmp
-
-if [ -n "$OSXFUSE_PRIVATE_KEY" ]; then
-    readonly M_CONF_PRIVKEY="$OSXFUSE_PRIVATE_KEY"
-else
-    readonly M_CONF_PRIVKEY="$HOME/.osxfuse_private_key"
-fi
+readonly M_PLISTSIGNER_TEST_KEY="`dirname $0`/prefpane/autoinstaller/TestKeys/private_key.der"
 
 # Other constants
 #
 readonly M_PROGDESC="OSXFUSE build tool"
-readonly M_PROGNAME=build
-readonly M_PROGVERS=1.0
+readonly M_PROGNAME=`basename $0`
+readonly M_PROGVERS=1.1
 
 readonly M_DEFAULT_VALUE=__default__
 
@@ -53,6 +48,8 @@ declare m_stderr=/dev/stderr
 declare m_stdout=/dev/stdout
 declare m_suprompt=" invalid "
 declare m_target="$M_DEFAULT_TARGET"
+declare m_signing_id=""
+declare m_plistsigner_key=""
 declare m_usdk_dir=""
 declare m_compiler=""
 declare m_xcode_dir=""
@@ -163,12 +160,15 @@ $M_PROGDESC version $M_PROGVERS
 Copyright (C) 2011 OSXFUSE Project. All Rights Reserved.
 Copyright (C) 2008 Google. All Rights Reserved.
 Usage:
-  $M_PROGNAME [-dhqsv] [-c configuration] [-p platform] -t target
+  $M_PROGNAME
+      [-dhqsv] [-c configuration] [-p platform] [-i identity] [-u keyfile]
+      -t target
 
   * configuration is one of: $M_CONFIGURATIONS (default is $m_configuration)
   * platform is one of: $M_PLATFORMS (default is the host's platform)
   * target is one of: $M_TARGETS
   * platforms can only be specified for: $M_TARGETS_WITH_PLATFORM
+  * identity and keyfile are ignored for all targets but dist
 
 The target keywords mean the following:
     clean       clean all targets
@@ -177,6 +177,13 @@ The target keywords mean the following:
     lib         build the user-space library (e.g. to run fusexmp_fh)
     reload      rebuild and reload the kernel extension
     smalldist   create a platform-specific distribution package
+
+Options for target dist are:
+
+    -i identity
+        sign the installer package with the specified signing identity
+    -u keyfile
+        sign the update rules file with the specified private key
 
 Other options are:
     -d  create a developer prerelease package instead of a regular release
@@ -685,10 +692,20 @@ function m_handler_dist()
     fi
 
     m_log "locating OSXFUSE private key"
-    if [ ! -f "$M_CONF_PRIVKEY" ]
+
+    if [ -z "$m_plistsigner_key" ]
+    then
+        m_plistsigner_key="$HOME/.osxfuse_private_key"
+    fi
+    if [ ! -f "$m_plistsigner_key" ]
+    then
+        m_plistsigner_key="$M_PLISTSIGNER_TEST_KEY"
+        m_warn "using test key to sign update rules file"
+    fi
+    if [ ! -f "$m_plistsigner_key" ]
     then
         false
-        m_exit_on_error "cannot find OSXFUSE private key in '$M_CONF_PRIVKEY'."
+        m_exit_on_error "cannot find private key '$m_plistsigner_key'."
     fi
 
     # Autoinstaller
@@ -1080,8 +1097,25 @@ __END_DISTRIBUTION
 
     m_log "flatten installer package '$M_PKGNAME_OSXFUSE'"
 
-    pkgutil --flatten "$md_osxfuse_out/OSXFUSE" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
+    pkgutil --flatten "$md_osxfuse_out/OSXFUSE" "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg"
     m_exit_on_error "cannot flatten package '$M_PKGNAME_OSXFUSE'."
+
+    # Sign installer package
+    #
+    if [ -z "$m_signing_id" ]
+    then
+        m_signing_id="Developer ID Installer: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+    fi
+    productsign --sign "$m_signing_id" "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
+    if [ $? -eq 0 ]
+    then
+        rm -rf "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg"
+    else
+        mv "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
+        m_warn "cannot sign installer package with id '$m_signing_id', proceed with unsigned package."
+    fi
+
+    rm -rf "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg"
 
     # Create the distribution volume
     #
@@ -1399,13 +1433,13 @@ __END_RULES_PLIST
     # Sign the output rules
     #
 
-    m_log "signing autoinstaller rules"
+    m_log "signing autoinstaller rules with key '$m_plistsigner_key'"
 
     m_set_suprompt "to sign the rules file"
     sudo -p "$m_suprompt" \
-        "$md_plistsigner" --sign --key "$M_CONF_PRIVKEY" \
+        "$md_plistsigner" --sign --key "$m_plistsigner_key" \
             "$md_rules_plist" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot sign the rules file '$md_rules_plist' with key '$M_CONF_PRIVKEY'."
+    m_exit_on_error "cannot sign the rules file '$md_rules_plist' with key '$m_plistsigner_key'."
 
     echo >$m_stdout
     m_log "succeeded, results in '$md_osxfuse_out'."
@@ -1933,6 +1967,16 @@ function m_read_input()
         -v)
             m_version
             exit 0
+            shift
+            ;;
+        -i)
+            m_signing_id="$2"
+            shift
+            shift
+            ;;
+        -u)
+            m_plistsigner_key="$2"
+            shift
             shift
             ;;
         --)
