@@ -1273,11 +1273,11 @@ __END_ENGINE_INSTALL
     local mr_dmg_size=$(stat -f%z "$mr_dmg_path")
 
     local mr_rules_plist="$mr_osxfuse_out/DeveloperRelease.plist"
-    local mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$md_dmg_name"
+    local mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$mr_dmg_name"
     if [ "$m_developer" == "0" ]
     then
         mr_rules_plist="$mr_osxfuse_out/CurrentRelease.plist"
-        mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$md_dmg_name"
+        mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$mr_dmg_name"
     fi
 
 cat > "$mr_rules_plist" <<__END_RULES_PLIST
