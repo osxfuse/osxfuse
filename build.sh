@@ -159,7 +159,7 @@ $M_PROGDESC version $M_PROGVERS
 Copyright (C) 2008 Google Inc.
 Copyright (C) 2011-2012 Benjamin Fleischer
 All Rights Reserved.
-01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
 Usage:
   $M_PROGNAME
       [-dhqsv] [-c configuration] [-p platform] [-i identity] [-u keyfile]
