@@ -409,8 +409,6 @@ function m_handler_lib()
 
     m_set_platform
 
-    m_set_srcroot
-
     local lib_dir="$m_srcroot"/fuse
     if [ ! -d "$lib_dir" ]
     then
@@ -469,8 +467,6 @@ function m_handler_reload()
     # for this target.
 
     m_set_platform
-
-    m_set_srcroot
 
     local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
@@ -532,8 +528,6 @@ function m_handler_examples()
     m_active_target="examples"
 
     m_set_platform
-
-    m_set_srcroot
 
     local lib_dir="$m_srcroot"/fuse
     if [ ! -d "$lib_dir" ]
@@ -600,8 +594,6 @@ function m_handler_dist()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    m_set_srcroot
-
     m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
     m_release=`echo "$m_release_full" | cut -d . -f 1,2`
     m_exit_on_error "cannot get OSXFUSE release version."
@@ -642,8 +634,6 @@ function m_handler_dist()
 
         m_set_platform
 
-        m_set_srcroot
-
         rm -rf "$m_srcroot/prefpane/autoinstaller/build"
         m_log "cleaned internal subtarget autoinstaller"
 
@@ -668,8 +658,6 @@ function m_handler_dist()
 
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
-
-    m_set_srcroot
 
     m_log "configuration is '$m_configuration'"
     if [ "$m_developer" == "0" ]
@@ -990,8 +978,6 @@ function m_handler_release()
     m_platform="$M_DEFAULT_PLATFORM"
     m_set_platform
 
-    m_set_srcroot
-
     m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
     m_release=`echo "$m_release_full" | cut -d . -f 1,2`
     m_exit_on_error "cannot get OSXFUSE release version."
@@ -1041,8 +1027,6 @@ function m_handler_release()
 
     m_platform="$M_DEFAULT_PLATFORM"
     m_set_platform
-
-    m_set_srcroot
 
     local mr_dist_out="$M_CONF_TMPDIR/osxfuse-dist-$m_release_full"
 
@@ -1337,8 +1321,6 @@ function m_handler_osxfusefs()
 {
     m_active_target="osxfusefs"
 
-    m_set_srcroot
-
     local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
@@ -1492,8 +1474,6 @@ function m_handler_kext()
 
     m_set_platform
 
-    m_set_srcroot
-
     local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
@@ -1599,8 +1579,6 @@ function m_handler_core()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    m_set_srcroot
-
     local lib_dir="$m_srcroot"/fuse
     if [ ! -d "$lib_dir" ]
     then
@@ -1692,8 +1670,6 @@ function m_handler_core()
 
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
-
-    m_set_srcroot
 
     mkdir -p "$ms_osxfuse_build"
     m_exit_on_error "cannot make new build directory '$ms_osxfuse_build'."
@@ -2390,6 +2366,9 @@ function m_handler()
     fi
 
     m_log "supported platforms: $M_PLATFORMS"
+
+    m_set_srcroot
+    m_log "source root: $m_srcroot"
 
     m_validate_input
     m_handler
