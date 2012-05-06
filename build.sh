@@ -51,10 +51,6 @@ declare m_plistsigner_key=""
 declare m_usdk_dir=""
 declare m_compiler=""
 declare m_xcode_dir=""
-declare m_version_leopard=""
-declare m_version_snowleopard=""
-declare m_version_lion=""
-declare m_version_mountainlion=""
 declare m_xcode_version=""
 declare m_xcode_latest=""
 
@@ -1282,7 +1278,7 @@ cat >> "$mr_rules_plist" <<__END_RULES_PLIST
       <key>Predicate</key>
       <string>SystemVersion.ProductVersion beginswith "$m_p" AND Ticket.version != "$m_release_full"</string>
       <key>Version</key>
-      <string>$m_version_mountainlion</string>
+      <string>$m_release_full</string>
       <key>Codebase</key>
       <string>$mr_download_url</string>
       <key>Hash</key>
