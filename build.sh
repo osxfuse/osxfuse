@@ -53,10 +53,6 @@ declare m_plistsigner_key=""
 declare m_usdk_dir=""
 declare m_compiler=""
 declare m_xcode_dir=""
-declare m_version_leopard=""
-declare m_version_snowleopard=""
-declare m_version_lion=""
-declare m_version_mountainlion=""
 declare m_xcode_version=""
 declare m_xcode_latest=""
 
@@ -799,21 +795,6 @@ function m_handler_dist()
         md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_CORE"
         md_platforms="${md_platforms},${md_tmp_os_version}=${i}/$M_PKGNAME_MACFUSE"
 
-        case "$md_tmp_os_version" in
-        10.5)
-            m_version_leopard=$md_tmp_release_version
-        ;;
-        10.6)
-            m_version_snowleopard=$md_tmp_release_version
-        ;;
-        10.7)
-            m_version_lion=$md_tmp_release_version
-        ;;
-        10.8)
-            m_version_mountainlion=$md_tmp_release_version
-        ;;
-        esac
-
         m_log "adding [ '$md_tmp_os_version', '$md_tmp_release_version' ]"
     done
 
@@ -1351,9 +1332,9 @@ cat >> "$md_rules_plist" <<__END_RULES_PLIST
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.8" AND Ticket.version != "$m_version_mountainlion"</string>
+      <string>SystemVersion.ProductVersion beginswith "10.8" AND Ticket.version != "$m_release_full"</string>
       <key>Version</key>
-      <string>$m_version_mountainlion</string>
+      <string>$m_release_full</string>
       <key>Codebase</key>
       <string>$md_download_url</string>
       <key>Hash</key>
@@ -1371,9 +1352,9 @@ cat >> "$md_rules_plist" <<__END_RULES_PLIST
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_version_lion"</string>
+      <string>SystemVersion.ProductVersion beginswith "10.7" AND Ticket.version != "$m_release_full"</string>
       <key>Version</key>
-      <string>$m_version_lion</string>
+      <string>$m_release_full</string>
       <key>Codebase</key>
       <string>$md_download_url</string>
       <key>Hash</key>
@@ -1391,9 +1372,9 @@ cat >> "$md_rules_plist" <<__END_RULES_PLIST
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_version_snowleopard"</string>
+      <string>SystemVersion.ProductVersion beginswith "10.6" AND Ticket.version != "$m_release_full"</string>
       <key>Version</key>
-      <string>$m_version_snowleopard</string>
+      <string>$m_release_full</string>
       <key>Codebase</key>
       <string>$md_download_url</string>
       <key>Hash</key>
@@ -1411,9 +1392,9 @@ cat >> "$md_rules_plist" <<__END_RULES_PLIST
       <key>ProductID</key>
       <string>$M_OSXFUSE_PRODUCT_ID</string>
       <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "10.5" AND Ticket.version != "$m_version_leopard"</string>
+      <string>SystemVersion.ProductVersion beginswith "10.5" AND Ticket.version != "$m_release_full"</string>
       <key>Version</key>
-      <string>$m_version_leopard</string>
+      <string>$m_release_full</string>
       <key>Codebase</key>
       <string>$md_download_url</string>
       <key>Hash</key>
