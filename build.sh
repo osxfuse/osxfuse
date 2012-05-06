@@ -1576,8 +1576,8 @@ function m_handler_smalldist()
     cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
-    cp -pRX "$ms_built_products_dir/$M_KEXT_NAME.dSYM" "$ms_osxfuse_out/$M_KEXT_NAME.dSYM"
-    m_exit_on_error "cannot copy '$M_KEXT_NAME.dSYM' to destination."
+    cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
+    m_exit_on_error "cannot copy 'Debug' to destination."
 
     cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_bundle_support_dir/load_osxfusefs"
     m_exit_on_error "cannot copy 'load_osxfusefs' to destination."
