@@ -1746,7 +1746,7 @@ function m_handler_core()
     ln -s osxfuse.pc "$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc"
     m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
 
-    # generate dsym
+    # Generate dSYM bundle
     xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse.dylib
     m_exit_on_error "cannot generate debugging information for libosxfuse."
 
@@ -1773,11 +1773,11 @@ function m_handler_core()
     ln -s libfuse.dylib "$ms_macfuse_root/usr/local/lib/libfuse.0.dylib"
     m_exit_on_error "cannot create compatibility symlink 'libfuse.0.dylib'."
 
-    # generate dsym
-#   xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse.dylib
-#   m_exit_on_error "cannot generate debugging information for libfuse."
-#   xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse_ino64.dylib
-#   m_exit_on_error "cannot generate debugging information for libfuse_ino64."
+    # Generate dSYM bundles
+    xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse.dylib
+    m_exit_on_error "cannot generate debugging information for libfuse."
+    xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse_ino64.dylib
+    m_exit_on_error "cannot generate debugging information for libfuse_ino64."
 
     # Build OSXFUSE.framework
     #
@@ -1797,6 +1797,7 @@ function m_handler_core()
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
 
     mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
+    mv "$ms_macfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
 #   mkdir -p "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
 #   m_exit_on_error "cannot create directory for Xcode templates."
 #   ln -s "/Library/Frameworks/OSXFUSE.framework/Resources/ProjectTemplates/" "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/OSXFUSE"
