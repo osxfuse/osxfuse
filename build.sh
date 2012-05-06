@@ -1649,7 +1649,7 @@ function m_handler_smalldist()
     ln -s osxfuse.pc "$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc"
     m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
 
-    # generate dsym
+    # Generate dSYM bundles
     xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i32.dylib
     m_exit_on_error "cannot generate debugging information for libosxfuse_i32."
     xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse_i64.dylib
@@ -1666,7 +1666,7 @@ function m_handler_smalldist()
     xcodebuild -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/libmacfuse*.dylib "$ms_macfuse_root/usr/local/lib/"
+    cp -pRX build/"$m_configuration"/libmacfuse* "$ms_macfuse_root/usr/local/lib/"
     m_exit_on_error "cannot copy 'libmacfuse*.dylib' to destination."
 
     for f in "$ms_macfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
@@ -1704,6 +1704,7 @@ function m_handler_smalldist()
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
 
     mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
+    mv "$ms_macfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
 #   mkdir -p "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
 #   m_exit_on_error "cannot create directory for Xcode templates."
 #   ln -s "/Library/Frameworks/OSXFUSE.framework/Resources/ProjectTemplates/" "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/OSXFUSE"
