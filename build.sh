@@ -1552,8 +1552,8 @@ function m_handler_kext()
     cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
-    cp -pRX "$ms_built_products_dir/$M_KEXT_NAME.dSYM" "$ms_osxfuse_out/$M_KEXT_NAME.dSYM"
-    m_exit_on_error "cannot copy '$M_KEXT_NAME.dSYM' to destination."
+    cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
+    m_exit_on_error "cannot copy 'Debug' to destination."
 
     m_set_suprompt "to set permissions on newly built kernel extension"
     sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_out/$M_KEXT_NAME"
