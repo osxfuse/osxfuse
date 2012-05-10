@@ -21,12 +21,10 @@ The build script locates automatically all supported installations of Xcode in t
 
 * Building OSXFUSE on Mac OS X 10.6:
   - Building OSXFUSE for Mac OS X 10.5 requires Xcode 3.2
-  - Building OSXFUSE for Mac OS X 10.6 requires Xcode 3.2 / 4.0
-  - Building OSXFUSE for Mac OS X 10.7 is not supported
+  - Building OSXFUSE for Mac OS X 10.6 and later requires Xcode 3.2 or 4.0
 * Building OSXFUSE on Mac OS X 10.7:
   - Building OSXFUSE for Mac OS X 10.5 requires Xcode 3.2
-  - Building OSXFUSE for Mac OS X 10.6 requires Xcode 3.2 / 4.1 / 4.2 / 4.3
-  - Building OSXFUSE for Mac OS X 10.7 requires Xcode 4.1 / 4.2 / 4.3
+  - Building OSXFUSE for Mac OS X 10.6 and later requires Xcode 3.2, 4.1, 4.2 or 4.3
 
 ---
 
