@@ -2115,7 +2115,7 @@ function m_platform_realistic_add()
     local platform="$1"
 
     local _IFS="$IFS"; IFS=" "
-    for p in $M_PLATFORMS_REALISTIC
+    for p in $M_PLATFORMS
     do
         if [[ "$p" = "$platform" ]]
         then
@@ -2281,6 +2281,9 @@ function m_handler()
         M_SDK_106_XCODE="$M_XCODE32"
         M_SDK_106_COMPILER="$M_XCODE32_COMPILER"
         m_platform_realistic_add "10.6"
+
+        m_platform_add "10.7"
+        m_platform_add "10.8"
     fi
     if [[ -n "$M_XCODE40" ]]
     then
@@ -2290,6 +2293,9 @@ function m_handler()
         M_SDK_106_XCODE="$M_XCODE40"
         M_SDK_106_COMPILER="$M_XCODE40_COMPILER"
         m_platform_realistic_add "10.6"
+
+        m_platform_add "10.7"
+        m_platform_add "10.8"
     fi
     if [[ -n "$M_XCODE41" ]]
     then
