@@ -1,30 +1,28 @@
 #!/bin/sh
-# Copyright 2011, OSXFUSE Project
-# All rights reserved.
 
 FUSEFS_FS="/Library/Filesystems/fusefs.fs"
-KEXT_ID=com.google.filesystems.fusefs
+KEXT_ID="com.google.filesystems.fusefs"
 
 PREFPANE="/Library/PreferencePanes/MacFUSE.prefPane"
-PKG_ID=com.google.macfuse
+PKG_ID="com.google.macfuse"
 
 PREFERENCES="/Library/Preferences/com.google.macfuse.plist"
 
-if [ ! -d "$FUSEFS_FS" ]
+if [ ! -d "${FUSEFS_FS}" ]
 then
     exit 0
 fi
 
 # Unload MacFUSE kernel extension
-if [ -n "`kextstat -l -b $KEXT_ID`" ]
+if [[ -n "`kextstat -l -b "${KEXT_ID}"`" ]]
 then
-	kextunload -b $KEXT_ID 
+    kextunload -b "${KEXT_ID}" 
 fi
 
 # Remove MacFUSE container package
-rm -rf "$PREFPANE" > /dev/null 2>&1
-pkgutil --forget $PKG_ID
+rm -rf "${PREFPANE}" > /dev/null 2>&1
+pkgutil --forget "${PKG_ID}"
 
-rm -f "$PREFERENCES" > /dev/null 2>&1
+rm -f "${PREFERENCES}" > /dev/null 2>&1
 
 exit 0
