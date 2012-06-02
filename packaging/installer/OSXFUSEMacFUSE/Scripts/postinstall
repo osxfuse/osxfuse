@@ -7,4 +7,7 @@ FUSE_PC="/usr/local/lib/pkgconfig/fuse.pc"
 # Restore link from fuse.pc to osxfuse.pc that might have been removed
 ln -sf "osxfuse.pc" "$FUSE_PC"
 
+# Make sure /usr/local/lib is readable
+chmod u+rx,g+rx,o+rx "/usr/local/lib"
+
 exit 0

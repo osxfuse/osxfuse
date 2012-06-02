@@ -2,5 +2,6 @@
 <pkg-info auth="root" followSymLinks="true">
 	<scripts>
 		<preinstall file="./preinstall"/>
+        <postinstall file="./postinstall"/>
 	</scripts>
 </pkg-info>

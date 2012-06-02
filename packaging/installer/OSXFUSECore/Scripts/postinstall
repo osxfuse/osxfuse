@@ -1,0 +1,9 @@
+#!/bin/sh
+# Copyright 2011, OSXFUSE Project
+# All rights reserved.
+
+# Make sure /usr/local/lib and /usr/local/include are readable
+chmod u+rx,g+rx,o+rx "/usr/local/lib"
+chmod u+rx,g+rx,o+rx "/usr/local/include"
+
+exit 0
