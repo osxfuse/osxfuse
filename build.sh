@@ -2182,6 +2182,7 @@ function m_handler()
         M_SDK_106_XCODE="$M_XCODE41"
         M_SDK_106_COMPILER="$M_XCODE41_COMPILER"
         m_platform_realistic_add "10.6"
+        m_platform_add "10.7"
 
         M_SDK_107="$M_XCODE41/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE41"
@@ -2198,6 +2199,7 @@ function m_handler()
         M_SDK_106_XCODE="$M_XCODE42"
         M_SDK_106_COMPILER="$M_XCODE42_COMPILER"
         m_platform_realistic_add "10.6"
+        m_platform_add "10.7"
 
         M_SDK_107="$M_XCODE42/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE42"
@@ -2214,6 +2216,7 @@ function m_handler()
         M_SDK_106_XCODE="$M_XCODE43"
         M_SDK_106_COMPILER="$M_XCODE43_COMPILER"
         m_platform_realistic_add "10.6"
+        m_platform_add "10.7"
 
         M_SDK_107="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
         M_SDK_107_XCODE="$M_XCODE43"
@@ -2230,6 +2233,7 @@ function m_handler()
         M_SDK_107_XCODE="$M_XCODE44"
         M_SDK_107_COMPILER="$M_XCODE44_COMPILER"
         m_platform_realistic_add "10.7"
+        m_platform_add "10.8"
 
         M_SDK_108="$M_XCODE44/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
         M_SDK_108_XCODE="$M_XCODE44"
