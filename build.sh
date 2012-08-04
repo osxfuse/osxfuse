@@ -1978,16 +1978,16 @@ function m_version_compare()
 
     IFS="$_IFS"
 
-    local last
+    local count
     if [[ ${#version1[@]} -lt ${#version2[@]} ]]
     then
-        (( last=${#version2[@]}-1 ))
+        count=${#version2[@]}
     else
-        (( last=${#version1[@]}-1 ))
+        count=${#version1[@]}
     fi
 
     local i
-    for i in `seq 0 $last`
+    for (( i=0; i < count; i++ ))
     do
         local t1=${version1[$i]:-0}
         local t2=${version2[$i]:-0}
