@@ -351,7 +351,7 @@ function m_build_pkg()
         # Use most recent version of PackageMaker.app
         for m_pm in "${m_package_maker_installed[@]}";
         do
-            m_pm_version=`mdls -name kMDItemVersion "$m_pm" | grep -Po "kMDItemVersion = \"\K[^\"]*?(?=\")"`
+            m_pm_version=`mdls -name kMDItemVersion "$m_pm" | perl -ne '/kMDItemVersion = "(.*)"/ && print $1'`
             m_version_compare "$mp_package_maker_version" "$m_pm_version"
             if [[ $? -ne 2 ]]
             then
@@ -840,17 +840,17 @@ __END_DISTRIBUTION
                 m_exit_on_error "cannot find package '$package'."
             fi
 
-            local md_dist_choice_pkg_id=`grep -Po '<pkg-info[^>]*\sidentifier="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'id' of '$package'."
+            local md_dist_choice_pkg_id=`perl -ne '/<pkg-info[^>]*\sidentifier="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            m_exit_on_error "cannot extract property 'id' of '$package' for platform '$platform'."
 
-            local md_dist_choice_pkg_size=`grep -Po '<payload[^>]*\sinstallKBytes="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'size' of '$package'."
+            local md_dist_choice_pkg_size=`perl -ne '/<payload[^>]*\sinstallKBytes="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            m_exit_on_error "cannot extract property 'size' of '$package' for platform '$platform'."
 
-            local md_dist_choice_pkg_version=`grep -Po '<pkg-info[^>]*\sversion="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'version' of '$package'."
+            local md_dist_choice_pkg_version=`perl -ne '/<pkg-info[^>]*\sversion="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            m_exit_on_error "cannot extract property 'version' of '$package' for platform '$platform'."
 
-            local md_dist_choice_pkg_auth=`grep -Po '<pkg-info[^>]*\sauth="\K.+?(?=")' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'auth' of '$package'."
+            local md_dist_choice_pkg_auth=`perl -ne '/<pkg-info[^>]*\sauth="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            m_exit_on_error "cannot extract property 'auth' of '$package' for platform '$platform'."
 
 cat >> "$md_dist_out" <<__END_DISTRIBUTION
         <pkg-ref id="$md_dist_choice_pkg_id"
