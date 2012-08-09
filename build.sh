@@ -843,16 +843,16 @@ __END_DISTRIBUTION
                 m_exit_on_error "cannot find package '$package'."
             fi
 
-            local md_dist_choice_pkg_id=`perl -ne '/<pkg-info[^>]*\sidentifier="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            local md_dist_choice_pkg_id=`perl -ne '/<pkg-info[^>]*\sidentifier="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
             m_exit_on_error "cannot extract property 'id' of '$package' for platform '$platform'."
 
-            local md_dist_choice_pkg_size=`perl -ne '/<payload[^>]*\sinstallKBytes="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            local md_dist_choice_pkg_size=`perl -ne '/<payload[^>]*\sinstallKBytes="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
             m_exit_on_error "cannot extract property 'size' of '$package' for platform '$platform'."
 
-            local md_dist_choice_pkg_version=`perl -ne '/<pkg-info[^>]*\sversion="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            local md_dist_choice_pkg_version=`perl -ne '/<pkg-info[^>]*\sversion="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
             m_exit_on_error "cannot extract property 'version' of '$package' for platform '$platform'."
 
-            local md_dist_choice_pkg_auth=`perl -ne '/<pkg-info[^>]*\sauth="(.+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
+            local md_dist_choice_pkg_auth=`perl -ne '/<pkg-info[^>]*\sauth="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
             m_exit_on_error "cannot extract property 'auth' of '$package' for platform '$platform'."
 
 cat >> "$md_dist_out" <<__END_DISTRIBUTION
