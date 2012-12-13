@@ -681,7 +681,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
-    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$md_ai_builddir/$m_configuration" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
@@ -712,7 +712,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the prefpane source."
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$md_pp_builddir/$m_configuration" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget prefpane."
     popd >/dev/null 2>/dev/null
 
@@ -1369,17 +1369,18 @@ function m_handler_osxfusefs()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
+    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
+
     if [ "$m_developer" == "0" ]
     then
-        xcodebuild -configuration "$m_configuration" -target Helpers GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild -configuration "$m_configuration" -target Helpers GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$ms_built_products_dir" >$m_stdout 2>$m_stderr
     else
-        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target Helpers GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target Helpers GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$ms_built_products_dir" >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
     cd "$m_srcroot"
 
-    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
     if [ ! -d "$ms_built_products_dir" ]
     then
         m_exit_on_error "cannot find built products directory."
@@ -1530,11 +1531,13 @@ function m_handler_kext()
 
     m_log "building OSXFUSE kernel extension"
 
+    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
+
     if [ "$m_developer" == "0" ]
     then
-        xcodebuild -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$ms_built_products_dir" >$m_stdout 2>$m_stderr
     else
-        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$ms_built_products_dir" >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
@@ -1543,12 +1546,12 @@ function m_handler_kext()
 
     local ms_project_dir="$kernel_dir"
 
-    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
     if [ ! -d "$ms_built_products_dir" ]
     then
         m_exit_on_error "cannot find built products directory."
     fi
 
+    echo "Creating directory $ms_osxfuse_out"
     mkdir -p "$ms_osxfuse_out"
     m_exit_on_error "cannot make directory '$ms_osxfuse_out'."
 
@@ -1793,7 +1796,7 @@ function m_handler_core()
     rm -rf build/
     m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
 
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" CONFIGURATION_BUILD_DIR="build/$m_configuration" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
