@@ -207,7 +207,7 @@ function m_version
     m_set_platform
     m_set_srcroot
 
-    local mv_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "kext/common/fuse_version.h"`
+    local mv_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
     if [ ! -z "$mv_release" ]
     then
         echo "OSXFUSE version $mv_release"
@@ -442,7 +442,7 @@ function m_handler_lib()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     m_log "running make"
@@ -475,7 +475,7 @@ function m_handler_reload()
     fi
 
     local ms_os_version="$m_platform"
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
     m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
@@ -562,7 +562,7 @@ function m_handler_examples()
     m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
 
     m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     cd example
@@ -593,7 +593,7 @@ function m_handler_dist()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
+    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
     m_release=`echo "$m_release_full" | cut -d . -f 1,2`
     m_exit_on_error "cannot get OSXFUSE release version."
 
@@ -977,7 +977,7 @@ function m_handler_release()
     m_platform="$M_DEFAULT_PLATFORM"
     m_set_platform
 
-    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/kext/common/fuse_version.h"`
+    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
     m_release=`echo "$m_release_full" | cut -d . -f 1,2`
     m_exit_on_error "cannot get OSXFUSE release version."
 
@@ -1327,7 +1327,7 @@ function m_handler_osxfusefs()
         m_exit_on_error "cannot access directory '$kernel_dir'."
     fi
 
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
     m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-osxfusefs-$ms_osxfuse_version"
@@ -1486,7 +1486,7 @@ function m_handler_kext()
     fi
 
     local ms_os_version="$m_platform"
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
     m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
@@ -1605,7 +1605,7 @@ function m_handler_core()
     fi
 
     local ms_os_version="$m_platform"
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
     m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-core-$ms_osxfuse_version"
@@ -1728,7 +1728,7 @@ function m_handler_core()
     cd "$ms_osxfuse_build"/fuse
     m_exit_on_error "cannot access OSXFUSE library source in '$ms_osxfuse_build/fuse'."
 
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure OSXFUSE library source for compilation."
 
     xcrun make -j4 >$m_stdout 2>$m_stderr
@@ -1764,7 +1764,7 @@ function m_handler_core()
     cd "$ms_osxfuse_build"/macfuse
     m_exit_on_error "cannot access MacFUSE library source in '$ms_osxfuse_build/macfuse'."
 
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot configure MacFUSE library source for compilation."
 
     xcrun make -j4 >$m_stdout 2>$m_stderr
