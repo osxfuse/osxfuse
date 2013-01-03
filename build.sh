@@ -111,11 +111,10 @@ declare M_SDK_108=""
 declare M_SDK_108_XCODE=""
 declare M_SDK_108_COMPILER=""
 
-readonly M_FSBUNDLE_NAME="osxfusefs.fs"
+readonly M_FSBUNDLE_NAME="osxfuse.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
 readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
-readonly M_KEXT_NAME="osxfusefs.kext"
-readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
+readonly M_KEXT_NAME="osxfuse.kext"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
 readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
 
@@ -748,12 +747,12 @@ function m_handler_dist()
     # Build Preference Pane installer package
     m_log "building installer package '$M_PKGNAME_PREFPANE'"
 
-    m_build_pkg "$m_release_full" "$m_srcroot/packaging/installer/$M_PKGBASENAME_PREFPANE" "$md_osxfuse_root" "$M_PKGID_PREFPANE" "$M_PKGNAME_PREFPANE" "/" "$md_osxfuse_out"
+    m_build_pkg "$m_release_full" "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_PREFPANE" "$md_osxfuse_root" "$M_PKGID_PREFPANE" "$M_PKGNAME_PREFPANE" "/" "$md_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_PREFPANE'."
 
     # Build OSXFUSE installer package
     #
-    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
+    cp -R "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
     m_exit_on_error "cannot copy the packaging files for package '$M_PKGNAME_OSXFUSE'."
 
     local md_dist_choices_outline;
@@ -1092,7 +1091,7 @@ function m_handler_release()
 
     # Copy over the license file
     #
-    cp "$m_srcroot/packaging/diskimage/License.rtf" "$mr_volume_path"
+    cp "$m_srcroot/support/DiskImage/License.rtf" "$mr_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1129,7 +1128,7 @@ function m_handler_release()
 
     # Copy over the website link
     #
-    cp "$m_srcroot/packaging/diskimage/OSXFUSE Website.webloc" "$mr_volume_path"
+    cp "$m_srcroot/support/DiskImage/OSXFUSE Website.webloc" "$mr_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1159,7 +1158,7 @@ __END_ENGINE_INSTALL
 
     # Set the custom icon
     #
-    cp -pRX "$m_srcroot/packaging/images/osxfuse.icns" \
+    cp -pRX "$m_srcroot/support/Images/osxfuse.icns" \
         "$mr_volume_path/.VolumeIcon.icns"
     if [ $? -ne 0 ]
     then
@@ -1186,7 +1185,7 @@ __END_ENGINE_INSTALL
         m_exit_on_error "cannot make directory '.background' on scratch disk image."
     fi
 
-    cp "$m_srcroot/packaging/diskimage/background.png" "$mr_volume_path/.background/"
+    cp "$m_srcroot/support/DiskImage/background.png" "$mr_volume_path/.background/"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1320,6 +1319,13 @@ function m_handler_osxfusefs()
 {
     m_active_target="osxfusefs"
 
+    local support_dir="$m_srcroot"/support
+    if [ ! -d "$support_dir" ]
+    then
+        false
+        m_exit_on_error "cannot access directory '$support_dir'."
+    fi
+
     local kernel_dir="$m_srcroot"/kext
     if [ ! -d "$kernel_dir" ]
     then
@@ -1355,14 +1361,15 @@ function m_handler_osxfusefs()
         done
 
         m_active_target="osxfusefs"
+        rm -rf "$support_dir/build/"
         rm -rf "$kernel_dir/build/"
 
         m_log "cleaned"
         return 0
     fi
 
-    cd "$kernel_dir"
-    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
+    cd "$support_dir"
+    m_exit_on_error "failed to access the bundle source directory '$support_dir'."
 
     m_log "building OSXFUSE file system bundle"
 
@@ -1371,15 +1378,15 @@ function m_handler_osxfusefs()
 
     if [ "$m_developer" == "0" ]
     then
-        xcodebuild -configuration "$m_configuration" -target Helpers GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild -project "osxfusefs.xcodeproj" -configuration "$m_configuration" -target "osxfuse.fs" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     else
-        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target Helpers GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild -project "osxfusefs.xcodeproj" OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target "osxfuse.fs" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
     cd "$m_srcroot"
 
-    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
+    local ms_built_products_dir="$support_dir/build/$m_configuration/"
     if [ ! -d "$ms_built_products_dir" ]
     then
         m_exit_on_error "cannot find built products directory."
@@ -1391,21 +1398,15 @@ function m_handler_osxfusefs()
     cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME"
     m_exit_on_error "cannot copy file system bundle to destination."
 
-    mkdir -p "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support'."
-
-    cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/load_osxfusefs"
-    m_exit_on_error "cannot copy 'load_osxfusefs' to destination."
-
-    m_set_suprompt "to setuid 'load_osxfusefs'"
-    sudo -p "$m_suprompt" chmod u+s "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/load_osxfusefs"
-    m_exit_on_error "cannot setuid 'load_osxfusefs'."
-
-    cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/mount_osxfusefs"
-    m_exit_on_error "cannot copy 'mount_osxfusefs' to destination."
+    m_set_suprompt "to setuid 'load_osxfuse'"
+    sudo -p "$m_suprompt" chmod u+s "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
+    m_exit_on_error "cannot setuid 'load_osxfuse'."
 
     # Build kernel extensions
     #
+
+    cd "$kernel_dir"
+    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
 
     local -a md_plr=($M_PLATFORMS_REALISTIC)
     local -a md_pl=($M_PLATFORMS)
@@ -1441,13 +1442,13 @@ function m_handler_osxfusefs()
                 m_exit_on_error "cannot access directory '$ms_kext_out'."
             fi
 
-            mkdir -p "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/$m_p"
-            m_exit_on_error "cannot make directory '$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/$m_p'."
+            mkdir -p "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p"
+            m_exit_on_error "cannot make directory '$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p'."
 
-            cp -pRX "$ms_kext_out/$M_KEXT_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/$m_p/$M_KEXT_NAME"
+            cp -pRX "$ms_kext_out/$M_KEXT_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p/$M_KEXT_NAME"
             m_exit_on_error "cannot copy '$M_KEXT_NAME' for platform '$m_p' to destination."
         else
-            ln -s "$m_pr" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Support/$m_p"
+            ln -s "$m_pr" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p"
             m_exit_on_error "cannot make symlink '$m_p' -> '$m_pr'"
         fi
 
@@ -1532,9 +1533,9 @@ function m_handler_kext()
 
     if [ "$m_developer" == "0" ]
     then
-        xcodebuild -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild -configuration "$m_configuration" -target osxfuse GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     else
-        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target osxfusefs GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target osxfuse GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     fi
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
@@ -1584,7 +1585,7 @@ function m_handler_core()
         false
         m_exit_on_error "cannot access directory '$lib_dir'."
     fi
-    local lib_dir_mf="$m_srcroot"/macfuse
+    local lib_dir_mf="$m_srcroot"/fuse-macfuse
     if [ ! -d "$lib_dir_mf" ]
     then
         false
@@ -1699,19 +1700,19 @@ function m_handler_core()
 
     local ms_bundle_dir_generic="/Library/Filesystems/$M_FSBUNDLE_NAME"
     local ms_bundle_dir="$ms_osxfuse_root/$ms_bundle_dir_generic"
-    local ms_bundle_support_dir="$ms_bundle_dir/Support"
+    local ms_bundle_resources_dir="$ms_bundle_dir/Contents/Resources"
 
     cp -pRX "$ms_osxfusefs_out/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
     m_exit_on_error "cannot copy '$M_FSBUNDLE_NAME' to destination."
 
-    cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-osxfuse-core.sh" "$ms_bundle_support_dir/uninstall-osxfuse-core.sh"
-    m_exit_on_error "cannot copy 'uninstall-osxfuse-core.sh' to destination."
+    cp -pRX "$m_srcroot/support/uninstall_osxfuse.sh" "$ms_bundle_resources_dir/uninstall_osxfuse.sh"
+    m_exit_on_error "cannot copy 'uninstall_osxfuse.sh' to destination."
 
-    cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
-    m_exit_on_error "cannot copy 'uninstall-macfuse-core.sh' to destination."
+    cp -pRX "$m_srcroot/support/uninstall_macfuse.sh" "$ms_bundle_resources_dir/uninstall_macfuse.sh"
+    m_exit_on_error "cannot copy 'uninstall_macfuse.sh' to destination."
 
-    ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_support_dir/autoinstall-osxfuse-core"
-    m_exit_on_error "cannot create legacy symlink '$ms_bundle_support_dir/autoinstall-osxfuse-core'".
+    ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_resources_dir/autoinstall-osxfuse-core"
+    m_exit_on_error "cannot create legacy symlink '$ms_bundle_resources_dir/autoinstall-osxfuse-core'".
 
     # Build the user-space OSXFUSE library
     #
@@ -1758,7 +1759,7 @@ function m_handler_core()
 
     m_log "building user-space MacFUSE library"
 
-    cp -pRX "$lib_dir_mf" "$ms_osxfuse_build"
+    cp -pRX "$lib_dir_mf" "$ms_osxfuse_build/macfuse"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir_mf'."
 
     cd "$ms_osxfuse_build"/macfuse
@@ -1826,9 +1827,9 @@ function m_handler_core()
     sudo -p "$m_suprompt" chown -R root:wheel "$ms_macfuse_root"/*
     m_exit_on_error "cannot chown '$ms_macfuse_root/*'."
 
-    m_set_suprompt "to setuid 'load_osxfusefs'"
-    sudo -p "$m_suprompt" chmod u+s "$ms_bundle_support_dir/load_osxfusefs"
-    m_exit_on_error "cannot setuid 'load_osxfusefs'."
+    m_set_suprompt "to setuid 'load_osxfuse'"
+    sudo -p "$m_suprompt" chmod u+s "$ms_bundle_resources_dir/load_osxfuse"
+    m_exit_on_error "cannot setuid 'load_osxfuse'."
 
     m_set_suprompt "to chown '$ms_osxfuse_root/Library/'"
     sudo -p "$m_suprompt" chown root:admin "$ms_osxfuse_root/Library/"
@@ -1898,10 +1899,10 @@ function m_handler_core()
     m_platform="$ms_deployment_target"
     m_set_platform
 
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/installer/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "/" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "/" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
 
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/packaging/installer/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "/" "$ms_osxfuse_out"
+    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "/" "$ms_osxfuse_out"
     m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE'."
 
     echo >$m_stdout

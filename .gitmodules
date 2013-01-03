@@ -4,12 +4,15 @@
 [submodule "fuse"]
 	path = fuse
 	url = ../fuse.git
+[submodule "fuse-macfuse"]
+        path = fuse-macfuse
+        url = ../fuse.git
 [submodule "kext"]
 	path = kext
 	url = ../kext.git
-[submodule "macfuse"]
-	path = macfuse
-	url = ../fuse.git
 [submodule "prefpane"]
 	path = prefpane
 	url = ../prefpane.git
+[submodule "support"]
+        path = support
+        url = ../support.git

@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# Make sure /usr/local/include and /usr/local/lib are readable
-chmod u+rx,g+rx,o+rx "/usr/local/include"
-chmod u+rx,g+rx,o+rx "/usr/local/lib"
-
-exit 0
