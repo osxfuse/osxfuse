@@ -111,10 +111,9 @@ declare M_SDK_108=""
 declare M_SDK_108_XCODE=""
 declare M_SDK_108_COMPILER=""
 
-readonly M_FSBUNDLE_NAME="osxfuse.fs"
-readonly M_INSTALL_RESOURCES_DIR="Install_resources"
-readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
-readonly M_KEXT_NAME="osxfuse.kext"
+declare M_FSBUNDLE_NAME="osxfuse.fs"
+declare M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
+declare M_KEXT_NAME="osxfuse.kext"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
 readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
 
@@ -1336,6 +1335,12 @@ function m_handler_osxfusefs()
     local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
     m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
+    local ms_osxfuse_name="`awk '/#define[ \t]*OSXFUSE_NAME_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`"
+    m_exit_on_error "cannot get name."
+
+    local ms_osxfuse_namespace=`awk '/#define[ \t]*OSXFUSE_IDENTIFIER_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
+    m_exit_on_error "cannot get OSXFUSE namespace."
+
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-osxfusefs-$ms_osxfuse_version"
 
     if [ -e "$ms_osxfuse_out" ]
@@ -1362,10 +1367,14 @@ function m_handler_osxfusefs()
 
         m_active_target="osxfusefs"
         rm -rf "$support_dir/build/"
-        rm -rf "$kernel_dir/build/"
 
         m_log "cleaned"
         return 0
+    fi
+
+    if [ "$m_shortcircuit" != "1" ]
+    then
+        rm -rf "$support_dir/build/"
     fi
 
     cd "$support_dir"
@@ -1376,12 +1385,8 @@ function m_handler_osxfusefs()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    if [ "$m_developer" == "0" ]
-    then
-        xcodebuild -project "osxfusefs.xcodeproj" -configuration "$m_configuration" -target "osxfuse.fs" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
-    else
-        xcodebuild -project "osxfusefs.xcodeproj" OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target "osxfuse.fs" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
-    fi
+
+    xcodebuild -project "osxfusefs.xcodeproj" -configuration "$m_configuration" -target "osxfuse.fs" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_NAME="$ms_osxfuse_name" ENABLE_MACFUSE_MODE="$M_MACFUSE_MODE" BUNDLE_IDENTIFIER_PREFIX="$ms_osxfuse_namespace" >$m_stdout 2>$m_stderr
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
     cd "$m_srcroot"
@@ -1398,9 +1403,13 @@ function m_handler_osxfusefs()
     cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME"
     m_exit_on_error "cannot copy file system bundle to destination."
 
-    m_set_suprompt "to setuid 'load_osxfuse'"
-    sudo -p "$m_suprompt" chmod u+s "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
-    m_exit_on_error "cannot setuid 'load_osxfuse'."
+    local ms_load_osxfuse="$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
+    if [[ -f "$ms_load_osxfuse" ]]
+    then
+        m_set_suprompt "to setuid 'load_osxfuse'"
+        sudo -p "$m_suprompt" chmod u+s "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
+        m_exit_on_error "cannot setuid 'load_osxfuse'."
+    fi
 
     # Build kernel extensions
     #
@@ -1490,6 +1499,11 @@ function m_handler_kext()
     local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
     m_exit_on_error "cannot get platform-specific OSXFUSE version."
 
+    local ms_osxfuse_name="`awk '/#define[ \t]*OSXFUSE_NAME_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`"
+    m_exit_on_error "cannot get name."
+
+    M_KEXT_NAME="$ms_osxfuse_name.kext"
+
     local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
 
     if [ "$m_shortcircuit" != "1" ]
@@ -1531,12 +1545,7 @@ function m_handler_kext()
 
     m_log "building OSXFUSE kernel extension"
 
-    if [ "$m_developer" == "0" ]
-    then
-        xcodebuild -configuration "$m_configuration" -target osxfuse GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
-    else
-        xcodebuild OSXFUSE_BUILD_FLAVOR=Beta -configuration "$m_configuration" -target osxfuse GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
-    fi
+    xcodebuild -configuration "$m_configuration" -target osxfuse GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_NAME="$ms_osxfuse_name" ENABLE_MACFUSE_MODE="$M_MACFUSE_MODE" >$m_stdout 2>$m_stderr
 
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
 
@@ -1555,6 +1564,12 @@ function m_handler_kext()
 
     cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
+
+    if [[ -n "$m_signing_id" ]]
+    then
+        codesign -f -s "$m_signing_id" "$ms_osxfuse_out/$M_KEXT_NAME"
+        m_exit_on_error "cannot sign kernel extension."
+    fi
 
     cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
     m_exit_on_error "cannot copy 'Debug' to destination."
