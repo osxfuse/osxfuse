@@ -150,10 +150,10 @@ Please read further for specific details.
     THEORY  OF  CONTRACT,  TORT  (INCLUDING  NEGLIGENCE),  STRICT  LIABILITY  OR
     OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-* Parts of the mount_osxfusefs and the load_osxfusefs command-line programs 
-  (implemented in kext/mount/ and kext/load/, respectively) come from Apple's 
-  Darwin sources and are covered under the Apple Public Source License (APSL). 
-  You can read the APSL at:
+* Parts of the mount_osxfuse and the load_osxfuse command-line programs 
+  (implemented in support/mount_osxfuse/ and support/load_osxfuse/,
+  respectively) are covered under the Apple Public Source License (APSL). You
+  can read the APSL at:
 
     http://www.opensource.apple.com/license/apsl/
 
@@ -191,7 +191,8 @@ Please read further for specific details.
 
 * Parts of OSXFUSE come from the Fuse4X project which itself is a MacFUSE fork.
   Additional information and the original source of Fuse4X are available on 
-  http://fuse4x.org. Fuse4X is covered under the following BSD-style license:
+  https://github.com/fuse4x. Fuse4X is covered under the following BSD-style
+  license:
 
     Copyright (c) 2011 Anatol Pomozov
     All rights reserved.
