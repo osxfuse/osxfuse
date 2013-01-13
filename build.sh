@@ -1160,7 +1160,7 @@ __END_ENGINE_INSTALL
 
     # Set the custom icon
     #
-    cp -pRX "$m_srcroot/support/Images/osxfuse.icns" \
+    cp -pRX "$m_srcroot/support/Icon.icns" \
         "$mr_volume_path/.VolumeIcon.icns"
     if [ $? -ne 0 ]
     then
@@ -1619,6 +1619,13 @@ function m_handler_core()
         m_exit_on_error "cannot access directory '$kernel_dir'."
     fi
 
+    local support_dir="$m_srcroot"/support
+    if [ ! -d "$support_dir" ]
+    then
+        false
+        m_exit_on_error "cannot access directory '$support_dir'."
+    fi
+
     if [ "$m_shortcircuit" != "1" ]
     then
         rm -rf "$kernel_dir/build/"
@@ -1819,6 +1826,9 @@ function m_handler_core()
 
     cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
+
+    cp -pRX "$support_dir/Icon.icns" "$ms_osxfuse_root/Library/Frameworks/OSXFUSE.framework/Resources/DefaultVolumeIcon.icns"
+    m_exit_on_error "cannot copy 'DefaultVolumeIcon.icns' to destination."
 
     mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
     mv "$ms_macfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
