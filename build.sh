@@ -120,7 +120,7 @@ declare M_KEXT_NAME="osxfuse.kext"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
 readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
 
-readonly M_MACFUSE_MODE=0;
+readonly M_MACFUSE_MODE=1;
 
 readonly M_PKG_VERSION="10.5"
 
