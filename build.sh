@@ -1080,7 +1080,7 @@ function m_handler_release()
     #
     local mr_volume_name="FUSE for OS X"
     local mr_scratch_dmg="$mr_osxfuse_out/osxfuse-scratch.dmg"
-    hdiutil create -layout NONE -size 10m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
+    hdiutil create -layout NONE -size 16m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
         -volname "$mr_volume_name" "$mr_scratch_dmg" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot create scratch OSXFUSE disk image."
 
@@ -1091,28 +1091,23 @@ function m_handler_release()
 
     local mr_volume_path="/Volumes/$mr_volume_name"
 
-    # Copy over the license file
+    # Copy over resources
     #
-    cp "$m_srcroot/support/DiskImage/License.rtf" "$mr_volume_path"
+    local mr_resources_name="Resources"
+    local mr_resources_path="$mr_volume_path/$mr_resources_name"
+    cp -R "$m_srcroot/support/DiskImage/Resources" "$mr_resources_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
-        m_exit_on_error "cannot copy OSXFUSE license to scratch disk image."
-    fi
-
-    xcrun SetFile -a E "$mr_volume_path/License.rtf"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot hide extension of 'License.rtf'."
+        m_exit_on_error "cannot copy resources to scratch disk image."
     fi
 
     # Copy over the package
     #
-    local mr_pkgname_installer="Install OSXFUSE $m_release.pkg"
-    cp -pRX "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE" "$mr_volume_path/$mr_pkgname_installer"
+    local mr_pkgname_installer="FUSE for OS X $m_release_full.pkg"
+    local mr_pkgname_installer_link="Install FUSE for OS X"
+    cp -pRX "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE" "$mr_resources_path/$mr_pkgname_installer"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1120,7 +1115,7 @@ function m_handler_release()
         m_exit_on_error "cannot copy '$M_PKGNAME_OSXFUSE' to scratch disk image."
     fi
 
-    xcrun SetFile -a E "$mr_volume_path/$mr_pkgname_installer"
+    xcrun SetFile -a E "$mr_resources_path/$mr_pkgname_installer"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1128,22 +1123,12 @@ function m_handler_release()
         m_exit_on_error "cannot hide extension of installer package."
     fi
 
-    # Copy over the website link
-    #
-    cp "$m_srcroot/support/DiskImage/OSXFUSE Website.webloc" "$mr_volume_path"
+    ln -s "$mr_resources_name/$mr_pkgname_installer" "$mr_volume_path/$mr_pkgname_installer_link"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
         false
-        m_exit_on_error "cannot copy website link to scratch disk image."
-    fi
-
-    xcrun SetFile -a E "$mr_volume_path/OSXFUSE Website.webloc"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot hide extension of 'OXSFUSE Website.webloc'."
+        m_exit_on_error "cannot link installer package."
     fi
 
     # Create the .engine_install file
@@ -1151,31 +1136,11 @@ function m_handler_release()
     local mr_engine_install="$mr_volume_path/.engine_install"
     cat > "$mr_engine_install" <<__END_ENGINE_INSTALL
 #!/bin/sh -p
-/usr/sbin/installer -pkg "\$1/$mr_pkgname_installer" -target /
+/usr/sbin/installer -pkg "\$1/$mr_resources_name/$mr_pkgname_installer" -target /
 __END_ENGINE_INSTALL
 
     chmod +x "$mr_engine_install"
     m_exit_on_error "cannot set permissions on autoinstaller engine file."
-
-
-    # Set the custom icon
-    #
-    cp -pRX "$m_srcroot/support/Icon.icns" \
-        "$mr_volume_path/.VolumeIcon.icns"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot copy custom volume icon to scratch disk image."
-    fi
-
-    xcrun SetFile -a C "$mr_volume_path"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot set custom volume icon on scratch disk image."
-    fi
 
     # Set custom background
     #
@@ -1187,7 +1152,7 @@ __END_ENGINE_INSTALL
         m_exit_on_error "cannot make directory '.background' on scratch disk image."
     fi
 
-    cp "$m_srcroot/support/DiskImage/background.png" "$mr_volume_path/.background/"
+    cp "$m_srcroot/support/DiskImage/background.tiff" "$mr_volume_path/.background/"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1203,14 +1168,14 @@ __END_ENGINE_INSTALL
                 open
                 set current view of container window to icon view
                 set toolbar visible of container window to false
-                set the bounds of container window to {0, 0, 500, 350}
+                set the bounds of container window to {0, 0, 500, 450}
                 set theViewOptions to the icon view options of container window
                 set arrangement of theViewOptions to not arranged
                 set icon size of theViewOptions to 128
-                set background picture of theViewOptions to file ".background:background.png"
-                set position of item "License.rtf" of container window to {100, 230}
-                set position of item "'$mr_pkgname_installer'" of container window to {250, 230}
-                set position of item "OSXFUSE Website.webloc" of container window to {400, 230}
+                set text size of theViewOptions to 14
+                set background picture of theViewOptions to file ".background:background.tiff"
+                set position of item "'$mr_pkgname_installer_link'" of container window to {150, 175}
+                set position of item "Resources" of container window to {350, 175}
                 close
                 open
                 update without registering applications
