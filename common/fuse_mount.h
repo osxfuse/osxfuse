@@ -29,8 +29,7 @@ struct fuse_mount_args {
     uint32_t blocksize;           // fictitious block size of our "storage"
     uint32_t daemon_timeout;      // timeout in seconds for upcalls to daemon
     uint32_t fsid;                // optional custom value for part of fsid[0]
-    uint32_t fssubtype;           // file system sub type id (type is "osxfusefs")
-    uint32_t init_timeout;        // timeout in seconds for daemon handshake
+    uint32_t fssubtype;           // file system sub type id (type is "osxfuse")
     uint32_t iosize;              // maximum size for reading or writing
     uint32_t random;              // random "secret" from device
     uint32_t rdev;                // dev_t for the /dev/osxfuseN in question
@@ -63,7 +62,6 @@ enum {
 #define FUSE_MOPT_FSNAME                 0x0000000000001000ULL
 #define FUSE_MOPT_FSSUBTYPE              0x0000000000002000ULL
 #define FUSE_MOPT_FSTYPENAME             0x0000000000004000ULL
-#define FUSE_MOPT_INIT_TIMEOUT           0x0000000000008000ULL
 #define FUSE_MOPT_IOSIZE                 0x0000000000010000ULL
 #define FUSE_MOPT_JAIL_SYMLINKS          0x0000000000020000ULL
 #define FUSE_MOPT_LOCALVOL               0x0000000000080000ULL

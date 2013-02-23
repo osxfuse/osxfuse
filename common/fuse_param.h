@@ -120,16 +120,6 @@
 #define FUSE_MIN_IOSIZE                    512
 #define FUSE_MAX_IOSIZE                    (MAX_UPL_TRANSFER * PAGE_SIZE)
 
-#define FUSE_DEFAULT_INIT_TIMEOUT                  10     /* s  */
-#define FUSE_MIN_INIT_TIMEOUT                      1      /* s  */
-#define FUSE_MAX_INIT_TIMEOUT                      300    /* s  */
-#define FUSE_INIT_WAIT_INTERVAL                    100000 /* us */
-
-#define FUSE_INIT_TIMEOUT_DEFAULT_BUTTON_TITLE     "OK"
-#define FUSE_INIT_TIMEOUT_NOTICE_MESSAGE                                  \
-  "Timed out waiting for the file system to initialize. The volume has "  \
-  "been ejected. You can use the init_timeout mount option to wait longer."
-
 #define FUSE_DEFAULT_DAEMON_TIMEOUT                60     /* s */
 #define FUSE_MIN_DAEMON_TIMEOUT                    0      /* s */
 #define FUSE_MAX_DAEMON_TIMEOUT                    600    /* s */
