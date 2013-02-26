@@ -124,14 +124,6 @@
 #define FUSE_MIN_DAEMON_TIMEOUT                    0      /* s */
 #define FUSE_MAX_DAEMON_TIMEOUT                    600    /* s */
 
-#define FUSE_DAEMON_TIMEOUT_DEFAULT_BUTTON_TITLE   "Keep Trying"
-#define FUSE_DAEMON_TIMEOUT_OTHER_BUTTON_TITLE     "Force Eject"
-#define FUSE_DAEMON_TIMEOUT_ALTERNATE_BUTTON_TITLE "Don't Warn Again"
-#define FUSE_DAEMON_TIMEOUT_ALERT_MESSAGE                                 \
-  "There was a timeout waiting for the file system to respond. You can "  \
-  "eject this volume immediately, but unsaved changes may be lost."
-#define FUSE_DAEMON_TIMEOUT_ALERT_TIMEOUT          120    /* s */
-
 #ifdef KERNEL
 
 /*
