@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2011-2012 Benjamin Fleischer
+ * Copyright (c) 2011-2013 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -21,6 +21,7 @@
 #define M_OSXFUSE_ENABLE_UNSUPPORTED           1
 #define M_OSXFUSE_ENABLE_XATTR                 1
 #define M_OSXFUSE_ENABLE_DSELECT               1
+#define M_OSXFUSE_ENABLE_KEXT_VERSION_CHECK    0
 
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
 #  define M_OSXFUSE_ENABLE_EXCHANGE            1
@@ -74,6 +75,10 @@
 #define OSXFUSE_MOUNT_PROG     OSXFUSE_RESOURCES_PATH "/mount_osxfuse"
 #define SYSTEM_KEXTLOAD        "/sbin/kextload"
 #define SYSTEM_KEXTUNLOAD      "/sbin/kextunload"
+
+/* Minimum supported Darwin version */
+
+#define OSXFUSE_MIN_DARWIN_VERSION         9
 
 /* Compatible API version */
 
