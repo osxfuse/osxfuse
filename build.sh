@@ -3,7 +3,7 @@
 # OSXFUSE build tool
 
 # Copyright (c) 2008-2009 Google Inc.
-# Copyright (c) 2011-2012 Benjamin Fleischer
+# Copyright (c) 2011-2013 Benjamin Fleischer
 # All rights reserved.
 
 # Configurables
@@ -157,7 +157,7 @@ function m_help()
 $M_PROGDESC version $M_PROGVERS
 
 Copyright (C) 2008 Google Inc.
-Copyright (C) 2011-2012 Benjamin Fleischer
+Copyright (C) 2011-2013 Benjamin Fleischer
 All Rights Reserved.
 
 Usage:
@@ -984,7 +984,7 @@ function m_handler_release()
 
     local mr_osxfuse_out="$M_CONF_TMPDIR/osxfuse-release-$m_release_full"
 
-    local mr_dmg_name="OSXFUSE-$m_release_full.dmg"
+    local mr_dmg_name="osxfuse-$m_release_full.dmg"
     local mr_dmg_path="$mr_osxfuse_out/$mr_dmg_name"
 
     if [ "$m_shortcircuit" != "1" ]
@@ -1222,11 +1222,10 @@ __END_ENGINE_INSTALL
     local mr_dmg_size=$(stat -f%z "$mr_dmg_path")
 
     local mr_rules_plist="$mr_osxfuse_out/DeveloperRelease.plist"
-    local mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$mr_dmg_name"
+    local mr_download_url="http://sourceforge.net/projects/osxfuse/files/osxfuse-$m_release_full/$mr_dmg_name/download"
     if [ "$m_developer" == "0" ]
     then
         mr_rules_plist="$mr_osxfuse_out/CurrentRelease.plist"
-        mr_download_url="https://github.com/downloads/osxfuse/osxfuse/$mr_dmg_name"
     fi
 
 cat > "$mr_rules_plist" <<__END_RULES_PLIST
