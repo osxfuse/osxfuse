@@ -86,6 +86,9 @@ readonly M_XCODE45_COMPILER="com.apple.compilers.llvmgcc42"
 declare M_XCODE46=""
 declare M_XCODE46_VERSION=4.6
 readonly M_XCODE46_COMPILER="com.apple.compilers.llvmgcc42"
+declare M_XCODE50=""
+declare M_XCODE50_VERSION=5.0
+readonly M_XCODE50_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -116,6 +119,12 @@ readonly M_SDK_108_ARCHS="i386 x86_64"
 declare M_SDK_108=""
 declare M_SDK_108_XCODE=""
 declare M_SDK_108_COMPILER=""
+
+# SDK 10.9
+readonly M_SDK_109_ARCHS="i386 x86_64"
+declare M_SDK_109=""
+declare M_SDK_109_XCODE=""
+declare M_SDK_109_COMPILER=""
 
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
@@ -313,6 +322,13 @@ function m_set_platform()
         m_usdk_dir="$M_SDK_108"
         m_compiler="$M_SDK_108_COMPILER"
         m_archs="$M_SDK_108_ARCHS"
+    ;;
+    10.9*)
+        m_osname="Mavericks"
+        m_xcode_dir="$M_SDK_109_XCODE"
+        m_usdk_dir="$M_SDK_109"
+        m_compiler="$M_SDK_109_COMPILER"
+        m_archs="$M_SDK_109_ARCHS"
     ;;
     *)
         m_osname="Unknown"
@@ -690,6 +706,9 @@ function m_handler_dist()
     elif [ -n "$M_SDK_108" ]
     then
         m_platform="10.8"
+    elif [ -n "$M_SDK_109" ]
+    then
+        m_platform="10.9"
     else
         false
         m_exit_on_error "no supported SDK found"
@@ -2203,6 +2222,14 @@ function m_handler()
                     M_XCODE46_VERSION=$m_xcode_version
                 fi
                 ;;
+            5.0*)
+                m_version_compare $M_XCODE50_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE50="$m_xcode_root"
+                    M_XCODE50_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2345,6 +2372,21 @@ function m_handler()
         m_platform_realistic_add "10.8"
 
         m_platform_add "10.9"
+    fi
+    if [[ -n "$M_XCODE50" ]]
+    then
+        m_xcode_latest="$M_XCODE50"
+
+        M_SDK_108="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
+        M_SDK_108_XCODE="$M_XCODE50"
+        M_SDK_108_COMPILER="$M_XCODE50_COMPILER"
+        m_platform_realistic_add "10.8"
+        m_platform_add "10.9"
+
+        M_SDK_109="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+        M_SDK_109_XCODE="$M_XCODE50"
+        M_SDK_109_COMPILER="$M_XCODE50_COMPILER"
+        m_platform_realistic_add "10.9"
     fi
 
     m_read_input $*
