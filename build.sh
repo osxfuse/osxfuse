@@ -48,7 +48,8 @@ declare m_stderr=/dev/stderr
 declare m_stdout=/dev/stdout
 declare m_suprompt=" invalid "
 declare m_target="$M_DEFAULT_TARGET"
-declare m_signing_id=""
+declare m_signing_id_code=""
+declare m_signing_id_installer=""
 declare m_plistsigner_key=""
 declare m_usdk_dir=""
 declare m_compiler=""
@@ -82,6 +83,9 @@ readonly M_XCODE44_COMPILER="com.apple.compilers.llvmgcc42"
 declare M_XCODE45=""
 declare M_XCODE45_VERSION=4.5
 readonly M_XCODE45_COMPILER="com.apple.compilers.llvmgcc42"
+declare M_XCODE46=""
+declare M_XCODE46_VERSION=4.6
+readonly M_XCODE46_COMPILER="com.apple.compilers.llvmgcc42"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -179,6 +183,8 @@ The target keywords mean the following:
 
 Options for target dist are:
 
+    -c identity
+        sign the code with the specified signing identity
     -i identity
         sign the installer package with the specified signing identity
     -u keyfile
@@ -651,6 +657,13 @@ function m_handler_dist()
 
     m_log "initiating Universal build of OSXFUSE"
 
+    # Code signing id
+    #
+    if [ -z "$m_signing_id_code" ]
+    then
+        m_signing_id_code="Developer ID Application: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+    fi
+
     # Create platform-Specific OSXFUSE subpackages
     #
     for m_p in $M_PLATFORMS_REALISTIC
@@ -674,6 +687,9 @@ function m_handler_dist()
     elif [ -n "$M_SDK_107" ]
     then
         m_platform="10.7"
+    elif [ -n "$M_SDK_108" ]
+    then
+        m_platform="10.8"
     else
         false
         m_exit_on_error "no supported SDK found"
@@ -1086,17 +1102,17 @@ __END_DISTRIBUTION
 
     # Sign installer package
     #
-    if [ -z "$m_signing_id" ]
+    if [ -z "$m_signing_id_installer" ]
     then
-        m_signing_id="Developer ID Installer: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+        m_signing_id_intaller="Developer ID Installer: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
     fi
-    productsign --sign "$m_signing_id" "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
+    productsign --sign "$m_signing_id_installer" "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
     if [ $? -eq 0 ]
     then
         rm -rf "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg"
     else
         mv "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
-        m_warn "cannot sign installer package with id '$m_signing_id', proceed with unsigned package."
+        m_warn "cannot sign installer package with id '$m_signing_id_installer', proceed with unsigned package."
     fi
 
     rm -rf "$md_osxfuse_out/${M_PKGBASENAME_OSXFUSE}_unsigned.pkg"
@@ -1326,6 +1342,26 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
   <key>Rules</key>
   <array>
 __END_RULES_PLIST
+
+    if [[ "$M_PLATFORMS" =~ "10.9" ]]
+    then
+cat >> "$md_rules_plist" <<__END_RULES_PLIST
+    <dict>
+      <key>ProductID</key>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
+      <key>Predicate</key>
+      <string>SystemVersion.ProductVersion beginswith "10.9" AND Ticket.version != "$m_release_full"</string>
+      <key>Version</key>
+      <string>$m_release_full</string>
+      <key>Codebase</key>
+      <string>$md_download_url</string>
+      <key>Hash</key>
+      <string>$md_dmg_hash</string>
+      <key>Size</key>
+      <string>$md_dmg_size</string>
+    </dict>
+__END_RULES_PLIST
+    fi
 
     if [[ "$M_PLATFORMS" =~ "10.8" ]]
     then
@@ -1577,6 +1613,12 @@ function m_handler_smalldist()
 
     cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
+
+    if [[ -n "$m_signing_id_code" ]]
+    then
+        codesign -f -s "$m_signing_id_code" "$ms_bundle_support_dir/$M_KEXT_NAME"
+        # Ignore failure
+    fi
 
     cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
     m_exit_on_error "cannot copy 'Debug' to destination."
@@ -1953,8 +1995,13 @@ function m_read_input()
             exit 0
             shift
             ;;
+        -c)
+            m_signing_id_code="$2"
+            shift
+            shift
+            ;;
         -i)
-            m_signing_id="$2"
+            m_signing_id_installer="$2"
             shift
             shift
             ;;
@@ -2148,6 +2195,14 @@ function m_handler()
                     M_XCODE45_VERSION=$m_xcode_version
                 fi
                 ;;
+            4.6*)
+                m_version_compare $M_XCODE46_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE46="$m_xcode_root"
+                    M_XCODE46_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2171,6 +2226,7 @@ function m_handler()
 
         m_platform_add "10.7"
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE40" ]]
     then
@@ -2183,6 +2239,7 @@ function m_handler()
 
         m_platform_add "10.7"
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE41" ]]
     then
@@ -2200,6 +2257,7 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE42" ]]
     then
@@ -2217,6 +2275,7 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE43" ]]
     then
@@ -2234,6 +2293,7 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE44" ]]
     then
@@ -2249,6 +2309,8 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE44"
         M_SDK_108_COMPILER="$M_XCODE44_COMPILER"
         m_platform_realistic_add "10.8"
+
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE45" ]]
     then
@@ -2264,6 +2326,25 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE45"
         M_SDK_108_COMPILER="$M_XCODE45_COMPILER"
         m_platform_realistic_add "10.8"
+
+        m_platform_add "10.9"
+    fi
+    if [[ -n "$M_XCODE46" ]]
+    then
+        m_xcode_latest="$M_XCODE46"
+
+        M_SDK_107="$M_XCODE46/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
+        M_SDK_107_XCODE="$M_XCODE46"
+        M_SDK_107_COMPILER="$M_XCODE46_COMPILER"
+        m_platform_realistic_add "10.7"
+        m_platform_add "10.8"
+
+        M_SDK_108="$M_XCODE46/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
+        M_SDK_108_XCODE="$M_XCODE46"
+        M_SDK_108_COMPILER="$M_XCODE46_COMPILER"
+        m_platform_realistic_add "10.8"
+
+        m_platform_add "10.9"
     fi
 
     m_read_input $*
