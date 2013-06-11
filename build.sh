@@ -46,7 +46,8 @@ declare m_stderr=/dev/stderr
 declare m_stdout=/dev/stdout
 declare m_suprompt=" invalid "
 declare m_target="$M_DEFAULT_TARGET"
-declare m_signing_id=""
+declare m_signing_id_code=""
+declare m_signing_id_installer=""
 declare m_plistsigner_key=""
 declare m_usdk_dir=""
 declare m_compiler=""
@@ -184,6 +185,8 @@ The target keywords mean the following:
 
 Options for target release are:
 
+    -c identity
+        sign the code with the specified signing identity
     -i identity
         sign the installer package with the specified signing identity
     -u keyfile
@@ -1023,6 +1026,17 @@ function m_handler_release()
         return $retval
     fi
 
+    # Code signing id
+    #
+    if [ -z "$m_signing_id_code" ]
+    then
+        m_signing_id_code="Developer ID Application: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+    fi
+    if [ -z "$m_signing_id_installer" ]
+    then
+        m_signing_id_installer="Developer ID Installer: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+    fi
+
     m_handler_dist
 
     m_platform="$M_DEFAULT_PLATFORM"
@@ -1069,12 +1083,8 @@ function m_handler_release()
 
     # Sign installer package
     #
-    if [ -z "$m_signing_id" ]
-    then
-        m_signing_id="Developer ID Installer: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
-    fi
-    productsign --sign "$m_signing_id" "$mr_dist_out/$M_PKGNAME_OSXFUSE" "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE"
-    m_exit_on_error "cannot sign installer package with id '$m_signing_id'."
+    productsign --sign "$m_signing_id_installer" "$mr_dist_out/$M_PKGNAME_OSXFUSE" "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE"
+    m_exit_on_error "cannot sign installer package with id '$m_signing_id_installer'."
 
     # Create the distribution volume
     #
@@ -1534,9 +1544,9 @@ function m_handler_kext()
     cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
-    if [[ -n "$m_signing_id" ]]
+    if [[ -n "$m_signing_id_code" ]]
     then
-        codesign -f -s "$m_signing_id" "$ms_osxfuse_out/$M_KEXT_NAME"
+        codesign -f -s "$m_signing_id_code" "$ms_osxfuse_out/$M_KEXT_NAME"
         m_exit_on_error "cannot sign kernel extension."
     fi
 
@@ -2061,8 +2071,13 @@ function m_read_input()
             exit 0
             shift
             ;;
+        -c)
+            m_signing_id_code="$2"
+            shift
+            shift
+            ;;
         -i)
-            m_signing_id="$2"
+            m_signing_id_installer="$2"
             shift
             shift
             ;;
@@ -2298,6 +2313,7 @@ function m_handler()
 
         m_platform_add "10.7"
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE40" ]]
     then
@@ -2310,6 +2326,7 @@ function m_handler()
 
         m_platform_add "10.7"
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE41" ]]
     then
@@ -2327,6 +2344,7 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE42" ]]
     then
@@ -2344,6 +2362,7 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE43" ]]
     then
@@ -2361,6 +2380,7 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE44" ]]
     then
@@ -2376,6 +2396,8 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE44"
         M_SDK_108_COMPILER="$M_XCODE44_COMPILER"
         m_platform_realistic_add "10.8"
+
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE45" ]]
     then
@@ -2391,6 +2413,8 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE45"
         M_SDK_108_COMPILER="$M_XCODE45_COMPILER"
         m_platform_realistic_add "10.8"
+
+        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE46" ]]
     then
@@ -2406,6 +2430,8 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE46"
         M_SDK_108_COMPILER="$M_XCODE46_COMPILER"
         m_platform_realistic_add "10.8"
+
+        m_platform_add "10.9"
     fi
 
     m_read_input $*
