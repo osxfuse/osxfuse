@@ -803,7 +803,7 @@ function m_handler_dist()
 cat >> "$md_dist_out" <<__END_DISTRIBUTION
 <?xml version="1.0" encoding="UTF-8"?>
 <installer-gui-script minSpecVersion="1.0">
-    <title>FUSE for OS X (OSXFUSE)</title>
+    <title>FUSE for OS X</title>
     <background file="background.png" scaling="none" alignment="center"/>
     <welcome file="Welcome.rtf"/>
     <license file="License.rtf"/>
