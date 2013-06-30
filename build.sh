@@ -2337,7 +2337,6 @@ function m_handler()
 
         m_platform_add "10.7"
         m_platform_add "10.8"
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE40" ]]
     then
@@ -2350,7 +2349,6 @@ function m_handler()
 
         m_platform_add "10.7"
         m_platform_add "10.8"
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE41" ]]
     then
@@ -2368,7 +2366,6 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE42" ]]
     then
@@ -2386,7 +2383,6 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE43" ]]
     then
@@ -2404,7 +2400,6 @@ function m_handler()
         m_platform_realistic_add "10.7"
 
         m_platform_add "10.8"
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE44" ]]
     then
@@ -2420,8 +2415,6 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE44"
         M_SDK_108_COMPILER="$M_XCODE44_COMPILER"
         m_platform_realistic_add "10.8"
-
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE45" ]]
     then
@@ -2437,8 +2430,6 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE45"
         M_SDK_108_COMPILER="$M_XCODE45_COMPILER"
         m_platform_realistic_add "10.8"
-
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE46" ]]
     then
@@ -2454,8 +2445,6 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE46"
         M_SDK_108_COMPILER="$M_XCODE46_COMPILER"
         m_platform_realistic_add "10.8"
-
-        m_platform_add "10.9"
     fi
     if [[ -n "$M_XCODE50" ]]
     then
@@ -2465,7 +2454,6 @@ function m_handler()
         M_SDK_108_XCODE="$M_XCODE50"
         M_SDK_108_COMPILER="$M_XCODE50_COMPILER"
         m_platform_realistic_add "10.8"
-        m_platform_add "10.9"
 
         M_SDK_109="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
         M_SDK_109_XCODE="$M_XCODE50"
