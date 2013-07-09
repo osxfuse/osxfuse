@@ -25,7 +25,7 @@ readonly M_DEFAULT_VALUE=__default__
 
 readonly M_CONFIGURATIONS="Debug Release" # default is Release
 
-readonly M_TARGETS="clean dist examples lib reload smalldist"
+readonly M_TARGETS="clean dist examples lib reload smalldist homebrew"
 readonly M_TARGETS_WITH_PLATFORM="examples lib smalldist"
 
 readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
@@ -51,6 +51,7 @@ declare m_target="$M_DEFAULT_TARGET"
 declare m_signing_id_code=""
 declare m_signing_id_installer=""
 declare m_plistsigner_key=""
+declare m_prefix=""
 declare m_usdk_dir=""
 declare m_compiler=""
 declare m_xcode_dir=""
@@ -189,6 +190,7 @@ The target keywords mean the following:
     lib         build the user-space library (e.g. to run fusexmp_fh)
     reload      rebuild and reload the kernel extension
     smalldist   create a platform-specific distribution package
+    homebrew    build target for homebrew (install prefix required)
 
 Options for target dist are:
 
@@ -198,6 +200,11 @@ Options for target dist are:
         sign the installer package with the specified signing identity
     -u keyfile
         sign the update rules file with the specified private key
+
+Options for target homebrew are:
+
+    -f prefix
+        the install prefix
 
 Other options are:
     -d  create a developer prerelease package instead of a regular release
@@ -1859,6 +1866,191 @@ function m_handler_smalldist()
     return 0
 }
 
+function m_handler_homebrew()
+{
+    m_set_platform
+
+    m_set_srcroot "$m_platform"
+
+    if [ -z "$m_prefix" ]
+    then
+        false
+        m_exit_on_error "prefix undefined."
+    fi
+
+    local lib_dir="$m_srcroot"/fuse
+    if [ ! -d "$lib_dir" ]
+    then
+        false
+        m_exit_on_error "cannot access directory '$lib_dir'."
+    fi
+
+    local kernel_dir="$m_srcroot"/kext
+    if [ ! -d "$kernel_dir" ]
+    then
+        false
+        m_exit_on_error "cannot access directory '$kernel_dir'."
+    fi
+
+    rm -rf "$kernel_dir/build/"
+
+    local ms_os_version="$m_platform"
+    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$kernel_dir"/common/fuse_version.h`
+    m_exit_on_error "cannot get platform-specific OSXFUSE version."
+
+    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-homebrew-$ms_os_version-$ms_osxfuse_version"
+    local ms_osxfuse_build="$ms_osxfuse_out/build/"
+    local ms_osxfuse_root="$m_prefix"
+
+    if [ -e "$ms_osxfuse_out" ]
+    then
+        rm -rf "$ms_osxfuse_out"
+        m_exit_on_error "failed to clean up previous platform-specific OSXFUSE build."
+    fi
+    if [ -e "$M_CONF_TMPDIR/osxfuse-homebrew-$ms_os_version-"* ]
+    then
+        m_warn "removing unrecognized version of platform-specific package"
+        rm -rf "$M_CONF_TMPDIR/osxfuse-core-$ms_os_version-"*
+        m_exit_on_error "failed to clean up unrecognized version of platform-specific package."
+    fi
+
+    if [ "$1" == "clean" ]
+    then
+        local retval=$?
+        m_log "cleaned (platform $m_platform)"
+        return $retval
+    fi
+
+    cd "$kernel_dir"
+    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
+
+    m_log "building OSXFUSE kernel extension and tools"
+
+    xcodebuild -configuration "$m_configuration" -target All GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+
+    m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
+
+    # Go for it
+
+    local ms_project_dir="$kernel_dir"
+
+    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
+    if [ ! -d "$ms_built_products_dir" ]
+    then
+        m_exit_on_error "cannot find built products directory."
+    fi
+
+    ms_osxfuse_system_dir=""
+
+    mkdir -p "$ms_osxfuse_build"
+    m_exit_on_error "cannot make new build directory '$ms_osxfuse_build'."
+
+    mkdir -p "$ms_osxfuse_root"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root'."
+
+    mkdir -p "$ms_osxfuse_root/Library/Filesystems/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Filesystems/'."
+
+    mkdir -p "$ms_osxfuse_root/Library/Frameworks/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Frameworks/'."
+
+    mkdir -p "$ms_osxfuse_root/lib/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/lib/'."
+
+    mkdir -p "$ms_osxfuse_root/include/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/include/'."
+
+    mkdir -p "$ms_osxfuse_root/lib/pkgconfig/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/lib/pkgconfig/'."
+
+    local ms_bundle_dir_generic="/Library/Filesystems/$M_FSBUNDLE_NAME"
+    local ms_bundle_dir="$ms_osxfuse_root/$ms_bundle_dir_generic"
+    local ms_bundle_support_dir="$ms_bundle_dir/Support"
+
+    cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
+    m_exit_on_error "cannot copy '$M_FSBUNDLE_NAME' to destination."
+
+    mkdir -p "$ms_bundle_support_dir"
+    m_exit_on_error "cannot make directory '$ms_bundle_support_dir'."
+
+    cp -pRX "$ms_built_products_dir/Debug/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
+    m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
+
+    cp -pRX "$ms_built_products_dir/Debug/$M_KEXT_NAME.dSYM" "$ms_bundle_support_dir/$M_KEXT_NAME.dSYM"
+    m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
+
+    cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_bundle_support_dir/load_osxfusefs"
+    m_exit_on_error "cannot copy 'load_osxfusefs' to destination."
+
+    cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_bundle_support_dir/mount_osxfusefs"
+    m_exit_on_error "cannot copy 'mount_osxfusefs' to destination."
+
+    # Build the user-space OSXFUSE library
+    #
+
+    m_log "building user-space OSXFUSE library"
+
+    ms_deployment_target="$m_platform"
+
+    cp -pRX "$lib_dir" "$ms_osxfuse_build"
+    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
+
+    cd "$ms_osxfuse_build"/fuse
+    m_exit_on_error "cannot access OSXFUSE library source in '$ms_osxfuse_build/fuse'."
+
+    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_MACFUSE_MODE="0" PREFIX="$m_prefix" ./darwin_configure.sh "$kernel_dir" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot configure OSXFUSE library source for compilation."
+
+    xcrun make -j4 >$m_stdout 2>$m_stderr
+    m_exit_on_error "make failed while compiling the OSXFUSE library."
+
+    xcrun make install >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot prepare library build for installation."
+
+    for f in "$ms_osxfuse_root"/lib/libosxfuse_i64*.dylib; do
+        local source=`basename "$f"`
+        local target="`echo \"$f\" | sed 's/libosxfuse_i64/libosxfuse/'`"
+        ln -s "$source" "$target"
+        m_exit_on_error "cannot create symlink '$target' -> '$source'."
+    done
+    ln -s libosxfuse_i64.la "$ms_osxfuse_root/lib/libosxfuse.la"
+    m_exit_on_error "cannot create symlink '$ms_osxfuse_root/lib/libosxfuse.la' -> 'libosxfuse_i64.la'."
+
+    ln -s osxfuse.pc "$ms_osxfuse_root/lib/pkgconfig/fuse.pc"
+    m_exit_on_error "cannot create symlink '$ms_osxfuse_root/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
+
+    # Generate dSYM bundles
+    xcrun dsymutil "$ms_osxfuse_root"/lib/libosxfuse_i32.dylib
+    m_exit_on_error "cannot generate debugging information for libosxfuse_i32."
+    xcrun dsymutil "$ms_osxfuse_root"/lib/libosxfuse_i64.dylib
+    m_exit_on_error "cannot generate debugging information for libosxfuse_i64."
+
+    # Build OSXFUSE.framework
+    #
+
+    m_log "building OSXFUSE Objective-C framework"
+
+    cd "$ms_project_dir/../framework"
+    m_exit_on_error "cannot access Objective-C framework directory."
+
+    rm -rf build/
+    m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
+
+    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" PREFIX="" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
+    m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
+
+    cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
+    m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
+
+    mv "$ms_osxfuse_root"/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
+
+    echo >$m_stdout
+    m_log "succeeded, results in '$ms_osxfuse_root'."
+    echo >$m_stdout
+
+    return 0
+}
+
 function m_validate_input()
 {
     local mvi_found=
@@ -1964,7 +2156,7 @@ function m_validate_input()
 
 function m_read_input()
 {
-    m_args=`getopt c:dhp:qst:v $*`
+    m_args=`getopt c:dhp:qst:vc:u:u:f: $*`
 
     if [ $? != 0 ]
     then
@@ -2026,6 +2218,11 @@ function m_read_input()
             ;;
         -u)
             m_plistsigner_key="$2"
+            shift
+            shift
+            ;;
+        -f)
+            m_prefix="${2}"
             shift
             shift
             ;;
@@ -2132,6 +2329,10 @@ function m_handler()
 
     "smalldist")
         m_handler_smalldist
+    ;;
+
+    "homebrew")
+        m_handler_homebrew
     ;;
 
     *)
