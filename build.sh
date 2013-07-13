@@ -194,7 +194,7 @@ The target keywords mean the following:
 
 Options for target dist are:
 
-    -c identity
+    -j identity
         sign the code with the specified signing identity
     -i identity
         sign the installer package with the specified signing identity
@@ -2162,79 +2162,47 @@ function m_validate_input()
 
 function m_read_input()
 {
-    m_args=`getopt c:dhp:qst:vc:u:u:f: $*`
-
-    if [ $? != 0 ]
-    then
-        echo "Try $0 -h for help."
-        exit 2
-    fi
-
-    set -- $m_args
-
-    for m_i
+    while getopts "c:dhp:qst:vj:i:u:f:" m_i
     do
         case "$m_i" in
-        -c)
-            m_configuration="$2"
-            shift
-            shift
+        c)
+            m_configuration="$OPTARG"
             ;;
-        -d)
+        d)
             m_developer=1
-            shift
             ;;
-        -h)
+        h)
             m_help
             exit 0
             ;;
-        -p)
-            m_platform="$2"
-            shift
-            shift
+        p)
+            m_platform="$OPTARG"
             ;;
-        -q)
+        q)
             m_stderr=/dev/null
             m_stdout=/dev/null
-            shift
             ;;
-        -s)
+        s)
             m_shortcircuit="1"
-            shift
             ;;
-        -t)
-            m_target="$2"
-            shift
-            shift
+        t)
+            m_target="$OPTARG"
             ;;
-        -v)
+        v)
             m_version
             exit 0
-            shift
             ;;
-        -c)
-            m_signing_id_code="$2"
-            shift
-            shift
+        j)
+            m_signing_id_code="$OPTARG"
             ;;
-        -i)
-            m_signing_id_installer="$2"
-            shift
-            shift
+        i)
+            m_signing_id_installer="$OPTARG"
             ;;
-        -u)
-            m_plistsigner_key="$2"
-            shift
-            shift
+        u)
+            m_plistsigner_key="$OPTARG"
             ;;
-        -f)
-            m_prefix="${2}"
-            shift
-            shift
-            ;;
-        --)
-            shift
-            break
+        f)
+            m_prefix="$OPTARG"
             ;;
         esac
     done
@@ -2584,7 +2552,7 @@ function m_handler()
         m_platform_realistic_add "10.9"
     fi
 
-    m_read_input $*
+    m_read_input "$@"
 
     if [[ -z "$M_PLATFORMS" || -z "$m_xcode_latest" ]]
     then
