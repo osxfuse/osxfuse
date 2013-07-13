@@ -420,6 +420,15 @@ function m_build_pkg()
     return 0
 }
 
+function m_find_identity()
+{
+    local type="${1}"
+    local user="`dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+    security find-certificate -c "Developer ID ${type}: ${user}" -Z 2> /dev/null | sed -n -e 's/^SHA-1[^:]*:[ ]*\(.*\)$/\1/p' -e ""
+
+    return 0
+}
+
 # Build the user-space library
 #
 function m_handler_lib()
@@ -1046,11 +1055,11 @@ function m_handler_release()
     #
     if [ -z "$m_signing_id_code" ]
     then
-        m_signing_id_code="Developer ID Application: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+        m_signing_id_code="`m_find_identity "Application"`"
     fi
     if [ -z "$m_signing_id_installer" ]
     then
-        m_signing_id_installer="Developer ID Installer: `dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
+        m_signing_id_installer="`m_find_identity "Installer"`"
     fi
 
     m_handler_dist
