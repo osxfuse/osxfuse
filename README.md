@@ -39,7 +39,7 @@ The build script locates automatically all supported installations of Xcode in t
 
 * The "Command Line Tools for Xcode" package is needed to generate BridgeSupport metadata for `OSXFUSE.framework` because of a bug in `gen_bridge_metadata` (hard coded path to `cpp`).
 
-The Xcode tools packages can be obtained from http://connect.apple.com (free Apple Developer ID required).
+The Xcode tools packages can be obtained from https://developer.apple.com/downloads/ (free Apple Developer ID required).
 
 ---
 
