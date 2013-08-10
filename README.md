@@ -19,11 +19,11 @@ Build Instructions
 
 The build script locates automatically all supported installations of Xcode in the top level of the Mac OS X startup volume and the Applications folder. It builds a distribution package compatible with as many versions of Mac OS X as possible (depending on the versions of Xcode that are installed).
 
-* Xcode 3.2: OSXFUSE can be built with support for Mac OS X 10.5 and newer versions.
+* Xcode 3.2: OSXFUSE can be built with support for Mac OS X 10.5 to 10.8.
 
-* Xcode 4.0, 4.1, 4.2, 4.3: OSXFUSE can be built with support for Mac OS X 10.6 and newer versions. 
+* Xcode 4.0, 4.1, 4.2, 4.3: OSXFUSE can be built with support for Mac OS X 10.6 to 10.8. 
 
-* Xcode 4.4, 4.5, 4.6: OSXFUSE can be built with support for OS X 10.7 and newer versions.
+* Xcode 4.4, 4.5, 4.6: OSXFUSE can be built with support for OS X 10.7 and 10.8.
 
 * Xcode 5.0: OSXFUSE can be built with support for OS X 10.8 and 10.9
 
