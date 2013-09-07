@@ -247,9 +247,9 @@ function m_warn()
 #
 function m_exit_on_error()
 {
-    if [ "$?" != 0 ]
+    local retval=$?
+    if [ "$retval" != 0 ]
     then
-        local retval=$?
         echo "$M_LOGPREFIX($m_active_target) failed: $1" 1>&2
         exit $retval
     fi
