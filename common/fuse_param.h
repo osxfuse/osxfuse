@@ -82,7 +82,8 @@
 
 /* Compatible API version */
 
-#define OSXFUSE_MIN_ABI_VERSION            708
+#define FUSE_ABI_VERSION_MAX               (FUSE_KERNEL_VERSION * 100 + FUSE_KERNEL_MINOR_VERSION)
+#define FUSE_ABI_VERSION_MIN               708
 
 /* Device Interface */
 
