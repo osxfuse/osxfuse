@@ -2434,10 +2434,14 @@ function m_handler()
         M_SDK_108_COMPILER="$M_XCODE50_COMPILER"
         m_platform_realistic_add "10.8"
 
-        M_SDK_109="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
-        M_SDK_109_XCODE="$M_XCODE50"
-        M_SDK_109_COMPILER="$M_XCODE50_COMPILER"
-        m_platform_realistic_add "10.9"
+        m_version_compare $M_XCODE50_VERSION "5.0.1"
+        if [[ $? != 2 ]]
+        then
+            M_SDK_109="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+            M_SDK_109_XCODE="$M_XCODE50"
+            M_SDK_109_COMPILER="$M_XCODE50_COMPILER"
+            m_platform_realistic_add "10.9"
+        fi
     fi
 
     m_read_input "$@"
