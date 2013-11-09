@@ -1972,6 +1972,9 @@ function m_handler_homebrew()
     mkdir -p "$ms_osxfuse_root/lib/pkgconfig/"
     m_exit_on_error "cannot make directory '$ms_osxfuse_root/lib/pkgconfig/'."
 
+    mkdir -p "$ms_osxfuse_root/usr/local/lib/pkgconfig/"
+    m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/lib/pkgconfig/'."
+
     local ms_bundle_dir_generic="/Library/Filesystems/$M_FSBUNDLE_NAME"
     local ms_bundle_dir="$ms_osxfuse_root/$ms_bundle_dir_generic"
     local ms_bundle_support_dir="$ms_bundle_dir/Support"
@@ -2024,6 +2027,9 @@ function m_handler_homebrew()
     done
     ln -s libosxfuse_i64.la "$ms_osxfuse_root/lib/libosxfuse.la"
     m_exit_on_error "cannot create symlink '$ms_osxfuse_root/lib/libosxfuse.la' -> 'libosxfuse_i64.la'."
+
+    ln -s osxfuse.pc "$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc"
+    m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
 
     # Generate dSYM bundles
     xcrun dsymutil "$ms_osxfuse_root"/lib/libosxfuse_i32.dylib
