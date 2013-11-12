@@ -248,14 +248,17 @@ do
     IS_BOTCHED_UNINSTALL=1
   fi
 done
-for x in `/usr/bin/lsbom -sd "$BOMFILE_PREFPANE" | /usr/bin/sort -r`
-do
-  remove_dir "$INSTALL_VOLUME/$x"
-  if [ $? -ne 0 ]
-  then
-    IS_BOTCHED_UNINSTALL=1
-  fi
-done
+if [ -e "$BOMFILE_PREFPANE" ]
+then
+  for x in `/usr/bin/lsbom -sd "$BOMFILE_PREFPANE" | /usr/bin/sort -r`
+  do
+    remove_dir "$INSTALL_VOLUME/$x"
+    if [ $? -ne 0 ]
+    then
+      IS_BOTCHED_UNINSTALL=1
+    fi
+  done
+fi
 IFS="$OLD_IFS"
 
 # 6. Remove the Receipt.
