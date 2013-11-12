@@ -464,7 +464,7 @@ function m_handler_lib()
 
     m_log "initiating Universal build for $m_platform"
 
-    cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
+    /bin/cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
@@ -584,7 +584,7 @@ function m_handler_examples()
 
     m_log "initiating Universal build for $m_platform"
 
-    cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
+    /bin/cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
@@ -752,7 +752,7 @@ function m_handler_dist()
         m_exit_on_error "cannot find preference pane."
     fi
 
-    cp "$md_ai" "$md_pp/Contents/MacOS"
+    /bin/cp "$md_ai" "$md_pp/Contents/MacOS"
     m_exit_on_error "cannot copy the autoinstaller to the prefpane bundle."
 
     # Build the container
@@ -769,7 +769,7 @@ function m_handler_dist()
     m_log "copying generic container package payload"
     mkdir -p "$md_osxfuse_root/Library/PreferencePanes"
     m_exit_on_error "cannot make directory '$md_osxfuse_root/Library/PreferencePanes'."
-    cp -R "$md_pp" "$md_osxfuse_root/Library/PreferencePanes/"
+    /bin/cp -R "$md_pp" "$md_osxfuse_root/Library/PreferencePanes/"
     m_exit_on_error "cannot copy the prefpane to '$md_osxfuse_root/Library/PreferencePanes/'."
     m_set_suprompt "to chown '$md_osxfuse_root/'."
     sudo -p "$m_suprompt" chown -R root:wheel "$md_osxfuse_root/"
@@ -782,7 +782,7 @@ function m_handler_dist()
 
     # Build OSXFUSE installer package
     #
-    cp -R "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
+    /bin/cp -R "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
     m_exit_on_error "cannot copy the packaging files for package '$M_PKGNAME_OSXFUSE'."
 
     local md_dist_choices_outline;
@@ -1130,7 +1130,7 @@ function m_handler_release()
     #
     local mr_resources_name="Resources"
     local mr_resources_path="$mr_volume_path/$mr_resources_name"
-    cp -R "$m_srcroot/support/DiskImage/Resources" "$mr_resources_path"
+    /bin/cp -R "$m_srcroot/support/DiskImage/Resources" "$mr_resources_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1142,7 +1142,7 @@ function m_handler_release()
     #
     local mr_pkgname_installer="FUSE for OS X $m_release_full.pkg"
     local mr_pkgname_installer_link="Install FUSE for OS X"
-    cp -pRX "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE" "$mr_resources_path/$mr_pkgname_installer"
+    /bin/cp -pRX "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE" "$mr_resources_path/$mr_pkgname_installer"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1187,7 +1187,7 @@ __END_ENGINE_INSTALL
         m_exit_on_error "cannot make directory '.background' on scratch disk image."
     fi
 
-    cp "$m_srcroot/support/DiskImage/background.tiff" "$mr_volume_path/.background/"
+    /bin/cp "$m_srcroot/support/DiskImage/background.tiff" "$mr_volume_path/.background/"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
@@ -1402,7 +1402,7 @@ function m_handler_osxfusefs()
     mkdir -p "$ms_osxfuse_out"
     m_exit_on_error "cannot make directory '$ms_osxfuse_out'."
 
-    cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME"
+    /bin/cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME"
     m_exit_on_error "cannot copy file system bundle to destination."
 
     local ms_load_osxfuse="$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
@@ -1456,7 +1456,7 @@ function m_handler_osxfusefs()
             mkdir -p "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p"
             m_exit_on_error "cannot make directory '$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p'."
 
-            cp -pRX "$ms_kext_out/$M_KEXT_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p/$M_KEXT_NAME"
+            /bin/cp -pRX "$ms_kext_out/$M_KEXT_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p/$M_KEXT_NAME"
             m_exit_on_error "cannot copy '$M_KEXT_NAME' for platform '$m_p' to destination."
         else
             ln -s "$m_pr" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p"
@@ -1566,7 +1566,7 @@ function m_handler_kext()
     mkdir -p "$ms_osxfuse_out"
     m_exit_on_error "cannot make directory '$ms_osxfuse_out'."
 
-    cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
+    /bin/cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
     if [[ -n "$m_signing_id_code" ]]
@@ -1575,7 +1575,7 @@ function m_handler_kext()
         m_exit_on_error "cannot sign kernel extension."
     fi
 
-    cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
+    /bin/cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
     m_exit_on_error "cannot copy 'Debug' to destination."
 
     m_set_suprompt "to set permissions on newly built kernel extension"
@@ -1728,13 +1728,13 @@ function m_handler_core()
     local ms_bundle_dir="$ms_osxfuse_root/$ms_bundle_dir_generic"
     local ms_bundle_resources_dir="$ms_bundle_dir/Contents/Resources"
 
-    cp -pRX "$ms_osxfusefs_out/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
+    /bin/cp -pRX "$ms_osxfusefs_out/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
     m_exit_on_error "cannot copy '$M_FSBUNDLE_NAME' to destination."
 
-    cp -pRX "$m_srcroot/support/uninstall_osxfuse.sh" "$ms_bundle_resources_dir/uninstall_osxfuse.sh"
+    /bin/cp -pRX "$m_srcroot/support/uninstall_osxfuse.sh" "$ms_bundle_resources_dir/uninstall_osxfuse.sh"
     m_exit_on_error "cannot copy 'uninstall_osxfuse.sh' to destination."
 
-    cp -pRX "$m_srcroot/support/uninstall_macfuse.sh" "$ms_bundle_resources_dir/uninstall_macfuse.sh"
+    /bin/cp -pRX "$m_srcroot/support/uninstall_macfuse.sh" "$ms_bundle_resources_dir/uninstall_macfuse.sh"
     m_exit_on_error "cannot copy 'uninstall_macfuse.sh' to destination."
 
     ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_resources_dir/autoinstall-osxfuse-core"
@@ -1749,7 +1749,7 @@ function m_handler_core()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    cp -pRX "$lib_dir" "$ms_osxfuse_build"
+    /bin/cp -pRX "$lib_dir" "$ms_osxfuse_build"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$ms_osxfuse_build"/fuse
@@ -1785,7 +1785,7 @@ function m_handler_core()
 
     m_log "building user-space MacFUSE library"
 
-    cp -pRX "$lib_dir_mf" "$ms_osxfuse_build/macfuse"
+    /bin/cp -pRX "$lib_dir_mf" "$ms_osxfuse_build/macfuse"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir_mf'."
 
     cd "$ms_osxfuse_build"/macfuse
@@ -1823,10 +1823,10 @@ function m_handler_core()
     xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" CONFIGURATION_BUILD_DIR="build/$m_configuration" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
+    /bin/cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
 
-    cp -pRX "$support_dir/Icon.icns" "$ms_osxfuse_root/Library/Frameworks/OSXFUSE.framework/Resources/DefaultVolumeIcon.icns"
+    /bin/cp -pRX "$support_dir/Icon.icns" "$ms_osxfuse_root/Library/Frameworks/OSXFUSE.framework/Resources/DefaultVolumeIcon.icns"
     m_exit_on_error "cannot copy 'DefaultVolumeIcon.icns' to destination."
 
     mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
@@ -1839,7 +1839,7 @@ function m_handler_core()
     # Link MacFUSE.framework back to OSXFUSE.framework
     #
 
-    cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/"
+    /bin/cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'MacFUSE.framework' to destination."
 
     sed -e "s/OSXFUSE_CORE_VERSION/$ms_osxfuse_version/" "MacFUSE.framework/Versions/A/Resources/Info.plist" > "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/Resources/Info.plist"
