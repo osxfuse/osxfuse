@@ -39,8 +39,6 @@ The build script locates automatically all supported installations of Xcode in t
 
         sudo port install autoconf automake libtool
 
-* Xcode 4.3 and newer versions do no loner include PackageMaker, which is needed for creating installer packages. PackageMaker has been moved to the Xcode 4.3 "Auxiliary Tools" package but is no longer included in the Xcode 5.0 "Auxiliary Tools" package.
-
 * The "Command Line Tools" package is needed to generate BridgeSupport metadata for `OSXFUSE.framework` because of a bug in `gen_bridge_metadata` (hard coded path to `cpp`).
 
 The Xcode tools packages can be obtained from https://developer.apple.com/downloads/ (free Apple Developer ID required).
