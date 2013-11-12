@@ -135,9 +135,7 @@ readonly M_KEXT_SYMBOLS="osxfusefs-symbols"
 readonly M_LOGPREFIX="OSXFUSEBuildTool"
 readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
 
-readonly M_MACFUSE_MODE=1;
-
-readonly M_PKG_VERSION="10.5"
+readonly M_MACFUSE_MODE=1
 
 # Core
 readonly M_PKGID_CORE="com.github.osxfuse.pkg.Core"
@@ -363,58 +361,27 @@ function m_build_pkg()
     local bp_pkgname="$5"
     local bp_output_dir="$6"
 
-    if [ -z "$mp_package_maker" ]
-    then
-        # Find PackageMaker.app
-        local _IFS="$IFS"; IFS=$'\n'
-        m_package_maker_installed=(`mdfind 'kMDItemCFBundleIdentifier == "com.apple.PackageMaker"'`)
-        IFS="$_IFS"
-        if [[ ${#m_package_maker_installed[@]} -eq 0 ]]
-        then
-            false
-            m_exit_on_error "PackageMaker.app not found"
-        fi
-
-        # Use most recent version of PackageMaker.app
-        for m_pm in "${m_package_maker_installed[@]}";
-        do
-            m_pm_version=`mdls -name kMDItemVersion "$m_pm" | perl -ne '/kMDItemVersion = "(.*)"/ && print $1'`
-            m_version_compare "$mp_package_maker_version" "$m_pm_version"
-            if [[ $? -ne 2 ]]
-            then
-                mp_package_maker="$m_pm"
-                mp_package_maker_version="$m_pm_version"
-            fi
-        done
-        m_log "package maker: $mp_package_maker (version $mp_package_maker_version)"
-        mp_package_maker="$mp_package_maker/Contents/MacOS/PackageMaker"
-    fi
-
     # Make the package
-    m_set_suprompt "to run packagemaker"
+    m_set_suprompt "to run pkgbuild"
     if [ -d "$bp_install_srcroot/Scripts" ]
     then
         sudo -p "$m_suprompt" \
-            "$mp_package_maker" -r "$bp_install_payload" \
-            -i "$bp_pkgid" \
-            -f "$bp_install_srcroot/PackageInfo" \
-            -o "$bp_output_dir/$bp_pkgname" \
-            -n "$bp_pkgversion" \
-            -s "$bp_install_srcroot/Scripts" \
-            -g "$M_PKG_VERSION" \
-            -h system \
-            -m -w -v \
+            pkgbuild --root "$bp_install_payload" \
+            --identifier "$bp_pkgid" \
+            --version "$bp_pkgversion" \
+            --scripts "$bp_install_srcroot/Scripts" \
+            --install-location / \
+            --ownership preserve \
+            "$bp_output_dir/$bp_pkgname" \
             >$m_stdout 2>$m_stderr
     else
         sudo -p "$m_suprompt" \
-            "$mp_package_maker" -r "$bp_install_payload" \
-            -i "$bp_pkgid" \
-            -f "$bp_install_srcroot/PackageInfo" \
-            -o "$bp_output_dir/$bp_pkgname" \
-            -n "$bp_pkgversion" \
-            -g "$M_PKG_VERSION" \
-            -h system \
-            -m -w -v \
+            pkgbuild --root "$bp_install_payload" \
+            --identifier "$bp_pkgid" \
+            --version "$bp_pkgversion" \
+            --install-location / \
+            --ownership preserve \
+            "$bp_output_dir/$bp_pkgname" \
             >$m_stdout 2>$m_stderr
     fi
     m_exit_on_error "cannot create package '$bp_pkgname'."
