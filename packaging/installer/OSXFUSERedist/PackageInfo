@@ -1,5 +1,0 @@
-<pkg-info auth="root">
-    <scripts>
-        <postinstall file="./postinstall"/>
-    </scripts>
-</pkg-info>

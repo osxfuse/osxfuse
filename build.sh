@@ -156,11 +156,6 @@ readonly M_PKGNAME_MACFUSE="${M_PKGBASENAME_MACFUSE}.pkg"
 readonly M_PKGBASENAME_OSXFUSE="OSXFUSE"
 readonly M_PKGNAME_OSXFUSE="${M_PKGBASENAME_OSXFUSE}.pkg"
 
-# Redistribution package
-readonly M_PKGID_REDIST="com.github.osxfuse.pkg.osxfuse"
-readonly M_PKGBASENAME_REDIST="OSXFUSERedist"
-readonly M_PKGNAME_REDIST="${M_PKGBASENAME_REDIST}.pkg"
-
 readonly M_WANTSU="needs the Administrator password"
 readonly M_WARNING="*** Warning"
 
@@ -1290,36 +1285,6 @@ __END_ENGINE_INSTALL
     m_exit_on_error "cannot finalize OSXFUSE distribution disk image."
 
     rm -f "$md_scratch_dmg"
-    # ignore any errors
-
-    m_log "building redistribution package"
-
-    # Build redistribution package
-    #
-
-    local md_redist_pkgsrc="$md_osxfuse_out/redistpkgsrc"
-    local md_redist_root="$md_osxfuse_out/redistroot"
-
-    /bin/cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_REDIST" "$md_redist_pkgsrc"
-    m_exit_on_error "cannot copy redistribution package source to '$md_redist_pkgsrc'."
-    /bin/cp "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_redist_pkgsrc/Scripts/OSXFUSE.pkg"
-    m_exit_on_error "cannot copy OSXFUSE distribution package to '$md_redist_pkgsrc/Scripts'."
-
-    mkdir -p "$md_redist_root"
-    m_exit_on_error "cannot make directory '$md_redist_root'."
-
-    m_set_suprompt "to chown '$md_redist_root/'."
-    sudo -p "$m_suprompt" chown -R root:wheel "$md_redist_root/"
-    m_exit_on_error "cannot chown '$md_redist_root'."
-
-    m_build_pkg "$m_release_full" "$md_redist_pkgsrc" "$md_redist_root" "$M_PKGID_REDIST" "$M_PKGNAME_REDIST" "$md_osxfuse_out"
-    m_exit_on_error "cannot create '$M_PKGNAME_REDIST'."
-
-    m_set_suprompt "to remove directory '$md_redist_root'."
-    sudo -p "$m_suprompt" rm -rf "$md_redist_root"
-    # ignore any errors
-
-    rm -rf "$md_redist_pkgsrc"
     # ignore any errors
 
     m_log "creating autoinstaller rules"
