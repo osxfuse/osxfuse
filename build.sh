@@ -468,7 +468,7 @@ function m_handler_lib()
 
     m_log "initiating Universal build for $m_platform"
 
-    cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
+    /bin/cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
@@ -554,7 +554,7 @@ function m_handler_reload()
     mkdir "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS"
     m_exit_on_error "cannot create directory for OSXFUSE kext symbols."
 
-    cp -R "$kernel_dir/build/Debug/$M_KEXT_NAME" "$M_CONF_TMPDIR/$M_KEXT_NAME"
+    /bin/cp -R "$kernel_dir/build/Debug/$M_KEXT_NAME" "$M_CONF_TMPDIR/$M_KEXT_NAME"
     m_exit_on_error "cannot copy newly built OSXFUSE kext."
 
     m_set_suprompt "to set permissions on newly built OSXFUSE kext"
@@ -618,7 +618,7 @@ function m_handler_examples()
 
     m_log "initiating Universal build for $m_platform"
 
-    cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
+    /bin/cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$M_CONF_TMPDIR/$package_name"
@@ -815,7 +815,7 @@ function m_handler_dist()
         m_exit_on_error "cannot find preference pane."
     fi
 
-    cp "$md_ai" "$md_pp/Contents/MacOS"
+    /bin/cp "$md_ai" "$md_pp/Contents/MacOS"
     m_exit_on_error "cannot copy the autoinstaller to the prefpane bundle."
 
     # Build the container
@@ -863,7 +863,7 @@ function m_handler_dist()
     m_log "copying generic container package payload"
     mkdir -p "$md_osxfuse_root/Library/PreferencePanes"
     m_exit_on_error "cannot make directory '$md_osxfuse_root/Library/PreferencePanes'."
-    cp -R "$md_pp" "$md_osxfuse_root/Library/PreferencePanes/"
+    /bin/cp -R "$md_pp" "$md_osxfuse_root/Library/PreferencePanes/"
     m_exit_on_error "cannot copy the prefpane to '$md_osxfuse_root/Library/PreferencePanes/'."
     m_set_suprompt "to chown '$md_osxfuse_root/'."
     sudo -p "$m_suprompt" chown -R root:wheel "$md_osxfuse_root/"
@@ -876,7 +876,7 @@ function m_handler_dist()
 
     # Build OSXFUSE installer package
     #
-    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
+    /bin/cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
     m_exit_on_error "cannot copy the packaging files for package '$M_PKGNAME_OSXFUSE'."
 
     local md_dist_choices_outline;
@@ -1169,7 +1169,7 @@ __END_DISTRIBUTION
 
     # Copy over the license file
     #
-    cp "$m_srcroot/packaging/diskimage/License.rtf" "$md_volume_path"
+    /bin/cp "$m_srcroot/packaging/diskimage/License.rtf" "$md_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1188,7 +1188,7 @@ __END_DISTRIBUTION
     # Copy over the package
     #
     local md_pkgname_installer="Install OSXFUSE $m_release.pkg"
-    cp -pRX "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_volume_path/$md_pkgname_installer"
+    /bin/cp -pRX "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_volume_path/$md_pkgname_installer"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1206,7 +1206,7 @@ __END_DISTRIBUTION
 
     # Copy over the website link
     #
-    cp "$m_srcroot/packaging/diskimage/OSXFUSE Website.webloc" "$md_volume_path"
+    /bin/cp "$m_srcroot/packaging/diskimage/OSXFUSE Website.webloc" "$md_volume_path"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1236,7 +1236,7 @@ __END_ENGINE_INSTALL
 
     # Set the custom icon
     #
-    cp -pRX "$m_srcroot/packaging/images/osxfuse.icns" \
+    /bin/cp -pRX "$m_srcroot/packaging/images/osxfuse.icns" \
         "$md_volume_path/.VolumeIcon.icns"
     if [ $? -ne 0 ]
     then
@@ -1263,7 +1263,7 @@ __END_ENGINE_INSTALL
         m_exit_on_error "cannot make directory '.background' on scratch disk image."
     fi
 
-    cp "$m_srcroot/packaging/diskimage/background.png" "$md_volume_path/.background/"
+    /bin/cp "$m_srcroot/packaging/diskimage/background.png" "$md_volume_path/.background/"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1333,9 +1333,9 @@ __END_ENGINE_INSTALL
     local md_redist_pkgsrc="$md_osxfuse_out/redistpkgsrc"
     local md_redist_root="$md_osxfuse_out/redistroot"
 
-    cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_REDIST" "$md_redist_pkgsrc"
+    /bin/cp -R "$m_srcroot/packaging/installer/$M_PKGBASENAME_REDIST" "$md_redist_pkgsrc"
     m_exit_on_error "cannot copy redistribution package source to '$md_redist_pkgsrc'."
-    cp "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_redist_pkgsrc/Scripts/OSXFUSE.pkg"
+    /bin/cp "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" "$md_redist_pkgsrc/Scripts/OSXFUSE.pkg"
     m_exit_on_error "cannot copy OSXFUSE distribution package to '$md_redist_pkgsrc/Scripts'."
 
     mkdir -p "$md_redist_root"
@@ -1640,13 +1640,13 @@ function m_handler_smalldist()
     local ms_bundle_dir="$ms_osxfuse_root$ms_osxfuse_system_dir/$ms_bundle_dir_generic"
     local ms_bundle_support_dir="$ms_bundle_dir/Support"
 
-    cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
+    /bin/cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
     m_exit_on_error "cannot copy '$M_FSBUNDLE_NAME' to destination."
 
     mkdir -p "$ms_bundle_support_dir"
     m_exit_on_error "cannot make directory '$ms_bundle_support_dir'."
 
-    cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
+    /bin/cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
     if [[ -n "$m_signing_id_code" ]]
@@ -1655,19 +1655,19 @@ function m_handler_smalldist()
         # Ignore failure
     fi
 
-    cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
+    /bin/cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
     m_exit_on_error "cannot copy 'Debug' to destination."
 
-    cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_bundle_support_dir/load_osxfusefs"
+    /bin/cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_bundle_support_dir/load_osxfusefs"
     m_exit_on_error "cannot copy 'load_osxfusefs' to destination."
 
-    cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_bundle_support_dir/mount_osxfusefs"
+    /bin/cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_bundle_support_dir/mount_osxfusefs"
     m_exit_on_error "cannot copy 'mount_osxfusefs' to destination."
 
-    cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-osxfuse-core.sh" "$ms_bundle_support_dir/uninstall-osxfuse-core.sh"
+    /bin/cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-osxfuse-core.sh" "$ms_bundle_support_dir/uninstall-osxfuse-core.sh"
     m_exit_on_error "cannot copy 'uninstall-osxfuse-core.sh' to destination."
 
-    cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
+    /bin/cp -pRX "$m_srcroot/packaging/uninstaller/uninstall-macfuse-core.sh" "$ms_bundle_support_dir/uninstall-macfuse-core.sh"
     m_exit_on_error "cannot copy 'uninstall-macfuse-core.sh' to destination."
 
     ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_support_dir/autoinstall-osxfuse-core"
@@ -1682,7 +1682,7 @@ function m_handler_smalldist()
     m_platform="${M_PLATFORMS_REALISTIC%% *}"
     m_set_platform
 
-    cp -pRX "$lib_dir" "$ms_osxfuse_build"
+    /bin/cp -pRX "$lib_dir" "$ms_osxfuse_build"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$ms_osxfuse_build"/fuse
@@ -1726,7 +1726,7 @@ function m_handler_smalldist()
     xcodebuild -target libmacfuse -configuration "$m_configuration" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/libmacfuse* "$ms_macfuse_root/usr/local/lib/"
+    /bin/cp -pRX build/"$m_configuration"/libmacfuse* "$ms_macfuse_root/usr/local/lib/"
     m_exit_on_error "cannot copy 'libmacfuse*.dylib' to destination."
 
     for f in "$ms_macfuse_root"/usr/local/lib/libmacfuse_i32*.dylib; do
@@ -1760,7 +1760,7 @@ function m_handler_smalldist()
     xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
+    /bin/cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
 
     mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
@@ -1773,7 +1773,7 @@ function m_handler_smalldist()
     # Link MacFUSE.framework back to OSXFUSE.framework
     #
 
-    cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/"
+    /bin/cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'MacFUSE.framework' to destination."
 
     sed -e "s/OSXFUSE_CORE_VERSION/$ms_osxfuse_version/" "MacFUSE.framework/Versions/A/Resources/Info.plist" > "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/Resources/Info.plist"
@@ -1976,22 +1976,22 @@ function m_handler_homebrew()
     local ms_bundle_dir="$ms_osxfuse_root/$ms_bundle_dir_generic"
     local ms_bundle_support_dir="$ms_bundle_dir/Support"
 
-    cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
+    /bin/cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
     m_exit_on_error "cannot copy '$M_FSBUNDLE_NAME' to destination."
 
     mkdir -p "$ms_bundle_support_dir"
     m_exit_on_error "cannot make directory '$ms_bundle_support_dir'."
 
-    cp -pRX "$ms_built_products_dir/Debug/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
+    /bin/cp -pRX "$ms_built_products_dir/Debug/$M_KEXT_NAME" "$ms_bundle_support_dir/$M_KEXT_NAME"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
-    cp -pRX "$ms_built_products_dir/Debug/$M_KEXT_NAME.dSYM" "$ms_bundle_support_dir/$M_KEXT_NAME.dSYM"
+    /bin/cp -pRX "$ms_built_products_dir/Debug/$M_KEXT_NAME.dSYM" "$ms_bundle_support_dir/$M_KEXT_NAME.dSYM"
     m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
 
-    cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_bundle_support_dir/load_osxfusefs"
+    /bin/cp -pRX "$ms_built_products_dir/load_osxfusefs" "$ms_bundle_support_dir/load_osxfusefs"
     m_exit_on_error "cannot copy 'load_osxfusefs' to destination."
 
-    cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_bundle_support_dir/mount_osxfusefs"
+    /bin/cp -pRX "$ms_built_products_dir/mount_osxfusefs" "$ms_bundle_support_dir/mount_osxfusefs"
     m_exit_on_error "cannot copy 'mount_osxfusefs' to destination."
 
     # Build the user-space OSXFUSE library
@@ -2001,7 +2001,7 @@ function m_handler_homebrew()
 
     ms_deployment_target="$m_platform"
 
-    cp -pRX "$lib_dir" "$ms_osxfuse_build"
+    /bin/cp -pRX "$lib_dir" "$ms_osxfuse_build"
     m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
 
     cd "$ms_osxfuse_build"/fuse
@@ -2048,7 +2048,7 @@ function m_handler_homebrew()
     xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" PREFIX="" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
 
-    cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
+    /bin/cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
     m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
 
     mv "$ms_osxfuse_root"/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
