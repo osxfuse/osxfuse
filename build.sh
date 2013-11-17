@@ -2400,7 +2400,7 @@ function m_handler()
         m_platform_realistic_add "10.8"
 
         m_version_compare $M_XCODE50_VERSION "5.0.1"
-        if [[ $? != 2 ]]
+        if [[ $? != 1 ]]
         then
             M_SDK_109="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
             M_SDK_109_XCODE="$M_XCODE50"
