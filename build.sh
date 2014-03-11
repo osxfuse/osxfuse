@@ -90,6 +90,9 @@ readonly M_XCODE46_COMPILER="com.apple.compilers.llvmgcc42"
 declare M_XCODE50=""
 declare M_XCODE50_VERSION=5.0
 readonly M_XCODE50_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare M_XCODE51=""
+declare M_XCODE51_VERSION=5.1
+readonly M_XCODE51_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -2340,6 +2343,14 @@ function m_handler()
                     M_XCODE50_VERSION=$m_xcode_version
                 fi
                 ;;
+            5.1*)
+                m_version_compare $M_XCODE51_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE51="$m_xcode_root"
+                    M_XCODE51_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2489,6 +2500,20 @@ function m_handler()
             M_SDK_109_COMPILER="$M_XCODE50_COMPILER"
             m_platform_realistic_add "10.9"
         fi
+    fi
+    if [[ -n "$M_XCODE51" ]]
+    then
+        m_xcode_latest="$M_XCODE51"
+
+        M_SDK_108="$M_XCODE51/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
+        M_SDK_108_XCODE="$M_XCODE51"
+        M_SDK_108_COMPILER="$M_XCODE51_COMPILER"
+        m_platform_realistic_add "10.8"
+
+        M_SDK_109="$M_XCODE51/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+        M_SDK_109_XCODE="$M_XCODE51"
+        M_SDK_109_COMPILER="$M_XCODE51_COMPILER"
+        m_platform_realistic_add "10.9"
     fi
 
     m_read_input "$@"
