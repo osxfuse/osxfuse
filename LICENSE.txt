@@ -1,7 +1,7 @@
 OSXFUSE is a software developed by the OSXFUSE project and is covered under the 
 following BSD-style license:
 
-  Copyright (c) 2011-2013 Benjamin Fleischer
+  Copyright (c) 2011-2014 Benjamin Fleischer
   Copyright (c) 2011-2012 Erik Larsson
   All rights reserved.
 
