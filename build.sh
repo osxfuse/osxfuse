@@ -1,2453 +1,2009 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# OSXFUSE build tool
-
-# Copyright (c) 2008-2009 Google Inc.
-# Copyright (c) 2011-2013 Benjamin Fleischer
+# Copyright (c) 2011-2014 Benjamin Fleischer
 # All rights reserved.
-
-# Configurables
 #
-# Beware: GNU libtool cannot handle directory names containing whitespace.
-#         Therefore, do not set M_CONF_TMPDIR to such a directory.
+# Redistribution  and  use  in  source  and  binary  forms,  with   or   without
+# modification, are permitted provided that the following conditions are met:
 #
-readonly M_CONF_TMPDIR=/tmp
-readonly M_PLISTSIGNER_TEST_KEY="`dirname $0`/prefpane/autoinstaller/TestKeys/private_key.der"
-
-# Other constants
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above  copyright  notice,
+#    this list of conditions and the following disclaimer in  the  documentation
+#    and/or other materials provided with the distribution.
+# 3. Neither the name of osxfuse nor the names of its contributors may  be  used
+#    to endorse or promote products derived from this software without  specific
+#    prior written permission.
 #
-readonly M_PROGDESC="OSXFUSE build tool"
-readonly M_PROGNAME=`basename $0`
-readonly M_PROGVERS=2.0
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND  CONTRIBUTORS  "AS  IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT  NOT  LIMITED  TO,  THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS  FOR  A  PARTICULAR  PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE  COPYRIGHT  OWNER  OR  CONTRIBUTORS  BE
+# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,   SPECIAL,   EXEMPLARY,   OR
+# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT  LIMITED  TO,   PROCUREMENT   OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF  USE,  DATA,  OR  PROFITS;  OR  BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN
+# CONTRACT, STRICT  LIABILITY,  OR  TORT  (INCLUDING  NEGLIGENCE  OR  OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
+# POSSIBILITY OF SUCH DAMAGE.
 
-readonly M_DEFAULT_VALUE=__default__
 
-readonly M_CONFIGURATIONS="Debug Release" # default is Release
-
-readonly M_TARGETS="clean release dist core osxfusefs kext examples lib reload"
-readonly M_TARGETS_WITH_PLATFORM="kext examples lib"
-
-readonly M_DEFAULT_PLATFORM="$M_DEFAULT_VALUE"
-readonly M_DEFAULT_TARGET="$M_DEFAULT_VALUE"
-
-# Globals
-#
-declare m_args=
-declare m_active_target=""
-declare m_configuration="Release"
-declare m_developer=0
-declare m_osname=""
-declare m_platform="$M_DEFAULT_PLATFORM"
-declare m_archs=""
-declare m_release=""
-declare m_shortcircuit=0
-declare m_srcroot=""
-declare m_stderr=/dev/stderr
-declare m_stdout=/dev/stdout
-declare m_suprompt=" invalid "
-declare m_target="$M_DEFAULT_TARGET"
-declare m_signing_id_code=""
-declare m_signing_id_installer=""
-declare m_plistsigner_key=""
-declare m_usdk_dir=""
-declare m_compiler=""
-declare m_xcode_dir=""
-declare m_xcode_version=""
-declare m_xcode_latest=""
-
-declare mp_package_maker=""
-declare mp_package_maker_version=""
-
-# Other implementation details
-#
-declare M_XCODE32=""
-declare M_XCODE32_VERSION=3.2
-readonly M_XCODE32_COMPILER="4.2"
-declare M_XCODE40=""
-declare M_XCODE40_VERSION=4.0
-readonly M_XCODE40_COMPILER="4.2"
-declare M_XCODE41=""
-declare M_XCODE41_VERSION=4.1
-readonly M_XCODE41_COMPILER="4.2"
-declare M_XCODE42=""
-declare M_XCODE42_VERSION=4.2
-readonly M_XCODE42_COMPILER="com.apple.compilers.llvmgcc42"
-declare M_XCODE43=""
-declare M_XCODE43_VERSION=4.3
-readonly M_XCODE43_COMPILER="com.apple.compilers.llvmgcc42"
-declare M_XCODE44=""
-declare M_XCODE44_VERSION=4.4
-readonly M_XCODE44_COMPILER="com.apple.compilers.llvmgcc42"
-declare M_XCODE45=""
-declare M_XCODE45_VERSION=4.5
-readonly M_XCODE45_COMPILER="com.apple.compilers.llvmgcc42"
-declare M_XCODE46=""
-declare M_XCODE46_VERSION=4.6
-readonly M_XCODE46_COMPILER="com.apple.compilers.llvmgcc42"
-declare M_XCODE50=""
-declare M_XCODE50_VERSION=5.0
-readonly M_XCODE50_COMPILER="com.apple.compilers.llvm.clang.1_0"
-declare M_XCODE51=""
-declare M_XCODE51_VERSION=5.1
-readonly M_XCODE51_COMPILER="com.apple.compilers.llvm.clang.1_0"
-
-declare M_ACTUAL_PLATFORM=""
-declare M_PLATFORMS=""
-declare M_PLATFORMS_REALISTIC=""
-
-declare M_XCODE_VERSION_REQUIRED=""
-
-# SDK 10.5
-readonly M_SDK_105_ARCHS="ppc ppc64 i386 x86_64"
-declare M_SDK_105=""
-declare M_SDK_105_XCODE=""
-declare M_SDK_105_COMPILER=""
-
-# SDK 10.6
-readonly M_SDK_106_ARCHS="i386 x86_64"
-declare M_SDK_106=""
-declare M_SDK_106_XCODE=""
-declare M_SDK_106_COMPILER=""
-
-# SDK 10.7
-readonly M_SDK_107_ARCHS="i386 x86_64"
-declare M_SDK_107=""
-declare M_SDK_107_XCODE=""
-declare M_SDK_107_COMPILER=""
-
-# SDK 10.8
-readonly M_SDK_108_ARCHS="x86_64"
-declare M_SDK_108=""
-declare M_SDK_108_XCODE=""
-declare M_SDK_108_COMPILER=""
-
-# SDK 10.9
-readonly M_SDK_109_ARCHS="x86_64"
-declare M_SDK_109=""
-declare M_SDK_109_XCODE=""
-declare M_SDK_109_COMPILER=""
-
-declare M_FSBUNDLE_NAME="osxfuse.fs"
-declare M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
-declare M_KEXT_NAME="osxfuse.kext"
-readonly M_LOGPREFIX="OSXFUSEBuildTool"
-readonly M_OSXFUSE_PRODUCT_ID="com.github.osxfuse.OSXFUSE"
-
-readonly M_MACFUSE_MODE=1
-
-# Core
-readonly M_PKGID_CORE="com.github.osxfuse.pkg.Core"
-readonly M_PKGBASENAME_CORE="OSXFUSECore"
-readonly M_PKGNAME_CORE="${M_PKGBASENAME_CORE}.pkg"
-
-# Preference Pane
-readonly M_PKGID_PREFPANE="com.github.osxfuse.pkg.PrefPane"
-readonly M_PKGBASENAME_PREFPANE="OSXFUSEPrefPane"
-readonly M_PKGNAME_PREFPANE="${M_PKGBASENAME_PREFPANE}.pkg"
-
-# MacFUSE compatibility layer
-readonly M_PKGID_MACFUSE="com.google.macfuse.core"
-readonly M_PKGBASENAME_MACFUSE="OSXFUSEMacFUSE"
-readonly M_PKGNAME_MACFUSE="${M_PKGBASENAME_MACFUSE}.pkg"
-
-# Distribution package
-readonly M_PKGBASENAME_OSXFUSE="OSXFUSE"
-readonly M_PKGNAME_OSXFUSE="${M_PKGBASENAME_OSXFUSE}.pkg"
-
-# Redistribution package
-readonly M_PKGID_REDIST="com.github.osxfuse.pkg.osxfuse"
-readonly M_PKGBASENAME_REDIST="OSXFUSERedist"
-readonly M_PKGNAME_REDIST="${M_PKGBASENAME_REDIST}.pkg"
-
-readonly M_WANTSU="needs the Administrator password"
-readonly M_WARNING="*** Warning"
-
-function m_help()
+function bt_log
 {
-    cat <<__END_HELP_CONTENT
-$M_PROGDESC version $M_PROGVERS
+    local -a options=()
+    bt_getopt options "v:,verbosity:,c:,color:,t,trace,o:,offset:" "${@}"
+    bt_exit_on_error "${options[@]}"
 
-Copyright (C) 2008 Google Inc.
-Copyright (C) 2011-2013 Benjamin Fleischer
-All Rights Reserved.
+    set -- "${options[@]}"
 
-Usage:
-  $M_PROGNAME
-      [-dhqsv] [-c configuration] [-p platform] [-i identity] [-u keyfile]
-      -t target
+    local -i verbosity=2
+    local    color=""
+    local -i trace=0
+    local -i trace_offset=0
 
-  * configuration is one of: $M_CONFIGURATIONS (default is $m_configuration)
-  * platform is one of: $M_PLATFORMS (default is the host's platform)
-  * target is one of: $M_TARGETS
-  * platforms can only be specified for: $M_TARGETS_WITH_PLATFORM
-  * identity and keyfile are ignored for all targets but release
+    while [[ ${#} -gt 0 ]]
+    do
+        case "${1}" in
+            --)
+                shift
+                break
+                ;;
+            -v|--verbosity)
+                verbosity="${2}"
+                shift 2
+                ;;
+            -c|--color)
+                color="${2}"
+                shift 2
+                ;;
+            -t|--trace)
+                trace=1
+                shift
+                ;;
+            -o|--trace-offset)
+                trace_offset="${2}"
+                shift 2
+                ;;
+        esac
+    done
 
-The target keywords mean the following:
-    clean       clean all targets
-    release     create release disk image and updater files
-    dist        create a multi-platform distribution package
-    core        create a multi-platform core package
-    osxfusefs   build file system bundle
-    kext        build kernel extension
-    examples    build example file systems (e.g. fusexmp_fh and hello)
-    lib         build the user-space library (e.g. to run fusexmp_fh)
-    reload      rebuild and reload the kernel extension
-
-Options for target release are:
-
-    -j identity
-        sign the code with the specified signing identity
-    -i identity
-        sign the installer package with the specified signing identity
-    -u keyfile
-        sign the update rules file with the specified private key
-
-Other options are:
-    -d  create a developer prerelease package instead of a regular release
-    -q  enable quiet mode (suppresses verbose build output)
-    -s  enable shortcircuit mode (useful for testing the build mechanism itself)
-    -v  report version numbers and quit
-__END_HELP_CONTENT
-
-    return 0
-}
-
-# m_version()
-#
-function m_version
-{
-    echo "$M_PROGDESC version $M_PROGVERS"
-
-    m_set_platform
-    m_set_srcroot
-
-    local mv_release=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
-    if [ ! -z "$mv_release" ]
+    if (( verbosity > BT_LOG_VERBOSITY ))
     then
-        echo "OSXFUSE version $mv_release"
+        return 0
     fi
 
-    return 0
-}
-
-# m_log(msg)
-#
-function m_log()
-{
-    printf "%-30s: %s\n" "$M_LOGPREFIX($m_active_target)" "$*"
-}
-
-# m_warn(msg)
-#
-function m_warn()
-{
-    echo "$M_WARNING: $*"
-}
-
-# m_exit_on_error(errmsg)
-#
-function m_exit_on_error()
-{
-    local retval=$?
-    if [ "$retval" != 0 ]
+    if [[ -z "${color}" ]]
     then
-        echo "$M_LOGPREFIX($m_active_target) failed: $1" 1>&2
-        exit $retval
+        case ${verbosity} in
+            1|2)
+                color="1;30"
+                ;;
+            4) 
+                color="0;37"
+                ;;
+            [0-9]+) 
+                color="0:30"
+                ;;
+        esac
     fi
 
-    # NOTREACHED
-}
-
-# m_set_suprompt(msg)
-#
-function m_set_suprompt()
-{
-    m_suprompt="$M_LOGPREFIX($m_active_target) $M_WANTSU $*: "
-}
-
-# m_set_srcroot()
-#
-function m_set_srcroot()
-{
-    local osxfuse_dir=""
-    local is_absolute_path=`echo "$0" | cut -c1`
-    if [ "$is_absolute_path" == "/" ]
+    if (( trace == 1 ))
     then
-        osxfuse_dir="`dirname $0`/"
-    else
-        osxfuse_dir="`pwd`/`dirname $0`/"
-    fi
-    pushd . > /dev/null
-    cd "$osxfuse_dir" || exit 1
-    osxfuse_dir=`pwd`
-    popd > /dev/null
+        local -a stack=()
+        local -i i=${trace_offset}
+        local    caller=""
+        local    function=""
+        local    file=""
+        local    line=""
 
-    m_srcroot="$osxfuse_dir"
-    return 0
-}
+        while caller="`caller ${i}`"
+        do
+            function="`/usr/bin/cut -d " " -f 2 <<< "${caller}"`"
+            file="`/usr/bin/cut -d " " -f 3- <<< "${caller}"`"
+            line="`/usr/bin/cut -d " " -f 1 <<< "${caller}"`"
 
-# m_set_platform()
-#
-function m_set_platform()
-{
-    local retval=0
+            bt_array_add stack "at ${function} (${file}, line ${line})"
 
-    if [ "$m_platform" == "$M_DEFAULT_PLATFORM" ]
-    then
-       m_platform=$M_ACTUAL_PLATFORM
+            (( i++ ))
+        done
+
+        set -- "${@}" "${stack[@]}"
     fi
 
-    case "$m_platform" in
-    10.5*)
-        m_osname="Leopard"
-        m_xcode_dir="$M_SDK_105_XCODE"
-        m_usdk_dir="$M_SDK_105"
-        m_compiler="$M_SDK_105_COMPILER"
-        m_archs="$M_SDK_105_ARCHS"
-    ;;
-    10.6*)
-        m_osname="Snow Leopard"
-        m_xcode_dir="$M_SDK_106_XCODE"
-        m_usdk_dir="$M_SDK_106"
-        m_compiler="$M_SDK_106_COMPILER"
-        m_archs="$M_SDK_106_ARCHS"
-    ;;
-    10.7*)
-        m_osname="Lion"
-        m_xcode_dir="$M_SDK_107_XCODE"
-        m_usdk_dir="$M_SDK_107"
-        m_compiler="$M_SDK_107_COMPILER"
-        m_archs="$M_SDK_107_ARCHS"
-    ;;
-    10.8*)
-        m_osname="Mountain Lion"
-        m_xcode_dir="$M_SDK_108_XCODE"
-        m_usdk_dir="$M_SDK_108"
-        m_compiler="$M_SDK_108_COMPILER"
-        m_archs="$M_SDK_108_ARCHS"
-    ;;
-    10.9*)
-        m_osname="Mavericks"
-        m_xcode_dir="$M_SDK_109_XCODE"
-        m_usdk_dir="$M_SDK_109"
-        m_compiler="$M_SDK_109_COMPILER"
-        m_archs="$M_SDK_109_ARCHS"
-    ;;
-    *)
-        m_osname="Unknown"
-        m_xcode_dir=""
-        m_usdk_dir=""
-        m_compiler=""
-        m_archs=""
-        retval=1
-    ;;
+    while [[ ${#} -gt 0 ]]
+    do
+        if [[ ${#BT_LOG_PREFIX[@]} -gt 0 ]]
+        then
+            printf "\033[0;30m%-20s |\033[0m " "${BT_LOG_PREFIX}" >&2
+        fi
+        printf "\033[${color}m%s\033[0m\n" "${1}" >&2
+        shift
+    done
+}
+
+function bt_log_variable
+{
+    while [[ ${#} -gt 0 ]]
+    do
+        bt_log -v 4 -- "`bt_variable_print "${1}"`"
+        shift
+    done
+}
+
+function bt_warn
+{
+    bt_log -v 1 -c "0;31" -o 1 "${@}"
+}
+
+function bt_error
+{
+    if [[ ${#} -eq 0 ]]
+    then
+        set -- "Unspecified error"
+    fi
+
+    bt_log -v 1 -c "1;31" -o 1 "${@}"
+    echo -ne "\a" >&2
+
+    if (( BASH_SUBSHELL > 0 ))
+    then
+        kill -SIGTERM 0
+    fi
+    exit 1
+}
+
+function bt_assert
+{
+    if [[ -n "${1}" ]]
+    then
+        eval "${1}"
+        if [[ ${?} -ne 0 ]]
+        then
+            if [[ -n "${2}" ]]
+            then
+                bt_error -t -o 2 "${2}"
+            else
+                bt_error -t -o 2 "Assertion '${1}' failed"
+            fi
+        fi
+    fi
+}
+
+function bt_exit_on_error
+{
+    if [[ ${?} -ne 0 ]]
+    then
+        bt_error "${@}"
+    fi
+}
+
+function bt_warn_on_error 
+{
+    if [[ ${?} -ne 0 ]]
+    then
+        bt_warn "${@}"
+    fi
+}
+
+
+function bt_signal_handler
+{
+    local signal="${1}"
+
+    bt_log -v 4 "Received signal: ${signal}"
+    case "${signal}" in
+        SIGINT)  
+            bt_warn "Aborted by user"
+            exit 130
+            ;;
+        SIGTERM)
+            exit 143
+            ;;
+        *)
+            bt_warn "Ignore signal: ${signal}"
+            ;;
     esac
-
-    export DEVELOPER_DIR="$m_xcode_dir"
-
-    return $retval
 }
 
-# m_build_pkg(pkgversion, install_srcroot, install_payload, pkgid, pkgname, install_to, output_dir)
-#
-function m_build_pkg()
+
+function bt_getopt
 {
-    local bp_pkgversion="$1"
-    local bp_install_srcroot="$2"
-    local bp_install_payload="$3"
-    local bp_pkgid="$4"
-    local bp_pkgname="$5"
-    local bp_install_to="$6"
-    local bp_output_dir="$7"
+	function bt_getopt_internal
+	{
+        local variable="${1}"
 
-    # Make the package
-    m_set_suprompt "to run pkgbuild"
-    if [ -d "$bp_install_srcroot/Scripts" ]
-    then
-        sudo -p "$m_suprompt" \
-            pkgbuild --root "$bp_install_payload" \
-            --identifier "$bp_pkgid" \
-            --version "$bp_pkgversion" \
-            --scripts "$bp_install_srcroot/Scripts" \
-            --install-location "$bp_install_to" \
-            --ownership preserve \
-            "$bp_output_dir/$bp_pkgname" \
-            >$m_stdout 2>$m_stderr
-    else
-        sudo -p "$m_suprompt" \
-            pkgbuild --root "$bp_install_payload" \
-            --identifier "$bp_pkgid" \
-            --version "$bp_pkgversion" \
-            --install-location "$bp_install_to" \
-            --ownership preserve \
-            "$bp_output_dir/$bp_pkgname" \
-            >$m_stdout 2>$m_stderr
-    fi
-    m_exit_on_error "cannot create package '$bp_pkgname'."
+        local -a specs=()
+        IFS="," read -ra specs <<< "${2}"
 
-    return 0
-}
+        bt_assert "bt_is_array `bt_string_escape ${variable}`"
 
-function m_find_identity()
-{
-    local type="${1}"
-    local user="`dscl . -read /Users/$USER RealName | tail -1 | cut -c 2-`"
-    security find-certificate -c "Developer ID ${type}: ${user}" -Z 2> /dev/null | sed -n -e 's/^SHA-1[^:]*:[ ]*\(.*\)$/\1/p' -e ""
+        local -i error=0
+        local -a out=()
 
-    return 0
-}
+        function bt_getopt_spec
+	    {
+	        case "${1: -1}" in
+	            ":")
+	                bt_variable_set "${2}" "${1:0:$((${#1} - 1))}"
+	                bt_variable_set "${3}" 1
+	                ;;
+	            "?")
+	                bt_variable_set "${2}" "${1:0:$((${#1} - 1))}"
+	                bt_variable_set "${3}" 2
+	                ;;
+	            *)
+	                bt_variable_set "${2}" "${1}"
+	                bt_variable_set "${3}" 0
+	                ;;
+	        esac
+	    }
 
-# Build the user-space library
-#
-function m_handler_lib()
-{
-    m_active_target="lib"
+	    local    spec_name=""
+	    local -i spec_has_argument=0
 
-    m_set_platform
+	    local    option=""
+	    local    option_name=""
+	    local    option_argument=""
+	    local -i option_has_argument=0
 
-    local lib_dir="$m_srcroot"/fuse
-    if [ ! -d "$lib_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$lib_dir'."
-    fi
+	    local -i match_found=0
+	    local    match_name=""
+	    local -i match_has_argument=0
 
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
+        shift 2
+	    while [[ ${#} -gt 0 ]]
+	    do
+	        case ${1} in
+	            --)
+	                break
+	                ;;
+	            -)
+	                out+=("--")
+	                break
+	                ;;
+	            --*)
+		            option="${1:2}"
+		            shift
 
-    local package_name="fuse"
+		            option_name="`/usr/bin/sed -n -e 's/^\([^=]*\).*$/\1/p' <<< "${option}"`"
+		            option_argument="`sed -n -e 's/^[^=]*=\(.*\)$/\1/p' <<< "${option}"`"
 
-    rm -rf "$M_CONF_TMPDIR/$package_name"
+		            [[ ! "${option}" =~ "=" ]]
+		            option_has_argument=${?}
 
-    if [ "$1" == "clean" ]
-    then
-        local retval=$?
-        m_log "cleaned (platform $m_platform)"
-        return $retval
-    fi
+		            match_found=0
+		            match_name=""
+		            match_has_argument=0
+		            for spec in "${specs[@]}"
+		            do
+		                bt_getopt_spec "${spec}" spec_name spec_has_argument
 
-    m_log "initiating Universal build for $m_platform"
+		                if [[ ${#spec_name} -eq 1 ]]
+		                then
+		                    continue
+		                fi
 
-    /bin/cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
-    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
+		                if [[ "${spec_name:0:${#option_name}}" = "${option_name}" ]]
+		                then
+		                    match_name="${spec_name}"
+		                    match_has_argument=${spec_has_argument}
 
-    cd "$M_CONF_TMPDIR/$package_name"
-    m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
+		                    if [[ ${#spec_name} -eq ${#option_name} ]]
+		                    then
+		                        match_found=1
+		                        break
+		                    elif (( match_found != 0 ))
+		                    then
+                                error=1
+                                out=("Option '${option_name}' is ambiguous")
+                                break 2
+		                    else
+		                        match_found=1
+		                    fi
+		                fi
+		            done
+		            if (( match_found == 0 ))
+		            then
+                        error=1
+                        out=("Illegal option '${option_name}'")
+                        break
+		            fi
+		            if (( match_has_argument != 2 && option_has_argument != match_has_argument ))
+		            then
+                        error=1
+                        if (( option_has_argument == 0 ))
+                        then
+                            out=("Option '${option_name}' requires an argument")
+                        else
+                            out=("Option '${option_name}' does not allow an argument")
+                        fi
+                        break
+		            fi
 
-    m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot configure OSXFUSE library source for compilation."
+		            out+=("--${match_name}")
+		            if (( match_has_argument != 0 ))
+		            then
+		                out+=("${option_argument}")
+		            fi
+		        	;;
+		        -*)
+		            option="${1:1}"
+		            shift
 
-    m_log "running make"
-    xcrun make -j4 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the OSXFUSE library."
+		            option_name="${option:0:1}"
+		            option_argument="${option:1}"
 
-    echo >$m_stdout
-    m_log "succeeded, results in '$M_CONF_TMPDIR/$package_name'."
-    echo >$m_stdout
+		            match_found=0
+		            for spec in "${specs[@]}"
+		            do
+		                bt_getopt_spec "${spec}" spec_name spec_has_argument
 
-    return 0
-}
+		                if [[ "${option_name}" = "${spec_name}" ]]
+		                then
+		                    match_found=1
 
-# Rebuild and reload the kernel extension
-#
-function m_handler_reload()
-{
-    m_active_target="reload"
+		                    out+=("-${option_name}")
+		                    if (( spec_has_argument == 0 ))
+		                    then
+		                        if [[ -n "${option_argument}" ]]
+		                        then
+		                            set -- "-${option_argument}" "${@}"
+		                        fi
+		                    else
+		                        if [[ -z "${option_argument}" ]]
+		                        then
+		                            if [[ ${#} -le 0 ]]
+		                            then
+                                        error=1
+                                        out=("Option '${option_name}' requires an argument")
+                                        break 2
+		                            fi
+		                            option_argument="${1}"
+		                            shift
+		                        fi
 
-    # Argument validation would have ensured that we use native platform
-    # for this target.
+		                        out+=("${option_argument}")
+		                    fi
+		                    break
+		                fi
+		            done
 
-    m_set_platform
+		            if (( match_found == 0 ))
+		            then
+                        error=1
+                        out=("Illegal option '${option_name}'")
+                        break
+		            fi
+		        	;;
+		        *)
+		            out+=("--")
+		            break
+		        	;;
+	        esac
+	    done
 
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
-
-    local ms_os_version="$m_platform"
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
-    m_exit_on_error "cannot get platform-specific OSXFUSE version."
-
-    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
-
-    m_log "initiating kernel extension rebuild/reload for $m_platform"
-
-    kextstat -l -b "$M_KEXT_ID" | grep "$M_KEXT_ID" >/dev/null 2>/dev/null
-    if [ "$?" == "0" ]
-    then
-        m_log "unloading kernel extension"
-        m_set_suprompt "to unload OSXFUSE kext"
-        sudo -p "$m_suprompt" \
-            kextunload -v -b "$M_KEXT_ID" >$m_stdout 2>$m_stderr
-        m_exit_on_error "cannot unload kext '$M_KEXT_ID'."
-    fi
-
-    m_log "rebuilding kext"
-
-    m_shortcircuit="0"
-    m_configuration="Debug"
-    m_handler_kext "$1"
-    m_exit_on_error "failed to build kernel extension."
-
-    m_active_target="reload"
-    m_log "reloading kext"
-
-    m_set_suprompt "to load newly built kernel extension"
-    sudo -p "$m_suprompt" \
-        kextutil -s "$ms_osxfuse_out" \
-            -v "$ms_osxfuse_out/$M_KEXT_NAME" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot load newly built kernel extension."
-
-    echo >$m_stdout
-    m_log "checking status of kernel extension"
-    kextstat -l -b "$M_KEXT_ID"
-    echo >$m_stdout
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$ms_osxfuse_out'."
-    echo >$m_stdout
-
-    return 0
-}
-
-# Build examples from the user-space OSXFUSE library
-#
-function m_handler_examples()
-{
-    m_active_target="examples"
-
-    m_set_platform
-
-    local lib_dir="$m_srcroot"/fuse
-    if [ ! -d "$lib_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$lib_dir'."
-    fi
-
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
-
-    local package_name="fuse"
-
-    rm -rf "$M_CONF_TMPDIR/$package_name"
-
-    if [ "$1" == "clean" ]
-    then
-        local retval=$?
-        m_log "cleaned (platform $m_platform)"
-        return $retval
-    fi
-
-    m_log "initiating Universal build for $m_platform"
-
-    /bin/cp -pRX "$lib_dir" "$M_CONF_TMPDIR"
-    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
-
-    cd "$M_CONF_TMPDIR/$package_name"
-    m_exit_on_error "cannot access OSXFUSE library source in '$M_CONF_TMPDIR/$package_name'."
-
-    m_log "configuring library source"
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot configure OSXFUSE library source for compilation."
-
-    cd example
-    m_exit_on_error "cannot access examples source."
-
-    local me_installed_lib="/usr/local/lib/libosxfuse.la"
-
-    perl -pi -e "s#../lib/libosxfuse.la#$me_installed_lib#g" Makefile
-    m_exit_on_error "failed to prepare example source for build."
-
-    m_log "running make"
-    xcrun make -j4 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the OSXFUSE examples."
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$M_CONF_TMPDIR/$package_name/example'."
-    echo >$m_stdout
-
-    return 0
-}
-
-# Build a multiplatform distribution package
-#
-function m_handler_dist()
-{
-    m_active_target="dist"
-
-    m_platform="${M_PLATFORMS_REALISTIC%% *}"
-    m_set_platform
-
-    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
-    m_release=`echo "$m_release_full" | cut -d . -f 1,2`
-    m_exit_on_error "cannot get OSXFUSE release version."
-
-    local md_osxfuse_out="$M_CONF_TMPDIR/osxfuse-dist-$m_release_full"
-    local md_osxfuse_root="$md_osxfuse_out/pkgroot/"
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        if [ -e "$md_osxfuse_out" ]
+        if (( error == 0 ))
         then
-            m_set_suprompt "to remove a previously built distribution package"
-            sudo -p "$m_suprompt" rm -rf "$md_osxfuse_out"
-            m_exit_on_error "failed to clean up previous distribution package."
+            out+=("${@}")
         fi
-        if [ -e "$M_CONF_TMPDIR/osxfuse-dist-"* ]
-        then
-            m_warn "removing unrecognized version of distribution package"
-            m_set_suprompt "to remove unrecognized version of platform-specific package"
-            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-dist-"*
-            m_exit_on_error "failed to clean up unrecognized version of distribution package."
-        fi
-    else
-        if [ -e "$md_osxfuse_out/$M_PKGNAME_OSXFUSE" ]
-        then
-            echo >$m_stdout
-            m_log "succeeded (shortcircuited), results in '$md_osxfuse_out'."
-            echo >$m_stdout
-            return 0
-        fi
-    fi
 
-    if [ "$1" == "clean" ]
+        printf "%s=%s\n" "${variable}" "`bt_variable_clone out`"
+        printf "return %d\n" ${error}
+	}
+
+    eval "`bt_getopt_internal "${@}"`"
+}
+
+function bt_sudo
+{
+    local prompt="${1}"
+
+    bt_assert "[[ -n `bt_string_escape "${prompt}"` ]]"
+    bt_assert "[[ ${#} -gt 1 ]]"
+
+    if [[ ${#BT_LOG_PREFIX[@]} ]]
     then
-        m_handler_core clean
-
-        m_active_target="dist"
-
-        m_set_platform
-
-        rm -rf "$m_srcroot/prefpane/autoinstaller/build"
-        m_log "cleaned internal subtarget autoinstaller"
-
-        rm -rf "$m_srcroot/prefpane/build"
-        m_log "cleaned internal subtarget prefpane"
-
-        return 0
+        prompt="`printf "%-20s | %s" "${BT_LOG_PREFIX}" "${prompt}"`"
     fi
 
-    m_log "initiating Universal build of OSXFUSE"
+    sudo -p "${prompt}: " "${@:2}"
+}
 
-    # Create OSXFUSE subpackages
-    #
 
-    pushd . >/dev/null 2>/dev/null
+function bt_is_function
+{
+    [[ "`type -t "${1}"`" == "function" ]]
+}
 
-    m_handler_core
+function bt_function_is_legal_name
+{
+    [[ "${1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]]
+}
 
-    popd >/dev/null 2>/dev/null
+function bt_function_local
+{
+    local function_name="${1}"
+    local function_definition=""
+    local backup_name=""
+    local backup_definition=""
+    local stack_name=""
 
-    m_active_target="dist"
+    bt_assert "bt_is_function `bt_string_escape "${function_name}"`"
 
-    m_platform="${M_PLATFORMS_REALISTIC%% *}"
-    m_set_platform
-
-    m_log "configuration is '$m_configuration'"
-    if [ "$m_developer" == "0" ]
-    then
-        m_log "packaging flavor is 'Mainstream'"
-    else
-        m_log "packaging flavor is 'Developer Prerelease'"
-    fi
-
-    # Autoinstaller
-    #
-
-    local md_ai_builddir="$m_srcroot/prefpane/autoinstaller/build"
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        rm -rf "$md_ai_builddir"
-        # ignore any errors
-    fi
-
-    m_log "building the OSXFUSE autoinstaller"
-
-    pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
-    m_exit_on_error "cannot access the autoinstaller source."
-    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$md_ai_builddir/$m_configuration" >$m_stdout 2>$m_stderr
-    m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
-    popd >/dev/null 2>/dev/null
-
-    local md_ai="$md_ai_builddir/$m_configuration/autoinstall-osxfuse-core"
-    if [ ! -x "$md_ai" ]
-    then
-        false
-        m_exit_on_error "cannot find autoinstaller '$md_ai'."
-    fi
-    local md_plistsigner="$md_ai_builddir/$m_configuration/plist_signer"
-    if [ ! -x "$md_plistsigner" ]
-    then
-        false
-        m_exit_on_error "cannot find plist signer '$md_plistsigner'."
-    fi
-
-    # Build the preference pane
-    #
-    local md_pp_builddir="$m_srcroot/prefpane/build"
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        rm -rf "$md_pp_builddir"
-        # ignore any errors
-    fi
-
-    m_log "building the OSXFUSE prefpane"
-
-    pushd "$m_srcroot/prefpane" >/dev/null 2>/dev/null
-    m_exit_on_error "cannot access the prefpane source."
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$md_pp_builddir/$m_configuration" >$m_stdout 2>$m_stderr
-    m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget prefpane."
-    popd >/dev/null 2>/dev/null
-
-    local md_pp="$md_pp_builddir/$m_configuration/OSXFUSE.prefPane"
-    if [ ! -d "$md_pp" ]
-    then
-        false
-        m_exit_on_error "cannot find preference pane."
-    fi
-
-    /bin/cp "$md_ai" "$md_pp/Contents/MacOS"
-    m_exit_on_error "cannot copy the autoinstaller to the prefpane bundle."
-
-    # Build the container
-    #
-
-    m_log "building '$M_PKGNAME_OSXFUSE'"
-
-    mkdir -p "$md_osxfuse_out"
-    m_exit_on_error "cannot create directory '$md_osxfuse_out'."
-
-    mkdir -p "$md_osxfuse_root"
-    m_exit_on_error "cannot create directory '$md_osxfuse_root'."
-
-    m_log "copying generic container package payload"
-    mkdir -p "$md_osxfuse_root/Library/PreferencePanes"
-    m_exit_on_error "cannot make directory '$md_osxfuse_root/Library/PreferencePanes'."
-    /bin/cp -R "$md_pp" "$md_osxfuse_root/Library/PreferencePanes/"
-    m_exit_on_error "cannot copy the prefpane to '$md_osxfuse_root/Library/PreferencePanes/'."
-    m_set_suprompt "to chown '$md_osxfuse_root/'."
-    sudo -p "$m_suprompt" chown -R root:wheel "$md_osxfuse_root/"
-
-    # Build Preference Pane installer package
-    m_log "building installer package '$M_PKGNAME_PREFPANE'"
-
-    m_build_pkg "$m_release_full" "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_PREFPANE" "$md_osxfuse_root" "$M_PKGID_PREFPANE" "$M_PKGNAME_PREFPANE" "/" "$md_osxfuse_out"
-    m_exit_on_error "cannot create '$M_PKGNAME_PREFPANE'."
-
-    # Build OSXFUSE installer package
-    #
-    /bin/cp -R "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_OSXFUSE" "$md_osxfuse_out/OSXFUSE"
-    m_exit_on_error "cannot copy the packaging files for package '$M_PKGNAME_OSXFUSE'."
-
-    local md_dist_choices_outline;
-
-    local ms_core_out="$M_CONF_TMPDIR/osxfuse-core-$m_release_full"
-    if [ ! -d "$ms_core_out" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$ms_core_out'."
-    fi
-
-    pkgutil --expand "$ms_core_out/$M_PKGNAME_CORE" "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_CORE"
-    m_exit_on_error "cannot expand flat package '$M_PKGNAME_CORE'."
-
-    pkgutil --expand "$ms_core_out/$M_PKGNAME_MACFUSE" "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_MACFUSE"
-    m_exit_on_error "cannot expand flat package '$M_PKGNAME_MACFUSE'."
-
-    pkgutil --expand "$md_osxfuse_out/$M_PKGNAME_PREFPANE" "$md_osxfuse_out/OSXFUSE/$M_PKGNAME_PREFPANE"
-    m_exit_on_error "cannot expand flat package '$M_PKGNAME_PREFPANE'."
-
-    find "$md_osxfuse_out/OSXFUSE" -name ".DS_Store" -exec rm -f '{}' \;
-    m_exit_on_error "cannot remove '.DS_Store' files from package '$M_PKGNAME_OSXFUSE'."
-
-    local md_dist_out="$md_osxfuse_out/OSXFUSE/Distribution"
-    local md_dist_choices="${M_PKGBASENAME_CORE}:${M_PKGNAME_CORE};${M_PKGBASENAME_PREFPANE}:${M_PKGNAME_PREFPANE};${M_PKGBASENAME_MACFUSE}:${M_PKGNAME_MACFUSE}"
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-<?xml version="1.0" encoding="UTF-8"?>
-<installer-gui-script minSpecVersion="1.0">
-    <title>FUSE for OS X</title>
-    <background file="background.png" scaling="none" alignment="center"/>
-    <welcome file="Welcome.rtf"/>
-    <license file="License.rtf"/>
-    <options customize="always" rootVolumeOnly="true"/>
-    <choices-outline>
-__END_DISTRIBUTION
-    m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-
-    OLD_IFS="$IFS"
-    IFS=";"
-    for i in $md_dist_choices
+    while true
     do
-        local md_dist_choice_name="${i%%:*}"
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-        <line choice="$md_dist_choice_name"/>
-__END_DISTRIBUTION
-        m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-    done
-    IFS="$OLD_IFS"
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-    </choices-outline>
-__END_DISTRIBUTION
-    m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-
-    OLD_IFS="$IFS"
-    IFS=";"
-    for i in $md_dist_choices
-    do
-        IFS="$OLD_IFS"
-
-        local md_dist_choice_name="${i%%:*}"
-        local md_dist_choice_packages="${i##*:}"
-
-        local md_dist_choice_name_uc=`echo "$md_dist_choice_name" | tr '[:lower:]' '[:upper:]'`
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-    <choice id="$md_dist_choice_name"
-        title="${md_dist_choice_name_uc}_TITLE"
-        description="${md_dist_choice_name_uc}_DESCRIPTION"
-        start_selected="isChoiceSelected('$md_dist_choice_name')"
-        start_enabled="isChoiceEnabled('$md_dist_choice_name')"
-        visible="isChoiceVisible('$md_dist_choice_name')">
-__END_DISTRIBUTION
-            m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-
-        IFS=","
-        for package in $md_dist_choice_packages
-        do
-            local md_dist_choice_pkg_path="$md_osxfuse_out/OSXFUSE/$package"
-            local md_dist_choice_pkg_relpath="#$package"
-
-            if [ ! -e "$md_dist_choice_pkg_path" ]
-            then
-                false
-                m_exit_on_error "cannot find package '$package'."
-            fi
-
-            local md_dist_choice_pkg_id=`perl -ne '/<pkg-info[^>]*\sidentifier="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'id' of '$package' for platform '$platform'."
-
-            local md_dist_choice_pkg_size=`perl -ne '/<payload[^>]*\sinstallKBytes="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'size' of '$package' for platform '$platform'."
-
-            local md_dist_choice_pkg_version=`perl -ne '/<pkg-info[^>]*\sversion="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'version' of '$package' for platform '$platform'."
-
-            local md_dist_choice_pkg_auth=`perl -ne '/<pkg-info[^>]*\sauth="([^"]+)"/ && print $1' "$md_dist_choice_pkg_path/PackageInfo"`
-            m_exit_on_error "cannot extract property 'auth' of '$package' for platform '$platform'."
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-        <pkg-ref id="$md_dist_choice_pkg_id"
-            installKBytes="$md_dist_choice_pkg_size"
-            version="$md_dist_choice_pkg_version"
-            auth="$md_dist_choice_pkg_auth">$md_dist_choice_pkg_relpath</pkg-ref>
-__END_DISTRIBUTION
-            m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-        done
-        IFS="$OLD_IFS"
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-    </choice>
-__END_DISTRIBUTION
-        m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-
-        IFS=";"
-    done
-    IFS="$OLD_IFS"
-
-    local md_dist_productversion
-    for platform in $M_PLATFORMS
-    do
-        md_dist_productversion=${md_dist_productversion:+"$md_dist_productversion || "}"isProductVersion('$platform')"
-    done
-
-cat >> "$md_dist_out" <<__END_DISTRIBUTION
-    <installation-check script='installationCheck()'/>
-    <script><![CDATA[
-        function isProductVersion(version)
-        {
-            return system.version.ProductVersion.slice(0, version.length) == version;
-        }
-        function getChoice(package)
-        {
-            return choices[package];
-        }
-
-        function installationCheck()
-        {
-            if ($md_dist_productversion) return true;
-
-            my.result.type = 'Fatal';
-            my.result.message = system.localizedString('ERROR_OSXVERSION');
-            return false;
-        }
-        function choiceConflictCheck(package)
-        {
-            if (package == '$M_PKGBASENAME_MACFUSE')
-            {
-                return system.files.fileExistsAtPath(
-                           '/Library/Filesystems/fusefs.fs/Contents/Info.plist');
-            }
-            return false;
-        }
-
-        function isPackageInstalled()
-        {
-            return getChoice('$M_PKGBASENAME_CORE').packageUpgradeAction != 'clean';
-        }
-
-        function isChoiceDefaultSelected(package)
-        {
-            switch (package)
-            {
-                case '$M_PKGBASENAME_CORE': return true;
-                case '$M_PKGBASENAME_PREFPANE': return true;
-                default: return false;
-            }
-        }
-        function isChoiceDefaultEnabled(package)
-        {
-            switch (package)
-            {
-                case '$M_PKGBASENAME_CORE': return false;
-                default: return true;
-            }
-        }
-        function isChoiceInstalled(package)
-        {
-            return getChoice(package).packageUpgradeAction != 'clean';
-        }
-        function isChoiceRequired(package)
-        {
-            return isChoiceInstalled(package) && !choiceConflictCheck(package);
-        }
-        function isChoiceSelected(package)
-        {
-            return (!isPackageInstalled() && isChoiceDefaultSelected(package)) ||
-                   isChoiceRequired(package);
-        }
-        function isChoiceEnabled(package)
-        {
-            return isChoiceDefaultEnabled(package) && !isChoiceRequired(package);
-        }
-        function isChoiceVisible(package)
-        {
-            return true;
-        }
-    ]]></script>
-</installer-gui-script>
-__END_DISTRIBUTION
-    m_exit_on_error "cannot write file 'Distribution' for package '$M_PKGNAME_OSXFUSE'."
-
-    m_log "flatten installer package '$M_PKGNAME_OSXFUSE'"
-
-    pkgutil --flatten "$md_osxfuse_out/OSXFUSE" "$md_osxfuse_out/$M_PKGNAME_OSXFUSE"
-    m_exit_on_error "cannot flatten package '$M_PKGNAME_OSXFUSE'."
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$md_osxfuse_out'."
-    echo >$m_stdout
-
-    return 0
-}
-
-function m_handler_release()
-{
-    m_active_target="release"
-
-    m_platform="$M_DEFAULT_PLATFORM"
-    m_set_platform
-
-    m_release_full=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
-    m_release=`echo "$m_release_full" | cut -d . -f 1,2`
-    m_exit_on_error "cannot get OSXFUSE release version."
-
-    local mr_osxfuse_out="$M_CONF_TMPDIR/osxfuse-release-$m_release_full"
-
-    local mr_dmg_name="osxfuse-$m_release_full.dmg"
-    local mr_dmg_path="$mr_osxfuse_out/$mr_dmg_name"
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        if [ -e "$mr_osxfuse_out" ]
+        backup_name="bt_function_stack_${function_name}_${RANDOM}"
+        if ! bt_is_function "${backup_name}"
         then
-            m_set_suprompt "to remove a previously built release diskimage"
-            sudo -p "$m_suprompt" rm -rf "$mr_osxfuse_out"
-            m_exit_on_error "failed to clean up previous built release diskimage."
-        fi
-        if [ -e "$M_CONF_TMPDIR/osxfuse-release-"* ]
-        then
-            m_warn "removing unrecognized version of release diskimage"
-            m_set_suprompt "to remove unrecognized version of release diskimage"
-            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-release-"*
-            m_exit_on_error "failed to clean up unrecognized version of release diskimagee."
-        fi
-    else
-        if [ -e "$mr_dmg_path" ]
-        then
-            echo >$m_stdout
-            m_log "succeeded (shortcircuited), results in '$mr_osxfuse_out'."
-            echo >$m_stdout
-            return 0
-        fi
-    fi
-
-    if [ "$1" == "clean" ]
-    then
-        m_handler_dist clean
-        local retval=$?
-
-        m_active_target="release"
-
-        m_log "cleaned"
-        return $retval
-    fi
-
-    # Code signing id
-    #
-    if [ -z "$m_signing_id_code" ]
-    then
-        m_signing_id_code="`m_find_identity "Application"`"
-    fi
-    if [ -z "$m_signing_id_installer" ]
-    then
-        m_signing_id_installer="`m_find_identity "Installer"`"
-    fi
-
-    m_handler_dist
-
-    m_platform="$M_DEFAULT_PLATFORM"
-    m_set_platform
-
-    local mr_dist_out="$M_CONF_TMPDIR/osxfuse-dist-$m_release_full"
-
-    # Locate plistsigner and private key
-    #
-
-    m_log "locating plistsigner and private key"
-
-    local mr_ai_builddir="$m_srcroot/prefpane/autoinstaller/build"
-    local mr_ai="$mr_ai_builddir/$m_configuration/autoinstall-osxfuse-core"
-    if [ ! -x "$mr_ai" ]
-    then
-        false
-        m_exit_on_error "cannot find autoinstaller '$mr_ai'."
-    fi
-    local mr_plistsigner="$mr_ai_builddir/$m_configuration/plist_signer"
-    if [ ! -x "$mr_plistsigner" ]
-    then
-        false
-        m_exit_on_error "cannot find plist signer '$mr_plistsigner'."
-    fi
-
-    if [ -z "$m_plistsigner_key" ]
-    then
-        m_plistsigner_key="$HOME/.osxfuse_private_key"
-    fi
-    if [ ! -f "$m_plistsigner_key" ]
-    then
-        m_plistsigner_key="$M_PLISTSIGNER_TEST_KEY"
-        m_warn "using test key to sign update rules files"
-    fi
-    if [ ! -f "$m_plistsigner_key" ]
-    then
-        false
-        m_exit_on_error "cannot find private key '$m_plistsigner_key'."
-    fi
-
-    mkdir -p "$mr_osxfuse_out"
-    m_exit_on_error "cannot make directory '$mr_osxfuse_out'."
-
-    # Sign installer package
-    #
-    productsign --sign "$m_signing_id_installer" "$mr_dist_out/$M_PKGNAME_OSXFUSE" "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE"
-    m_exit_on_error "cannot sign installer package with id '$m_signing_id_installer'."
-
-    # Create the distribution volume
-    #
-    local mr_volume_name="FUSE for OS X"
-    local mr_scratch_dmg="$mr_osxfuse_out/osxfuse-scratch.dmg"
-    hdiutil create -layout NONE -size 16m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
-        -volname "$mr_volume_name" "$mr_scratch_dmg" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot create scratch OSXFUSE disk image."
-
-    # Attach/mount the volume
-    #
-    hdiutil attach -private -nobrowse "$mr_scratch_dmg" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot attach scratch OSXFUSE disk image."
-
-    local mr_volume_path="/Volumes/$mr_volume_name"
-
-    # Copy over resources
-    #
-    local mr_resources_name="Resources"
-    local mr_resources_path="$mr_volume_path/$mr_resources_name"
-    /bin/cp -R "$m_srcroot/support/DiskImage/Resources" "$mr_resources_path"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot copy resources to scratch disk image."
-    fi
-
-    # Copy over the package
-    #
-    local mr_pkgname_installer="FUSE for OS X $m_release_full.pkg"
-    local mr_pkgname_installer_link="Install FUSE for OS X"
-    /bin/cp -pRX "$mr_osxfuse_out/$M_PKGNAME_OSXFUSE" "$mr_resources_path/$mr_pkgname_installer"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot copy '$M_PKGNAME_OSXFUSE' to scratch disk image."
-    fi
-
-    xcrun SetFile -a E "$mr_resources_path/$mr_pkgname_installer"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot hide extension of installer package."
-    fi
-
-    ln -s "$mr_resources_name/$mr_pkgname_installer" "$mr_volume_path/$mr_pkgname_installer_link"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot link installer package."
-    fi
-
-    # Create the .engine_install file
-    #
-    local mr_engine_install="$mr_volume_path/.engine_install"
-    cat > "$mr_engine_install" <<__END_ENGINE_INSTALL
-#!/bin/sh -p
-/usr/sbin/installer -pkg "\$1/$mr_resources_name/$mr_pkgname_installer" -target /
-__END_ENGINE_INSTALL
-
-    chmod +x "$mr_engine_install"
-    m_exit_on_error "cannot set permissions on autoinstaller engine file."
-
-    # Set custom background
-    #
-    mkdir "$mr_volume_path/.background"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot make directory '.background' on scratch disk image."
-    fi
-
-    /bin/cp "$m_srcroot/support/DiskImage/background.tiff" "$mr_volume_path/.background/"
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot copy background picture to scratch disk image."
-    fi
-
-    # Customize scratch image
-    #
-    echo '
-        tell application "Finder"
-            tell disk "'$mr_volume_name'"
-                open
-                set current view of container window to icon view
-                set toolbar visible of container window to false
-                set the bounds of container window to {0, 0, 500, 450}
-                set theViewOptions to the icon view options of container window
-                set arrangement of theViewOptions to not arranged
-                set icon size of theViewOptions to 128
-                set text size of theViewOptions to 14
-                set background picture of theViewOptions to file ".background:background.tiff"
-                set position of item "'$mr_pkgname_installer_link'" of container window to {150, 175}
-                set position of item "Resources" of container window to {350, 175}
-                close
-                open
-                update without registering applications
-                close
-            end tell
-        end tell
-    ' | osascript
-    if [ $? -ne 0 ]
-    then
-        hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-        false
-        m_exit_on_error "cannot customize the scratch disk image."
-    fi
-
-    chmod -Rf go-w "$mr_volume_path"
-    sync
-    sync
-    # ignore errors
-
-    # Detach the volume.
-    hdiutil detach "$mr_volume_path" >$m_stdout 2>$m_stderr
-    if [ $? -ne 0 ]
-    then
-        false
-        m_exit_on_error "cannot detach volume '$mr_volume_path'."
-    fi
-
-    # Convert to a read-only compressed dmg
-    #
-    hdiutil convert -imagekey zlib-level=9 -format UDZO "$mr_scratch_dmg" \
-        -o "$mr_dmg_path" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot finalize OSXFUSE distribution disk image."
-
-    rm -f "$mr_scratch_dmg"
-    # ignore any errors
-
-    m_log "building redistribution package"
-
-    m_log "creating autoinstaller rules"
-
-    # Make autoinstaller rules file
-    #
-    local mr_dmg_hash=$(openssl sha1 -binary "$mr_dmg_path" | openssl base64)
-    local mr_dmg_size=$(stat -f%z "$mr_dmg_path")
-
-    local mr_rules_plist="$mr_osxfuse_out/DeveloperRelease.plist"
-    local mr_download_url="http://sourceforge.net/projects/osxfuse/files/osxfuse-$m_release_full/$mr_dmg_name/download"
-    if [ "$m_developer" == "0" ]
-    then
-        mr_rules_plist="$mr_osxfuse_out/CurrentRelease.plist"
-    fi
-
-cat > "$mr_rules_plist" <<__END_RULES_PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Rules</key>
-  <array>
-__END_RULES_PLIST
-
-    for m_p in $M_PLATFORMS
-    do
-cat >> "$mr_rules_plist" <<__END_RULES_PLIST
-    <dict>
-      <key>ProductID</key>
-      <string>$M_OSXFUSE_PRODUCT_ID</string>
-      <key>Predicate</key>
-      <string>SystemVersion.ProductVersion beginswith "$m_p" AND Ticket.version != "$m_release_full"</string>
-      <key>Version</key>
-      <string>$m_release_full</string>
-      <key>Codebase</key>
-      <string>$mr_download_url</string>
-      <key>Hash</key>
-      <string>$mr_dmg_hash</string>
-      <key>Size</key>
-      <string>$mr_dmg_size</string>
-    </dict>
-__END_RULES_PLIST
-    done
-
-cat >> "$mr_rules_plist" <<__END_RULES_PLIST
-  </array>
-</dict>
-</plist>
-__END_RULES_PLIST
-
-    # Sign the output rules
-    #
-
-    m_log "signing autoinstaller rules with key '$m_plistsigner_key'"
-
-    m_set_suprompt "to sign the rules file"
-    sudo -p "$m_suprompt" \
-        "$mr_plistsigner" --sign --key "$m_plistsigner_key" \
-            "$mr_rules_plist" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot sign the rules file '$mr_rules_plist' with key '$m_plistsigner_key'."
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$mr_osxfuse_out'."
-    echo >$m_stdout
-
-    return 0
-}
-
-function m_handler_osxfusefs()
-{
-    m_active_target="osxfusefs"
-
-    local support_dir="$m_srcroot"/support
-    if [ ! -d "$support_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$support_dir'."
-    fi
-
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
-
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
-    m_exit_on_error "cannot get platform-specific OSXFUSE version."
-
-    local ms_osxfuse_name="`awk '/#define[ \t]*OSXFUSE_NAME_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`"
-    m_exit_on_error "cannot get name."
-
-    local ms_osxfuse_namespace=`awk '/#define[ \t]*OSXFUSE_IDENTIFIER_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`
-    m_exit_on_error "cannot get OSXFUSE namespace."
-
-    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-osxfusefs-$ms_osxfuse_version"
-
-    if [ -e "$ms_osxfuse_out" ]
-    then
-        m_set_suprompt "to remove a previously built package"
-        sudo -p "$m_suprompt" rm -rf "$ms_osxfuse_out"
-        m_exit_on_error "failed to clean up previously built package."
-    fi
-    if [ -e "$M_CONF_TMPDIR/osxfuse-osxfusefs-"* ]
-    then
-        m_warn "removing unrecognized version of package"
-        m_set_suprompt "to remove unrecognized version of package"
-        sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-osxfusefs-"*
-        m_exit_on_error "failed to clean up unrecognized version of package."
-    fi
-
-    if [ "$1" == "clean" ]
-    then
-        for m_p in $M_PLATFORMS_REALISTIC
-        do
-            m_platform="$m_p"
-            m_handler_kext clean
-        done
-
-        m_active_target="osxfusefs"
-        rm -rf "$support_dir/build/"
-
-        m_log "cleaned"
-        return 0
-    fi
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        rm -rf "$support_dir/build/"
-    fi
-
-    cd "$support_dir"
-    m_exit_on_error "failed to access the bundle source directory '$support_dir'."
-
-    m_log "building OSXFUSE file system bundle"
-
-    m_platform="${M_PLATFORMS_REALISTIC%% *}"
-    m_set_platform
-
-    local ms_built_products_dir="$support_dir/build/$m_configuration/"
-
-    xcodebuild -project "osxfusefs.xcodeproj" -configuration "$m_configuration" -target "osxfuse.fs" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$ms_built_products_dir" OSXFUSE_NAME="$ms_osxfuse_name" ENABLE_MACFUSE_MODE="$M_MACFUSE_MODE" BUNDLE_IDENTIFIER_PREFIX="$ms_osxfuse_namespace" >$m_stdout 2>$m_stderr
-
-    m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
-    cd "$m_srcroot"
-
-    if [ ! -d "$ms_built_products_dir" ]
-    then
-        m_exit_on_error "cannot find built products directory."
-    fi
-
-    mkdir -p "$ms_osxfuse_out"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_out'."
-
-    /bin/cp -pRX "$ms_built_products_dir/$M_FSBUNDLE_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME"
-    m_exit_on_error "cannot copy file system bundle to destination."
-
-    local ms_load_osxfuse="$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
-    if [[ -f "$ms_load_osxfuse" ]]
-    then
-        m_set_suprompt "to setuid 'load_osxfuse'"
-        sudo -p "$m_suprompt" chmod u+s "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/load_osxfuse"
-        m_exit_on_error "cannot setuid 'load_osxfuse'."
-    fi
-
-    # Build kernel extensions
-    #
-
-    cd "$kernel_dir"
-    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
-
-    local -a md_plr=($M_PLATFORMS_REALISTIC)
-    local -a md_pl=($M_PLATFORMS)
-    j=0
-    k=0
-    while [[ $k -lt ${#md_pl[@]} ]]
-    do
-        if [[ $(( j+1 )) -lt ${#md_plr[@]} ]]
-        then
-            m_version_compare "${md_plr[$(( j+1 ))]}" "${md_pl[$k]}"
-            if [[ $? -ne 2 ]]
-            then
-                (( j++ ))
-            fi
-        fi
-
-        m_p="${md_pl[$k]}"
-        m_pr="${md_plr[$j]}"
-
-        if [ "$m_p" = "$m_pr" ]
-        then
-            pushd . >/dev/null 2>/dev/null
-            m_platform="$m_p"
-            m_handler_kext
-            popd >/dev/null 2>/dev/null
-
-            m_active_target="osxfusefs"
-
-            local ms_kext_out="$M_CONF_TMPDIR/osxfuse-kext-$m_p-$ms_osxfuse_version"
-            if [ ! -d "$ms_kext_out" ]
-            then
-                false
-                m_exit_on_error "cannot access directory '$ms_kext_out'."
-            fi
-
-            mkdir -p "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p"
-            m_exit_on_error "cannot make directory '$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p'."
-
-            /bin/cp -pRX "$ms_kext_out/$M_KEXT_NAME" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p/$M_KEXT_NAME"
-            m_exit_on_error "cannot copy '$M_KEXT_NAME' for platform '$m_p' to destination."
-        else
-            ln -s "$m_pr" "$ms_osxfuse_out/$M_FSBUNDLE_NAME/Contents/Resources/$m_p"
-            m_exit_on_error "cannot make symlink '$m_p' -> '$m_pr'"
-        fi
-
-        (( k++ ))
-    done
-
-    m_set_suprompt "to set permissions on newly built file system bundle"
-    sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_out/$M_FSBUNDLE_NAME"
-    m_exit_on_error "cannot set permissions on newly built file system bundle."
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$ms_osxfuse_out'."
-    echo >$m_stdout
-
-    return 0
-}
-
-# Build kernel extension
-#
-function m_handler_kext()
-{
-    m_active_target="kext"
-
-    m_set_platform
-
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        rm -rf "$kernel_dir/build/"
-    fi
-
-    local ms_os_version="$m_platform"
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
-    m_exit_on_error "cannot get platform-specific OSXFUSE version."
-
-    local ms_osxfuse_name="`awk '/#define[ \t]*OSXFUSE_NAME_LITERAL/ {print $NF}' "$m_srcroot/common/fuse_version.h"`"
-    m_exit_on_error "cannot get name."
-
-    M_KEXT_NAME="$ms_osxfuse_name.kext"
-
-    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-$ms_osxfuse_version"
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        if [ -e "$ms_osxfuse_out" ]
-        then
-            m_set_suprompt "to remove a previously built platform-specific package"
-            sudo -p "$m_suprompt" rm -rf "$ms_osxfuse_out"
-            m_exit_on_error "failed to clean up previous platform-specific OSXFUSE build."
-        fi
-        if [ -e "$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-"* ]
-        then
-            m_warn "removing unrecognized version of platform-specific package"
-            m_set_suprompt "to remove unrecognized version of platform-specific package"
-            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-kext-$ms_os_version-"*
-            m_exit_on_error "failed to clean up unrecognized version of platform-specific package."
-        fi
-    else
-        if [ -e "$ms_osxfuse_out/$M_KEXT_NAME" ]
-        then
-            echo >$m_stdout
-            m_log "succeeded (shortcircuited), results in '$ms_osxfuse_out'."
-            echo >$m_stdout
-            return 0
-        fi
-    fi
-
-    if [ "$1" == "clean" ]
-    then
-        local retval=$?
-        m_log "cleaned (platform $m_platform)"
-        return $retval
-    fi
-
-    m_log "initiating Universal build for $m_platform"
-
-    cd "$kernel_dir"
-    m_exit_on_error "failed to access the kext source directory '$kernel_dir'."
-
-    m_log "building OSXFUSE kernel extension"
-
-    local ms_built_products_dir="$kernel_dir/build/$m_configuration/"
-
-    xcodebuild -configuration "$m_configuration" -target osxfuse GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" CONFIGURATION_BUILD_DIR="$ms_built_products_dir" OSXFUSE_NAME="$ms_osxfuse_name" ENABLE_MACFUSE_MODE="$M_MACFUSE_MODE" >$m_stdout 2>$m_stderr
-
-    m_exit_on_error "xcodebuild cannot build configuration $m_configuration."
-
-    # Go for it
-
-    local ms_project_dir="$kernel_dir"
-
-    if [ ! -d "$ms_built_products_dir" ]
-    then
-        m_exit_on_error "cannot find built products directory."
-    fi
-
-    m_log "creating directory $ms_osxfuse_out"
-    mkdir -p "$ms_osxfuse_out"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_out'."
-
-    /bin/cp -pRX "$ms_built_products_dir/$M_KEXT_NAME" "$ms_osxfuse_out/$M_KEXT_NAME"
-    m_exit_on_error "cannot copy '$M_KEXT_NAME' to destination."
-
-    if [[ -n "$m_signing_id_code" ]]
-    then
-        codesign -f -s "$m_signing_id_code" "$ms_osxfuse_out/$M_KEXT_NAME"
-        m_exit_on_error "cannot sign kernel extension."
-    fi
-
-    /bin/cp -pRX "$ms_built_products_dir/Debug" "$ms_osxfuse_out/Debug"
-    m_exit_on_error "cannot copy 'Debug' to destination."
-
-    m_set_suprompt "to set permissions on newly built kernel extension"
-    sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_out/$M_KEXT_NAME"
-    m_exit_on_error "cannot set permissions on newly built kernel extension."
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$ms_osxfuse_out'."
-    echo >$m_stdout
-
-    return 0
-}
-
-# Build a platform-specific distribution package
-#
-function m_handler_core()
-{
-    m_active_target="core"
-
-    m_platform="${M_PLATFORMS_REALISTIC%% *}"
-    m_set_platform
-
-    local lib_dir="$m_srcroot"/fuse
-    if [ ! -d "$lib_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$lib_dir'."
-    fi
-    local lib_dir_mf="$m_srcroot"/fuse-macfuse
-    if [ ! -d "$lib_dir_mf" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$lib_dir_mf'."
-    fi
-
-    local kernel_dir="$m_srcroot"/kext
-    if [ ! -d "$kernel_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$kernel_dir'."
-    fi
-
-    local support_dir="$m_srcroot"/support
-    if [ ! -d "$support_dir" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$support_dir'."
-    fi
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        rm -rf "$kernel_dir/build/"
-        rm -rf "$m_srcroot/framework/build/"
-    fi
-
-    local ms_os_version="$m_platform"
-    local ms_osxfuse_version=`awk '/#define[ \t]*OSXFUSE_VERSION_LITERAL/ {print $NF}' "$m_srcroot"/common/fuse_version.h`
-    m_exit_on_error "cannot get platform-specific OSXFUSE version."
-
-    local ms_osxfuse_out="$M_CONF_TMPDIR/osxfuse-core-$ms_osxfuse_version"
-    local ms_osxfuse_build="$ms_osxfuse_out/build/"
-    local ms_osxfuse_root="$ms_osxfuse_out/osxfuse/"
-    local ms_macfuse_root="$ms_osxfuse_out/macfuse/"
-
-    if [ "$m_shortcircuit" != "1" ]
-    then
-        if [ -e "$ms_osxfuse_out" ]
-        then
-            m_set_suprompt "to remove a previously built core package"
-            sudo -p "$m_suprompt" rm -rf "$ms_osxfuse_out"
-            m_exit_on_error "failed to clean up previous OSXFUSE core build."
-        fi
-        if [ -e "$M_CONF_TMPDIR/osxfuse-core-"* ]
-        then
-            m_warn "removing unrecognized version of core package"
-            m_set_suprompt "to remove unrecognized version of core package"
-            sudo -p "$m_suprompt" rm -rf "$M_CONF_TMPDIR/osxfuse-core-"*
-            m_exit_on_error "failed to clean up unrecognized version of core package."
-        fi
-    else
-        if [ -e "$ms_osxfuse_out/$M_PKGNAME_CORE" -a -e "$ms_osxfuse_out/$M_PKGNAME_MACFUSE" ]
-        then
-            echo >$m_stdout
-            m_log "succeeded (shortcircuited), results in '$ms_osxfuse_out'."
-            echo >$m_stdout
-            return 0
-        fi
-    fi
-
-    if [ "$1" == "clean" ]
-    then
-        m_handler_osxfusefs clean
-        local retval=$?
-
-        m_active_target="core"
-
-        m_log "cleaned"
-        return $retval
-    fi
-
-    m_log "initiating Universal build for $m_platform"
-
-    # Build file system bundle
-    #
-
-    m_handler_osxfusefs
-
-    local ms_osxfusefs_out="$M_CONF_TMPDIR/osxfuse-osxfusefs-$ms_osxfuse_version"
-    if [ ! -d "$ms_osxfusefs_out" ]
-    then
-        false
-        m_exit_on_error "cannot access directory '$ms_osxfusefs_out'."
-    fi
-
-    # Go for it
-
-    m_active_target="core"
-
-    m_platform="${M_PLATFORMS_REALISTIC%% *}"
-    m_set_platform
-
-    mkdir -p "$ms_osxfuse_build"
-    m_exit_on_error "cannot make new build directory '$ms_osxfuse_build'."
-
-    mkdir -p "$ms_osxfuse_root"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root'."
-
-    mkdir -p "$ms_osxfuse_root/Library/Filesystems/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Filesystems/'."
-
-    mkdir -p "$ms_osxfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Frameworks/'."
-
-    mkdir -p "$ms_macfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/Library/Frameworks/'."
-
-    mkdir -p "$ms_osxfuse_root/usr/local/lib/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/lib/'."
-
-    mkdir -p "$ms_macfuse_root/usr/local/lib/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/lib/'."
-
-    mkdir -p "$ms_osxfuse_root/usr/local/include/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/include/'."
-
-    mkdir -p "$ms_osxfuse_root/usr/local/lib/pkgconfig/"
-    m_exit_on_error "cannot make directory '$ms_osxfuse_root/usr/local/lib/pkgconfig/'."
-
-    local ms_bundle_dir_generic="/Library/Filesystems/$M_FSBUNDLE_NAME"
-    local ms_bundle_dir="$ms_osxfuse_root/$ms_bundle_dir_generic"
-    local ms_bundle_resources_dir="$ms_bundle_dir/Contents/Resources"
-
-    /bin/cp -pRX "$ms_osxfusefs_out/$M_FSBUNDLE_NAME" "$ms_bundle_dir"
-    m_exit_on_error "cannot copy '$M_FSBUNDLE_NAME' to destination."
-
-    /bin/cp -pRX "$m_srcroot/support/uninstall_osxfuse.sh" "$ms_bundle_resources_dir/uninstall_osxfuse.sh"
-    m_exit_on_error "cannot copy 'uninstall_osxfuse.sh' to destination."
-
-    /bin/cp -pRX "$m_srcroot/support/uninstall_macfuse.sh" "$ms_bundle_resources_dir/uninstall_macfuse.sh"
-    m_exit_on_error "cannot copy 'uninstall_macfuse.sh' to destination."
-
-    ln -s "/Library/PreferencePanes/OSXFUSE.prefPane/Contents/MacOS/autoinstall-osxfuse-core" "$ms_bundle_resources_dir/autoinstall-osxfuse-core"
-    m_exit_on_error "cannot create legacy symlink '$ms_bundle_resources_dir/autoinstall-osxfuse-core'".
-
-    # Build the user-space OSXFUSE library
-    #
-
-    m_log "building user-space OSXFUSE library"
-
-    ms_deployment_target="$m_platform"
-    m_platform="${M_PLATFORMS_REALISTIC%% *}"
-    m_set_platform
-
-    /bin/cp -pRX "$lib_dir" "$ms_osxfuse_build"
-    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir'."
-
-    cd "$ms_osxfuse_build"/fuse
-    m_exit_on_error "cannot access OSXFUSE library source in '$ms_osxfuse_build/fuse'."
-
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot configure OSXFUSE library source for compilation."
-
-    xcrun make -j4 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the OSXFUSE library."
-
-    xcrun make install DESTDIR="$ms_osxfuse_root" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot prepare library build for installation."
-
-    for f in "$ms_osxfuse_root"/usr/local/lib/libosxfuse*.dylib; do
-        local source=`basename "$f"`
-        local target="`echo \"$f\" | sed 's/libosxfuse/libosxfuse_i64/'`"
-        ln -s "$source" "$target"
-        m_exit_on_error "cannot create symlink '$target' -> '$source'."
-    done
-    ln -s libosxfuse.la "$ms_osxfuse_root/usr/local/lib/libosxfuse_i64.la"
-    m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/libosxfuse.la' -> 'libosxfuse_i64.la'."
-
-    ln -s osxfuse.pc "$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc"
-    m_exit_on_error "cannot create symlink '$ms_osxfuse_root/usr/local/lib/pkgconfig/fuse.pc' -> 'osxfuse.pc'."
-
-    # Generate dSYM bundle
-    xcrun dsymutil "$ms_osxfuse_root"/usr/local/lib/libosxfuse.dylib
-    m_exit_on_error "cannot generate debugging information for libosxfuse."
-
-    # Build the user-space MacFUSE library
-    #
-
-    m_log "building user-space MacFUSE library"
-
-    /bin/cp -pRX "$lib_dir_mf" "$ms_osxfuse_build/macfuse"
-    m_exit_on_error "cannot copy OSXFUSE library source from '$lib_dir_mf'."
-
-    cd "$ms_osxfuse_build"/macfuse
-    m_exit_on_error "cannot access MacFUSE library source in '$ms_osxfuse_build/macfuse'."
-
-    COMPILER="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" ./darwin_configure.sh "$m_srcroot" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot configure MacFUSE library source for compilation."
-
-    xcrun make -j4 >$m_stdout 2>$m_stderr
-    m_exit_on_error "make failed while compiling the MacFUSE library."
-
-    xcrun make install DESTDIR="$ms_macfuse_root" >$m_stdout 2>$m_stderr
-    m_exit_on_error "cannot prepare library build for installation."
-
-    ln -s libfuse.dylib "$ms_macfuse_root/usr/local/lib/libfuse.0.dylib"
-    m_exit_on_error "cannot create compatibility symlink 'libfuse.0.dylib'."
-
-    # Generate dSYM bundles
-    xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse.dylib
-    m_exit_on_error "cannot generate debugging information for libfuse."
-    xcrun dsymutil "$ms_macfuse_root"/usr/local/lib/libfuse_ino64.dylib
-    m_exit_on_error "cannot generate debugging information for libfuse_ino64."
-
-    # Build OSXFUSE.framework
-    #
-
-    m_log "building OSXFUSE Objective-C framework"
-
-    cd "$m_srcroot/framework"
-    m_exit_on_error "cannot access Objective-C framework directory."
-
-    rm -rf build/
-    m_exit_on_error "cannot remove previous build of OSXFUSE.framework."
-
-    xcodebuild -configuration "$m_configuration" -target "OSXFUSE" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" OSXFUSE_BUILD_ROOT="$ms_osxfuse_root" OSXFUSE_BUNDLE_VERSION_LITERAL="$ms_osxfuse_version" CONFIGURATION_BUILD_DIR="build/$m_configuration" >$m_stdout 2>$m_stderr
-    m_exit_on_error "xcodebuild cannot build configuration '$m_configuration'."
-
-    /bin/cp -pRX build/"$m_configuration"/*.framework "$ms_osxfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot copy 'OSXFUSE.framework' to destination."
-
-    /bin/cp -pRX "$support_dir/Icon.icns" "$ms_osxfuse_root/Library/Frameworks/OSXFUSE.framework/Resources/DefaultVolumeIcon.icns"
-    m_exit_on_error "cannot copy 'DefaultVolumeIcon.icns' to destination."
-
-    mv "$ms_osxfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
-    mv "$ms_macfuse_root"/usr/local/lib/*.dSYM "$ms_osxfuse_root"/Library/Frameworks/OSXFUSE.framework/Resources/Debug/
-#   mkdir -p "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates"
-#   m_exit_on_error "cannot create directory for Xcode templates."
-#   ln -s "/Library/Frameworks/OSXFUSE.framework/Resources/ProjectTemplates/" "$ms_osxfuse_root/Library/Application Support/Developer/Shared/Xcode/Project Templates/OSXFUSE"
-#   m_exit_on_error "cannot create symlink for Xcode templates."
-
-    # Link MacFUSE.framework back to OSXFUSE.framework
-    #
-
-    /bin/cp -pRX MacFUSE.framework "$ms_macfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot copy 'MacFUSE.framework' to destination."
-
-    sed -e "s/OSXFUSE_CORE_VERSION/$ms_osxfuse_version/" "MacFUSE.framework/Versions/A/Resources/Info.plist" > "$ms_macfuse_root/Library/Frameworks/MacFUSE.framework/Versions/A/Resources/Info.plist"
-    m_exit_on_error "failed to process Info.plist of 'MacFUSE.framework'."
-
-    # Change owner and mode of files and directory in package root
-    #
-
-    m_set_suprompt "to chown '$ms_osxfuse_root/*'"
-    sudo -p "$m_suprompt" chown -R root:wheel "$ms_osxfuse_root"/*
-    m_exit_on_error "cannot chown '$ms_osxfuse_root/*'."
-
-    m_set_suprompt "to chown '$ms_macfuse_root/*'"
-    sudo -p "$m_suprompt" chown -R root:wheel "$ms_macfuse_root"/*
-    m_exit_on_error "cannot chown '$ms_macfuse_root/*'."
-
-    m_set_suprompt "to setuid 'load_osxfuse'"
-    sudo -p "$m_suprompt" chmod u+s "$ms_bundle_resources_dir/load_osxfuse"
-    m_exit_on_error "cannot setuid 'load_osxfuse'."
-
-    m_set_suprompt "to chown '$ms_osxfuse_root/Library/'"
-    sudo -p "$m_suprompt" chown root:admin "$ms_osxfuse_root/Library/"
-    m_exit_on_error "cannot chown '$ms_osxfuse_root/Library/'."
-
-    m_set_suprompt "to chown '$ms_macfuse_root/Library/'"
-    sudo -p "$m_suprompt" chown root:admin "$ms_macfuse_root/Library/"
-    m_exit_on_error "cannot chown '$ms_macfuse_root/Library/'."
-
-    m_set_suprompt "to chown '$ms_osxfuse_root/Library/Frameworks/"
-    sudo -p "$m_suprompt" \
-        chown -R root:admin "$ms_osxfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot chown '$ms_osxfuse_root/Library/Frameworks/'."
-
-    m_set_suprompt "to chown '$ms_macfuse_root/Library/Frameworks/"
-    sudo -p "$m_suprompt" \
-    chown -R root:admin "$ms_macfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot chown '$ms_macfuse_root/Library/Frameworks/'."
-
-    m_set_suprompt "to chmod '$ms_osxfuse_root/Library/Frameworks/'"
-    sudo -p "$m_suprompt" chmod 0775 "$ms_osxfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot chmod '$ms_osxfuse_root/Library/Frameworks/'."
-
-    m_set_suprompt "to chmod '$ms_macfuse_root/Library/Frameworks/'"
-    sudo -p "$m_suprompt" chmod 0775 "$ms_macfuse_root/Library/Frameworks/"
-    m_exit_on_error "cannot chmod '$ms_macfuse_root/Library/Frameworks/'."
-
-    m_set_suprompt "to chmod '$ms_osxfuse_root/Library/'"
-    sudo -p "$m_suprompt" chmod 1775 "$ms_osxfuse_root/Library/"
-    m_exit_on_error "cannot chmod '$ms_osxfuse_root/Library/'."
-
-    m_set_suprompt "to chmod '$ms_macfuse_root/Library/'"
-    sudo -p "$m_suprompt" chmod 1775 "$ms_macfuse_root/Library/"
-    m_exit_on_error "cannot chmod '$ms_macfuse_root/Library/'."
-
-    m_set_suprompt "to chmod files in '$ms_osxfuse_root/usr/local/lib/'"
-    sudo -p "$m_suprompt" \
-        find "$ms_osxfuse_root/usr/local/lib" -type l -depth 1 -exec chmod -h 755 '{}' \;
-    m_exit_on_error "cannot chmod files in '$ms_osxfuse_root/usr/local/lib/'."
-
-    m_set_suprompt "to chmod files in '$ms_macfuse_root/usr/local/lib/'"
-    sudo -p "$m_suprompt" \
-        find "$ms_macfuse_root/usr/local/lib" -type l -depth 1 -exec chmod -h 755 '{}' \;
-    m_exit_on_error "cannot chmod files in '$ms_macfuse_root/usr/local/lib/'."
-
-    m_set_suprompt "to chmod files in '$ms_osxfuse_root/Library/Frameworks/'"
-    sudo -p "$m_suprompt" \
-        find "$ms_osxfuse_root/Library/Frameworks/" -type l -exec chmod -h 755 '{}' \;
-    # no exit upon error
-
-    m_set_suprompt "to chmod files in '$ms_macfuse_root/Library/Frameworks/'"
-    sudo -p "$m_suprompt" \
-        find "$ms_macfuse_root/Library/Frameworks/" -type l -exec chmod -h 755 '{}' \;
-    # no exit upon error
-
-    cd "$ms_osxfuse_root"
-    m_exit_on_error "cannot access directory '$ms_osxfuse_root'."
-
-    cd "$ms_macfuse_root"
-    m_exit_on_error "cannot access directory '$ms_macfuse_root'."
-
-    # Create the OSXFUSE Installer Package
-    #
-
-    m_log "building installer package for $m_platform"
-
-    m_platform="$ms_deployment_target"
-    m_set_platform
-
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_CORE" "$ms_osxfuse_root" "$M_PKGID_CORE" "$M_PKGNAME_CORE" "/" "$ms_osxfuse_out"
-    m_exit_on_error "cannot create '$M_PKGNAME_CORE'."
-
-    m_build_pkg "$ms_osxfuse_version" "$m_srcroot/support/InstallerPackages/$M_PKGBASENAME_MACFUSE" "$ms_macfuse_root" "$M_PKGID_MACFUSE" "$M_PKGNAME_MACFUSE" "/" "$ms_osxfuse_out"
-    m_exit_on_error "cannot create '$M_PKGNAME_MACFUSE'."
-
-    echo >$m_stdout
-    m_log "succeeded, results in '$ms_osxfuse_out'."
-    echo >$m_stdout
-
-    return 0
-}
-
-function m_validate_input()
-{
-    local mvi_found=
-    local mvi_good=
-
-    # Validate scratch directory
-    if [ ! -d "$M_CONF_TMPDIR" ] || [ ! -w "$M_CONF_TMPDIR" ]
-    then
-        echo "M_CONF_TMPDIR (currently '$M_CONF_TMPDIR') must be set to a writeable directory."
-        exit 2
-    fi
-
-    # Validate if platform was specified when it shouldn't have been
-    #
-    if [ "$m_platform" != "$M_DEFAULT_PLATFORM" ]
-    then
-        mvi_found="0"
-        for m_p in $M_TARGETS_WITH_PLATFORM
-        do
-            if [ "$m_target" == "$m_p" ]
-            then
-                mvi_found="1"
-                break
-            fi
-        done
-        if [ "$mvi_found" == "0" ]
-        then
-            echo "Unknown argument or invalid combination of arguments."
-            echo  "Try $0 -h for help."
-            exit 2
-        fi
-    fi
-
-    # Validate platform
-    if [ "$m_platform" != "$M_DEFAULT_PLATFORM" ]
-    then
-        mvi_good="0"
-        for m_p in $M_PLATFORMS
-        do
-            if [ "$m_platform" == "$m_p" ]
-            then
-                mvi_good="1"
-                break
-            fi
-        done
-        if [ "$mvi_good" == "0" ]
-        then
-            echo "Unknown platform '$m_platform'."
-            echo "Valid platforms are: $M_PLATFORMS."
-            exit 2
-        fi
-    fi
-
-    # Validate target
-    #
-    if [ "$m_target" != "$M_DEFAULT_TARGET" ]
-    then
-        mvi_good="0"
-        for m_t in $M_TARGETS
-        do
-            if [ "$m_target" == "$m_t" ]
-            then
-                mvi_good="1"
-                break
-            fi
-        done
-        if [ "$mvi_good" == "0" ]
-        then
-            echo "Unknown target '$m_target'."
-            echo "Valid targets are: $M_TARGETS."
-            exit 2
-        fi
-    fi
-
-    # Validate configuration
-    #
-    mvi_good="0"
-    for m_c in $M_CONFIGURATIONS
-    do
-        if [ "$m_configuration" == "$m_c" ]
-        then
-            mvi_good="1"
             break
         fi
     done
-    if [ "$mvi_good" == "0" ]
+
+    stack_name="BT_FUNCTION_STACK_`bt_string_uppercase <<< "${function_name}"`"
+    if ! bt_is_array "${stack_name}"
     then
-        echo "Unknown configuration '$m_configuration'."
-        echo "Valid configurations are: $M_CONFIGURATIONS."
-        exit 2
+        bt_array_create "${stack_name}"
     fi
 
-    if [ "$m_shortcircuit" == "1" ] && [ "$m_target" == "clean" ]
-    then
-       echo "Cleaning cannot be shortcircuited!"
-       exit 2
-    fi
+    function_definition=`declare -f "${function_name}"`
+    backup_definition="${backup_name}${function_definition#${function_name}}"
 
-    export OSXFUSE_MACFUSE_MODE=$M_MACFUSE_MODE
+    eval "
+        ${backup_definition}
 
-    return 0
+        function ${function_name}
+        {
+            bt_error -t \"Function needs to be overridden\"
+        }
+
+        bt_stack_push \"\${stack_name}\" \"${backup_name}\"
+    "
 }
 
-function m_read_input()
+function bt_function_unset
 {
-    while getopts "c:dhp:qst:vj:i:u:" m_i
-    do
-        case "$m_i" in
-        c)
-            m_configuration="$OPTARG"
-            ;;
-        d)
-            m_developer=1
-            ;;
-        h)
-            m_help
-            exit 0
-            ;;
-        p)
-            m_platform="$OPTARG"
-            ;;
-        q)
-            m_stderr=/dev/null
-            m_stdout=/dev/null
-            ;;
-        s)
-            m_shortcircuit="1"
-            ;;
-        t)
-            m_target="$OPTARG"
-            ;;
-        v)
-            m_version
-            exit 0
-            ;;
-        j)
-            m_signing_id_code="$OPTARG"
-            ;;
-        i)
-            m_signing_id_installer="$OPTARG"
-            ;;
-        u)
-            m_plistsigner_key="$OPTARG"
-            ;;
-        esac
-    done
-}
+    local function_name="${1}"
+    local stack_name=""
 
-function m_version_compare()
-{
-    local _IFS="$IFS"; IFS="."
+    bt_assert "bt_is_function `bt_string_escape "${function_name}"`"
 
-    local -a version1=( $1 )
-    local -a version2=( $2 )
-
-    IFS="$_IFS"
-
-    local count
-    if [[ ${#version1[@]} -lt ${#version2[@]} ]]
+    stack_name="BT_FUNCTION_STACK_`bt_string_uppercase <<< "${function_name}"`"
+    if bt_is_array "${stack_name}" && [[ `bt_array_size "${stack_name}"` -gt 0 ]]
     then
-        count=${#version2[@]}
+        local function_defintion=""
+        local backup_name=""
+        local backup_defintion=""
+
+        backup_name="`bt_array_get "${stack_name}" 0`"
+        backup_definition=`declare -f "${backup_name}"`
+
+        function_definition="${function_name}${backup_definition#${backup_name}}"
+        eval "
+            ${function_definition}
+
+            bt_stack_pop \"\${stack_name}\"
+        "
     else
-        count=${#version1[@]}
+        unset "${function_name}"
+    fi
+}
+
+
+function bt_is_variable
+{
+    compgen -A variable | grep ^"${1}"$ > /dev/null
+}
+
+function bt_variable_is_legal_name
+{
+    [[ "${1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]]
+}
+
+function bt_variable_is_readonly
+{
+    if bt_is_variable "${1}"
+    then
+        [[ "`declare -p "${1}" 2> /dev/null`" =~ ^"declare -"[^=]{0,}"r"[^=]{0,}" ${1}=" ]]
+    fi
+}
+
+function bt_variable_get
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+    bt_string_escape "${!1}"
+}
+
+function bt_variable_set
+{
+    bt_assert "bt_variable_is_legal_name `bt_string_escape "${1}"`"
+    
+    eval "${1}=`bt_string_escape "${2}"`"
+}
+
+function bt_variable_clone
+{
+    if [[ -z "${2}" ]]
+    then
+        bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+        if bt_is_array "${1}"
+        then
+            printf "("
+            bt_array_get_elements "${1}"
+            printf ")"
+        else
+            bt_variable_get "${1}"
+        fi
+    else
+        bt_assert "bt_variable_is_legal_name `bt_string_escape "${2}"`"
+
+        eval "${2}=`bt_variable_clone "${1}"`"
+    fi
+}
+
+function bt_variable_print
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+    printf "%s=" "${1}"
+    bt_variable_clone "${1}"
+    printf "\n"
+}
+
+function bt_variable_require
+{
+    while [[ ${#} -gt 0 ]]
+    do
+        if ! bt_is_variable "${1}"
+        then
+            bt_error "Variable not declared: ${1}"
+        fi
+        shift
+    done
+}
+
+function bt_variable_expand
+{
+    while [[ ${#} -gt 0 ]]
+    do
+        eval "echo \${!${1}_@}"
+        shift
+    done
+}
+
+
+function bt_string_trim
+{
+    local string="${1}"
+
+    ! shopt -q extglob
+    local -i extglob=${?}
+
+    if (( extglob == 0 ))
+    then
+        shopt -s extglob
     fi
 
-    local i
-    for (( i=0; i < count; i++ ))
-    do
-        local t1=${version1[$i]:-0}
-        local t2=${version2[$i]:-0}
+    string="${string##+([[:space:]])}"
+    string="${string%%+([[:space:]])}"
 
-        [[ $t1 -lt $t2 ]] && return 1
-        [[ $t1 -gt $t2 ]] && return 2
-    done
+    if (( extglob == 0 ))
+    then
+        shopt -u extglob
+    fi
+
+    printf "%s" "${string}"
+}
+
+function bt_string_lowercase
+{
+    /usr/bin/tr '[A-Z]' '[a-z]'
+}
+
+function bt_string_uppercase
+{
+    /usr/bin/tr '[a-z]' '[A-Z]'
+}
+
+function bt_string_escape
+{
+    local count="${2:-1}"
+
+    if [[ "${count}" =~ [0-9]+ ]] && (( count > 0 ))
+    then
+        printf "%q" "`bt_string_escape "${1}" $(( ${count} - 1 ))`"
+    else
+        printf "%s" "${1}"
+    fi
+}
+
+function bt_string_compare
+{
+    if [[ "${1}" < "${2}" ]]
+    then
+        return 1
+    fi
+    if [[ "${1}" > "${2}" ]]
+    then
+        return 2
+    fi 
     return 0
 }
 
-function m_platform_realistic_add()
+
+function bt_is_array
 {
-    local platform="$1"
-
-    local _IFS="$IFS"; IFS=" "
-    for p in $M_PLATFORMS
-    do
-        if [[ "$p" = "$platform" ]]
-        then
-            IFS="$_IFS"
-            return
-        fi
-    done
-    IFS="$_IFS"
-
-    M_PLATFORMS_REALISTIC=${M_PLATFORMS_REALISTIC:+"$M_PLATFORMS_REALISTIC "}"$platform"
-    m_platform_add "$platform"
+    if bt_is_variable "${1}"
+    then
+        [[ "`declare -p "${1}" 2> /dev/null`" =~ ^"declare -"[^=]{0,}"a"[^=]{0,}" ${1}=" ]]
+    else
+        return 1
+    fi
 }
 
-function m_platform_add()
+function bt_array_create
 {
-    local platform="$1"
+    bt_assert "bt_variable_is_legal_name `bt_string_escape "${1}"`"
 
-    local _IFS="$IFS"; IFS=" "
-    for p in $M_PLATFORMS
-    do
-        if [[ "$p" = "$platform" ]]
-        then
-            IFS="$_IFS"
-            return
-        fi
-    done
-    IFS="$_IFS"
-
-    M_PLATFORMS=${M_PLATFORMS:+"$M_PLATFORMS "}"$platform"
+    eval "${1}=()"
 }
 
-function m_handler()
+function bt_array_size
 {
-    case "$m_target" in
+    bt_assert "bt_is_array `bt_string_escape "${1}"`"
 
-    "clean")
-        m_handler_examples clean
-        m_handler_lib clean
-        m_handler_release clean
-    ;;
-
-    "release")
-        m_handler_release
-    ;;
-
-    "dist")
-        m_handler_dist
-    ;;
-
-    "osxfusefs")
-        m_handler_osxfusefs
-    ;;
-
-    "kext")
-        m_handler_kext
-    ;;
-
-    "examples")
-        m_handler_examples
-    ;;
-
-    "lib")
-        m_handler_lib
-    ;;
-
-    "reload")
-        m_handler_reload
-    ;;
-
-    "core")
-        m_handler_core
-    ;;
-
-    *)
-        echo "Try $0 -h for help."
-    ;;
-
-    esac
+    eval "printf \"%u\" \${#${1}[@]}"
 }
 
-# main()
-# {
-    M_ACTUAL_PLATFORM=`sw_vers -productVersion | cut -d . -f 1,2`
-    m_exit_on_error "cannot determine actual platform"
+function bt_array_get
+{
+    if [[ -z "${3}" ]]
+    then
+        bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+        bt_assert "bt_math_is_integer `bt_string_escape "${2}"` && [[ ${2} -ge 0 ]]"
 
-    # Locace Xcode installations
-    for m_xcodebuild in /*/usr/bin/xcodebuild /Applications/*.app/Contents/Developer/usr/bin/xcodebuild
-    do
-        m_xcode_root="${m_xcodebuild%/usr/bin/xcodebuild}"
-        if [[ "$m_xcode_root" =~ "*"|" " || -L "$m_xcode_root" ]]
+        eval "bt_string_escape \"\${${1}[${2}]}\""
+    else
+        bt_assert "bt_is_variable `bt_string_escape "${3}"`"
+
+        eval "${3}=`bt_array_get "${1}" "${2}"`"
+    fi
+}
+
+function bt_array_set
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+    bt_assert "bt_math_is_integer `bt_string_escape "${2}"` && [[ ${2} -ge 0 ]]"
+
+    eval "${1}[${2}]=`bt_string_escape "${3}"`"
+}
+
+function bt_array_add
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+    eval "${1}+=(`bt_string_escape "${2}"`)"
+}
+
+function bt_array_get_elements
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+    function bt_array_get_elements_serialize
+    {
+        local offset=$(( ${#} / 2 + 1 ))
+        
+        if [[ ${#} -ge ${offset} ]]
         then
-            continue
+            printf '[%q]=%q' "${1}" "${!offset}"
+            shift
+
+            while [[ ${#} -ge ${offset} ]]
+            do
+                printf ' [%q]=%q' "${1}" "${!offset}"
+                shift
+            done
         fi
+    }
+    eval "bt_array_get_elements_serialize \"\${!${1}[@]}\" \"\${${1}[@]}\""
 
-        m_xcode_version=`DEVELOPER_DIR="$m_xcode_root" xcodebuild -version | grep "Xcode" | cut -f 2 -d " "`
+    local rc=${?}
+    unset -f bt_array_get_elements_serialize
+    return ${rc}
+}
 
-        case $m_xcode_version in
-            3.2*)
-                m_version_compare $M_XCODE32_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
+function bt_array_foreach
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+    bt_assert "bt_is_function `bt_string_escape "${2}"`"
+    bt_assert "[[ ! `bt_string_escape "${2}"` =~ ^bt_array_foreach_ ]]"
+
+    eval "
+        function bt_array_foreach_internal
+        {
+            while [[ \${#} -gt 0 ]]
+            do
+                if ${2} \"\${1}\"
                 then
-                    M_XCODE32="$m_xcode_root"
-                    M_XCODE32_VERSION=$m_xcode_version
+                    shift
+                else
+                    return \${?}
                 fi
-                ;;
-            4.0*)
-                m_version_compare $M_XCODE40_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
+            done
+        }
+
+        function bt_array_foreach_wrapper
+        {
+            bt_array_foreach_internal \"\${${1}[@]}\"
+        }
+    " && bt_array_foreach_wrapper
+
+    local rc=${?}
+    unset -f bt_array_foreach_internal
+    unset -f bt_array_foreach_wrapper
+    return ${rc}
+}
+
+function bt_array_contains
+{
+    eval "
+        function bt_array_contains_compare
+        {
+            [[ \"\${1}\" != `bt_string_escape "${2}"` ]]
+        }
+    " && ! bt_array_foreach "${1}" bt_array_contains_compare
+
+    local rc=${?}
+    unset -f bt_array_contains_compare
+    return ${rc}
+}
+
+function bt_array_sort
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+    bt_assert "bt_is_function `bt_string_escape "${2}"`"
+    bt_assert "[[ ! `bt_string_escape "${2}"` =~ ^bt_array_sort_ ]]"
+    bt_assert "[[ `bt_string_escape "${3}"` =~ !? ]]"
+
+    eval "
+        function bt_array_sort_quicksort
+        {
+            local -a left=()
+            local -a right=()
+            local    pivot=""
+
+            if [[ \${#} -eq 0 ]]
+            then
+                return 0
+            fi
+
+            pivot=\"\${1}\"
+            shift
+            
+            while [[ \${#} -gt 0 ]]
+            do
+                ${2} \"\${1}\" \"\${pivot}\"
+                if [[ ${3} \${?} -le 1 ]]
                 then
-                    M_XCODE40="$m_xcode_root"
-                    M_XCODE40_VERSION=$m_xcode_version
+                    left[\${#left[@]}]=\"\${1}\"
+                else
+                    right[\${#right[@]}]=\"\${1}\"
                 fi
+                shift
+            done
+
+            if [[ \${#left[@]} -gt 0 ]]
+            then
+                bt_array_sort_quicksort \"\${left[@]}\"
+            fi
+            bt_string_escape \"\${pivot}\"
+            printf \"%s\" \"\${IFS}\"
+            if [[ \${#right[@]} -gt 0 ]]
+            then
+                bt_array_sort_quicksort \"\${right[@]}\"
+            fi
+        }
+
+        function bt_array_sort_wrapper
+        {
+            eval \"${1}=(\$(bt_array_sort_quicksort \"\${${1}[@]}\"))\"
+        }
+    " && bt_array_sort_wrapper
+
+    local rc=${?}
+    unset -f bt_array_sort_quicksort
+    unset -f bt_array_sort_wrapper
+    return ${rc}
+}
+
+function bt_array_join
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+    eval "
+        function bt_array_join_internal
+        {
+            printf \"%s\" \"\${1}\"
+            shift
+            while [[ \${#} -gt 0 ]]
+            do
+                printf \"%s%s\" `bt_string_escape "${2:-, }"` \"\${1}\"
+                shift
+            done
+            printf \"\n\"
+        }
+
+        function bt_array_join_wrapper
+        {
+            bt_array_join_internal \"\${${1}[@]}\"
+        }
+    " && bt_array_join_wrapper
+
+    local rc=${?}
+    unset -f bt_array_join_internal
+    unset -f bt_array_join_wrapper
+    return ${rc}
+}
+
+
+function bt_stack_push
+{
+    bt_assert "bt_is_variable `bt_string_escape "${1}"`"
+
+    eval "${1}=(`bt_string_escape "${2}"` \"\${${1}[@]}\")"
+    bt_exit_on_error "Stack operation push failed: ${1}"
+}
+
+function bt_stack_pop
+{
+    bt_assert "bt_is_array `bt_string_escape "${1}"`"
+    bt_assert "[[ `bt_array_size "${1}"` -gt 0 ]]"
+
+    eval "${1}=(\"\${${1}[@]:1}\")"
+    bt_exit_on_error "Stack operation pop failed: ${1}"
+}
+
+
+function bt_path_absolute
+{
+    local    path="${1}"
+    local -a tokens=()
+    local -i tokens_count=0
+    local -i i=0
+
+    if [[ ! "${path}" =~ ^/ ]]
+    then
+        path="`pwd -P`/${path}"
+    fi
+    IFS="/" read -ra tokens <<< "${path}"
+    tokens_count=${#tokens[@]}
+
+    for (( i=0 ; i < ${tokens_count} ; i++ ))
+    do
+        case "${tokens[${i}]}" in
+            .|"")
+                unset -v tokens[${i}]
                 ;;
-            4.1*)
-                m_version_compare $M_XCODE41_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE41="$m_xcode_root"
-                    M_XCODE41_VERSION=$m_xcode_version
-                fi
-                ;;
-            4.2*)
-                m_version_compare $M_XCODE42_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE42="$m_xcode_root"
-                    M_XCODE42_VERSION=$m_xcode_version
-                fi
-                ;;
-            4.3*)
-                m_version_compare $M_XCODE43_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE43="$m_xcode_root"
-                    M_XCODE43_VERSION=$m_xcode_version
-                fi
-                ;;
-            4.4*)
-                m_version_compare $M_XCODE44_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE44="$m_xcode_root"
-                    M_XCODE44_VERSION=$m_xcode_version
-                fi
-                ;;
-            4.5*)
-                m_version_compare $M_XCODE45_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE45="$m_xcode_root"
-                    M_XCODE45_VERSION=$m_xcode_version
-                fi
-                ;;
-            4.6*)
-                m_version_compare $M_XCODE46_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE46="$m_xcode_root"
-                    M_XCODE46_VERSION=$m_xcode_version
-                fi
-                ;;
-            5.0*)
-                m_version_compare $M_XCODE50_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE50="$m_xcode_root"
-                    M_XCODE50_VERSION=$m_xcode_version
-                fi
-                ;;
-            5.1*)
-                m_version_compare $M_XCODE51_VERSION $m_xcode_version
-                if [[ $? != 2 ]]
-                then
-                    M_XCODE51="$m_xcode_root"
-                    M_XCODE51_VERSION=$m_xcode_version
-                fi
-                ;;
-            *)
-                m_log "skip unsupported Xcode version in '$m_xcode_root'."
+            ..)
+                unset -v tokens[$(( i - 1 ))]
+                unset -v tokens[${i}]
                 ;;
         esac
     done
 
-    # Use most recent version of Xcode for each SDK
-    if [[ -n "$M_XCODE32" ]]
+    printf "/"
+    bt_array_join tokens "/"
+}
+
+
+function bt_math_is_integer
+{
+    [[ "${1}" =~ ^-?[0-9]+$ ]]
+}
+
+function bt_math_compare
+{
+    if [[ ${1} -lt ${2} ]]
     then
-        m_xcode_latest="$M_XCODE32"
-
-        M_SDK_105="$M_XCODE32/SDKs/MacOSX10.5.sdk"
-        M_SDK_105_XCODE="$M_XCODE32"
-        M_SDK_105_COMPILER="$M_XCODE32_COMPILER"
-        m_platform_realistic_add "10.5"
-
-        M_SDK_106="$M_XCODE32/SDKs/MacOSX10.6.sdk"
-        M_SDK_106_XCODE="$M_XCODE32"
-        M_SDK_106_COMPILER="$M_XCODE32_COMPILER"
-        m_platform_realistic_add "10.6"
-
-        m_platform_add "10.7"
-        m_platform_add "10.8"
+        return 1
     fi
-    if [[ -n "$M_XCODE40" ]]
+    if [[ ${1} -gt ${2} ]]
     then
-        m_xcode_latest="$M_XCODE40"
+        return 2
+    fi 
+    return 0
+}
 
-        M_SDK_106="$M_XCODE40/SDKs/MacOSX10.6.sdk"
-        M_SDK_106_XCODE="$M_XCODE40"
-        M_SDK_106_COMPILER="$M_XCODE40_COMPILER"
-        m_platform_realistic_add "10.6"
+function bt_math_max
+{
+    bt_assert "bt_math_is_integer `bt_string_escape "${1}"`"
+    bt_assert "bt_math_is_integer `bt_string_escape "${2}"`"
 
-        m_platform_add "10.7"
-        m_platform_add "10.8"
+    if [[ ${1} -gt ${2} ]]
+    then
+        printf "%s" "${1}"
+    else
+        printf "%s" "${2}"
     fi
-    if [[ -n "$M_XCODE41" ]]
+}
+
+function bt_math_min
+{
+    bt_assert "bt_math_is_integer `bt_string_escape "${1}"`"
+    bt_assert "bt_math_is_integer `bt_string_escape "${2}"`"
+
+    if [[ ${1} -lt ${2} ]]
     then
-        m_xcode_latest="$M_XCODE41"
-
-        M_SDK_106="$M_XCODE41/SDKs/MacOSX10.6.sdk"
-        M_SDK_106_XCODE="$M_XCODE41"
-        M_SDK_106_COMPILER="$M_XCODE41_COMPILER"
-        m_platform_realistic_add "10.6"
-        m_platform_add "10.7"
-
-        M_SDK_107="$M_XCODE41/SDKs/MacOSX10.7.sdk"
-        M_SDK_107_XCODE="$M_XCODE41"
-        M_SDK_107_COMPILER="$M_XCODE41_COMPILER"
-        m_platform_realistic_add "10.7"
-
-        m_platform_add "10.8"
+        printf "%s" "${1}"
+    else
+        printf "%s" "${2}"
     fi
-    if [[ -n "$M_XCODE42" ]]
-    then
-        m_xcode_latest="$M_XCODE42"
+}
 
-        M_SDK_106="$M_XCODE42/SDKs/MacOSX10.6.sdk"
-        M_SDK_106_XCODE="$M_XCODE42"
-        M_SDK_106_COMPILER="$M_XCODE42_COMPILER"
-        m_platform_realistic_add "10.6"
-        m_platform_add "10.7"
 
-        M_SDK_107="$M_XCODE42/SDKs/MacOSX10.7.sdk"
-        M_SDK_107_XCODE="$M_XCODE42"
-        M_SDK_107_COMPILER="$M_XCODE42_COMPILER"
-        m_platform_realistic_add "10.7"
+function bt_is_version
+{
+    [[ "${1}" =~ ^[0-9]+(\.[0-9]+)*$ ]]
+}
 
-        m_platform_add "10.8"
-    fi
-    if [[ -n "$M_XCODE43" ]]
-    then
-        m_xcode_latest="$M_XCODE43"
+function bt_version_compare
+{
+    bt_assert "bt_is_version `bt_string_escape "${1}"`"
+    bt_assert "bt_is_version `bt_string_escape "${2}"`"
 
-        M_SDK_106="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.6.sdk"
-        M_SDK_106_XCODE="$M_XCODE43"
-        M_SDK_106_COMPILER="$M_XCODE43_COMPILER"
-        m_platform_realistic_add "10.6"
-        m_platform_add "10.7"
+    local -a version1=()
+    local -a version2=()
 
-        M_SDK_107="$M_XCODE43/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
-        M_SDK_107_XCODE="$M_XCODE43"
-        M_SDK_107_COMPILER="$M_XCODE43_COMPILER"
-        m_platform_realistic_add "10.7"
+    IFS="." read -ra version1 <<< "${1}"
+    IFS="." read -ra version2 <<< "${2}"
 
-        m_platform_add "10.8"
-    fi
-    if [[ -n "$M_XCODE44" ]]
-    then
-        m_xcode_latest="$M_XCODE44"
+    local -i i=0
+    local    t1=""
+    local    t2=""
+    for (( i=0 ; i < `bt_math_max ${#version1[@]} ${#version2[@]}` ; i++ ))
+    do
+        t1=${version1[${i}]:-0}
+        t2=${version2[${i}]:-0}
 
-        M_SDK_107="$M_XCODE44/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
-        M_SDK_107_XCODE="$M_XCODE44"
-        M_SDK_107_COMPILER="$M_XCODE44_COMPILER"
-        m_platform_realistic_add "10.7"
-        m_platform_add "10.8"
-
-        M_SDK_108="$M_XCODE44/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
-        M_SDK_108_XCODE="$M_XCODE44"
-        M_SDK_108_COMPILER="$M_XCODE44_COMPILER"
-        m_platform_realistic_add "10.8"
-    fi
-    if [[ -n "$M_XCODE45" ]]
-    then
-        m_xcode_latest="$M_XCODE45"
-
-        M_SDK_107="$M_XCODE45/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
-        M_SDK_107_XCODE="$M_XCODE45"
-        M_SDK_107_COMPILER="$M_XCODE45_COMPILER"
-        m_platform_realistic_add "10.7"
-        m_platform_add "10.8"
-
-        M_SDK_108="$M_XCODE45/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
-        M_SDK_108_XCODE="$M_XCODE45"
-        M_SDK_108_COMPILER="$M_XCODE45_COMPILER"
-        m_platform_realistic_add "10.8"
-    fi
-    if [[ -n "$M_XCODE46" ]]
-    then
-        m_xcode_latest="$M_XCODE46"
-
-        M_SDK_107="$M_XCODE46/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"
-        M_SDK_107_XCODE="$M_XCODE46"
-        M_SDK_107_COMPILER="$M_XCODE46_COMPILER"
-        m_platform_realistic_add "10.7"
-        m_platform_add "10.8"
-
-        M_SDK_108="$M_XCODE46/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
-        M_SDK_108_XCODE="$M_XCODE46"
-        M_SDK_108_COMPILER="$M_XCODE46_COMPILER"
-        m_platform_realistic_add "10.8"
-    fi
-    if [[ -n "$M_XCODE50" ]]
-    then
-        m_xcode_latest="$M_XCODE50"
-
-        M_SDK_108="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
-        M_SDK_108_XCODE="$M_XCODE50"
-        M_SDK_108_COMPILER="$M_XCODE50_COMPILER"
-        m_platform_realistic_add "10.8"
-
-        m_version_compare $M_XCODE50_VERSION "5.0.1"
-        if [[ $? != 1 ]]
+        if (( t1 < t2 ))
         then
-            M_SDK_109="$M_XCODE50/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
-            M_SDK_109_XCODE="$M_XCODE50"
-            M_SDK_109_COMPILER="$M_XCODE50_COMPILER"
-            m_platform_realistic_add "10.9"
+            return 1
         fi
-    fi
-    if [[ -n "$M_XCODE51" ]]
+        if (( t1 > t2 ))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+
+function bt_plist_get
+{
+    local file="${1}"
+    local entry="${2}"
+
+    /usr/libexec/PlistBuddy -x -c "Print '${entry}'" "${file}" 2> /dev/null
+}
+
+function bt_plist_set
+{
+    local file="${1}"
+    local entry="${2}"
+    local type="${3}"
+    local value="${4}"
+
+    /usr/libexec/PlistBuddy -c "Delete '${entry}'" "${file}" > /dev/null 2>&1
+    /usr/libexec/PlistBuddy -c "Add '${entry}' '${type}' '${value}'" "${file}" > /dev/null 2>&1
+}
+
+function bt_plist_array_size
+{
+    local file="${1}"
+    local entry="${2}"
+
+    bt_plist_get "${file}" "${entry}" | /usr/bin/xmllint --xpath 'count(/plist/array/*)' -
+}
+
+
+function bt_xcode_find
+{
+    local xcode_app_path=""
+    local xcode_path=""
+
+    function bt_xcode_find_sdk_add
+    {
+        if ! bt_array_contains BT_SDK_INSTALLED "${1}"
+        then
+            bt_array_create "BT_SDK_${1/./_}_XCODE"
+            bt_array_add BT_SDK_INSTALLED "${1}"
+        fi
+        
+        bt_array_add "BT_SDK_${1/./_}_XCODE" "${xcode_version}"
+    }
+
+    function bt_xcode_find_process
+    {
+        local xcode_path="${1}"
+        local xcode_version=""
+
+        local sdk_name=""
+        local sdk_version=""
+
+        if [[ "${xcode_path}" =~ " " ]]
+        then
+            bt_warn "Skipped Xcode at path '${xcode_path}' (Path contains whitespace)"
+            return
+        fi
+        if [[ -L "${xcode_path}" ]]
+        then
+            bt_warn "Skipped Xcode at path '${xcode_path}' (Path is a symbolic link)"
+            return
+        fi
+
+        xcode_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version 2> /dev/null | grep "Xcode" | /usr/bin/cut -f 2 -d " "`"
+        if ! bt_is_version "${xcode_version}"
+        then
+            bt_warn "Failed to parse version of Xcode at path '${xcode_path}'"
+            return
+        fi
+        if bt_array_contains BT_XCODE_INSTALLED "${xcode_version}"
+        then
+            bt_warn "Skipped Xcode at path '${xcode_path}' (Duplicate version of Xcode ${xcode_version})"
+            return
+        fi
+        bt_log -v 3 "Xcode ${xcode_version} found at path '${xcode_path}'"
+
+        bt_variable_set "BT_XCODE_${xcode_version//./_}_PATH" "${xcode_path}"
+        bt_array_create "BT_XCODE_${xcode_version//./_}_SDKS"
+
+        for sdk_name in `DEVELOPER_DIR="${xcode_path}" xcodebuild -showsdks | /usr/bin/sed -n -e 's/.*-sdk \(macosx.*\)/\1/p'`
+        do
+            sdk_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk ${sdk_name} SDKVersion`"
+            if ! bt_is_version "${sdk_version}"
+            then
+                continue
+            fi
+            bt_array_add "BT_XCODE_${xcode_version//./_}_SDKS" "${sdk_version}"
+        done
+
+        bt_array_add BT_XCODE_INSTALLED "${xcode_version}"
+        bt_array_foreach "BT_XCODE_${xcode_version//./_}_SDKS" bt_xcode_find_sdk_add
+    }
+
+    bt_log -v 3 "Search for Xcode"
+
+    for xcodebuild_path in /*/usr/bin/xcodebuild
+    do
+        xcode_path=`/bin/expr "${xcodebuild_path}" : '^\(\/[^\/]\{1,\}\)\/usr\/bin\/xcodebuild$'`
+        bt_xcode_find_process "${xcode_path}"
+    done
+
+    while read -r xcode_app_path
+    do
+        xcode_path="${xcode_app_path}/Contents/Developer"
+        bt_xcode_find_process "${xcode_path}"
+    done < <(mdfind 'kMDItemCFBundleIdentifier == "com.apple.dt.Xcode"')
+
+    unset -f bt_xcode_find_is_supported
+    unset -f bt_xcode_find_sdk_add
+    unset -f bt_xcode_find_process
+
+    function bt_xcode_find_sdk_sort
+    {
+        bt_array_sort "BT_SDK_${1//./_}_XCODE" bt_version_compare !
+    }
+    bt_array_foreach BT_SDK_INSTALLED bt_xcode_find_sdk_sort
+    unset -f bt_xcode_find_sdk_sort
+
+    function bt_xcode_find_print_xcode
+    {
+        bt_log_variable "BT_XCODE_${1//./_}_PATH"
+    }
+    bt_array_foreach BT_XCODE_INSTALLED bt_xcode_find_print_xcode
+    unset -f bt_xcode_find_print_xcode
+
+    bt_log_variable BT_XCODE_INSTALLED
+
+    function bt_xcode_find_print_sdk
+    {
+        bt_log_variable "BT_SDK_${1//./_}_XCODE"
+    }
+    bt_array_foreach BT_SDK_INSTALLED bt_xcode_find_print_sdk
+    unset -f bt_xcode_find_print_sdk
+
+    bt_log_variable BT_SDK_INSTALLED
+
+    bt_log -v 3 "Done searching for Xcode"
+}
+
+
+function bt_sdk_get_path
+{
+    local -a options=()
+    bt_getopt options "h,help,v:,verbosity:,a:,action:" "${@}"
+    bt_exit_on_error "${options[@]}"
+
+    set -- "${options[@]}"
+
+    local xcode_version=""
+    local xcode_path=""
+    local sdk_version=""
+
+    while [[ ${#} -gt 0 ]]
+    do
+        case "${1}" in
+            --)
+                shift
+                break
+                ;;
+            -x|--xcode)
+                xcode_version="${2}"
+                shift 2
+                ;;
+            -s|--sdk)
+                sdk_version="${2}"
+                shift 2
+                ;;
+        esac
+    done
+
+    bt_assert "bt_is_version `bt_string_escape "${xcode_version}"`"
+    bt_assert "bt_is_version `bt_string_escape "${sdk_version}"`"
+
+    bt_variable_clone "BT_XCODE_${xcode_version//./_}_PATH" xcode_path
+    DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk "macosx${sdk_version}" Path
+}
+
+
+function bt_target_get_build_directory
+{
+    local target_name="${1}"
+
+    printf "%s/%s" "${BT_BUILD_DIRECTORY}" "${target_name}"
+}
+
+function bt_target_sanity_check
+{
+    if ! bt_array_contains BT_SDK_SUPPORTED "${BT_TARGET_OPTION_SDK}"
     then
-        m_xcode_latest="$M_XCODE51"
-
-        M_SDK_108="$M_XCODE51/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"
-        M_SDK_108_XCODE="$M_XCODE51"
-        M_SDK_108_COMPILER="$M_XCODE51_COMPILER"
-        m_platform_realistic_add "10.8"
-
-        M_SDK_109="$M_XCODE51/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
-        M_SDK_109_XCODE="$M_XCODE51"
-        M_SDK_109_COMPILER="$M_XCODE51_COMPILER"
-        m_platform_realistic_add "10.9"
+        bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK not supported"
     fi
-
-    m_read_input "$@"
-
-    if [[ -z "$M_PLATFORMS" || -z "$m_xcode_latest" ]]
+    if ! bt_array_contains BT_SDK_INSTALLED "${BT_TARGET_OPTION_SDK}"
     then
-        false
-        m_exit_on_error "no supported version of Xcode found."
+        bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK not found"
     fi
 
-    m_log "supported platforms: $M_PLATFORMS"
+    if ! bt_array_contains "BT_XCODE_INSTALLED" "${BT_TARGET_OPTION_XCODE}"
+    then
+        bt_error "Xcode ${BT_TARGET_OPTION_XCODE} not found"
+    fi
+    if ! bt_array_contains "BT_SDK_${BT_TARGET_OPTION_SDK/./_}_XCODE" "${BT_TARGET_OPTION_XCODE}"
+    then
+        bt_error "Xcode ${BT_TARGET_OPTION_XCODE} does not include OS X ${BT_TARGET_OPTION_SDK} SDK"
+    fi
 
-    m_set_srcroot
-    m_log "source root: $m_srcroot"
+    function bt_target_sanity_check_build_achitecture
+    {
+        if ! bt_array_contains "BT_SDK_${BT_TARGET_OPTION_SDK/./_}_ARCHITECURES" "${1}"
+        then
+            bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK does not support architecture ${1}"
+        fi
+    }
+    bt_array_foreach BT_TARGET_OPTION_ARCHITECTURES bt_target_sanity_check_build_achitecture
+    unset bt_target_sanity_check_build_achitecture
 
-    m_validate_input
-    m_handler
-    exit $?
-# }
+    if ! bt_is_version "${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    then
+        bt_error "Deployment target is illegal"
+    fi
+    bt_version_compare "${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" 10.0
+    if [[ ${?} -eq 1 ]]
+    then
+        bt_error "Deployment target must be at least OS X 10.0"
+    fi
+    bt_version_compare "${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" "${BT_TARGET_OPTION_SDK}"
+    if [[ ${?} -eq 2 ]]
+    then
+        bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK does not support OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET} as deployment target"
+    fi
+
+    if [[ -n "${BT_TARGET_OPTION_DEBUG_DIRECTORY}" && ! -d "${BT_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+    then
+        bt_error "Debug directory '${BT_TARGET_OPTION_DEBUG_DIRECTORY}' does not exist"
+    fi
+}
+
+function bt_target_getopt
+{
+    function bt_target_getopt_internal
+    {
+        local -a options=()
+
+        bt_getopt options "p:,preset:,s:,custom-specs:,h:,handler:,o:,out:" "${@}"
+        bt_exit_on_error "${options[@]}"
+
+        set -- "${options[@]}"
+
+        local preset=""
+        local custom_specs=""
+        local handler=""
+        local out=""
+
+        while [[ ${#} -gt 0 ]]
+        do
+            case "${1}" in
+                --)
+                    shift
+                    break
+                    ;;
+                -p|--preset)
+                    preset="${2}"
+                    shift 2
+                    ;;
+                -s|--custom-specs)
+                    custom_specs="${2}"
+                    shift 2
+                    ;;
+                -h|--handler)
+                    handler="${2}"
+                    shift 2
+                    ;;
+                -o|--out)
+                    out="${2}"
+                    shift 2
+                    ;;
+            esac
+        done
+
+        if [[ -n "${out}" ]]
+        then
+            bt_assert "bt_is_variable `bt_string_escape "${out}"`"
+        fi
+
+        local preset_specs=""
+        case "${preset}" in
+            build)
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,code-sign-identity:,product-sign-identity:"
+                ;;
+            clean)
+                preset_specs="root,no-root"
+                ;;
+            install)
+                preset_specs="root,no-root,o:,owner:,g:,group:,debug:"
+                ;;
+            make-build)
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,b:,build-setting:,code-sign-identity:,product-sign-identity:"
+                ;;
+            make-install)
+                preset_specs="root,no-root,debug:"
+                ;;
+        esac
+
+        local specs=""
+        if [[ -n "${preset_specs}" && -n "${custom_specs}" ]]
+        then
+            specs="${preset_specs},${custom_specs}"
+        else
+            specs="${preset_specs}${custom_specs}"
+        fi
+
+        bt_getopt options "${specs}" "${@:1}"
+        bt_exit_on_error "${options[@]}"
+
+        set -- "${options[@]}"
+
+        local    sdk=""
+        local    xcode=""
+        local -a architectures=()
+        local    deployment_target=""
+        local    build_configuration=""
+        local -a build_settings=()
+
+        while [[ ${#} -gt 0 ]]
+        do
+            case "${1}" in
+                --)
+                    shift
+                    break
+                    ;;
+                -s|--sdk)
+                    sdk="${2}"
+                    shift 2
+                    ;;
+                -x|--xcode)
+                    xcode="${2}"
+                    shift 2
+                    ;;
+                -a|--architecture)
+                    if ! bt_array_contains architectures "${2}"
+                    then
+                        bt_array_add architectures "${2}"
+                    fi
+                    shift 2
+                    ;;
+                -d|--deployment-target)
+                    deployment_target="${2}"
+                    shift 2
+                    ;;
+                -c|--configuration)
+                    build_configuration="${2}"
+                    shift 2
+                    ;;
+                -b|--build-setting)
+                    if ! bt_array_contains build_settings "${2}"
+                    then
+                        bt_array_add build_settings "${2}"
+                    fi
+                    shift 2
+                    ;;
+                --code-sign-identity)
+                    BT_TARGET_OPTION_CODE_SIGN_IDENTITY="${2}"
+                    shift 2
+                    ;;
+                --product-sign-identity)
+                    BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="${2}"
+                    shift 2
+                    ;;
+                --root)
+                    BT_TARGET_OPTION_ROOT=1
+                    shift
+                    ;;
+                --no-root)
+                    BT_TARGET_OPTION_ROOT=0
+                    shift
+                    ;;
+                -o|--owner)
+                    BT_TARGET_OPTION_OWNER="${2}"
+                    shift 2
+                    ;;
+                -g|--group)
+                    BT_TARGET_OPTION_GROUP="${2}"
+                    shift 2
+                    ;;
+                --debug)
+                    BT_TARGET_OPTION_DEBUG_DIRECTORY="${2}"
+                    shift 2
+                    ;;
+                *)
+                    if bt_is_function "${handler}"
+                    then
+                        local -i offset=0
+                        "${handler}" "${@}"
+                        offset=${?}
+                        bt_assert "(( ${offset} > 0 ))" "Option '${1}' unsupported by handler"
+                        shift ${offset}
+                    else
+                        bt_error -t "Option handler required"
+                    fi
+                    ;;
+            esac
+        done
+
+        if [[ -z "${out}" && ${#} -gt 0 ]]
+        then
+            bt_warn "Action '${BT_TARGET_ACTION}' of target '${BT_TARGET_NAME}' does not expect any arguments"
+        fi
+
+        if [[ -n "${sdk}" ]]
+        then
+            BT_TARGET_OPTION_SDK="${sdk}"
+            BT_TARGET_OPTION_DEPLOYMENT_TARGET="${sdk}"
+        fi
+
+        if [[ -n "${xcode}" ]]
+        then
+            BT_TARGET_OPTION_XCODE="${xcode}"
+        elif bt_array_contains BT_SDK_INSTALLED "${BT_TARGET_OPTION_SDK}"
+        then
+            bt_array_get BT_SDK_${BT_TARGET_OPTION_SDK//./_}_XCODE 0 BT_TARGET_OPTION_XCODE
+        fi
+
+        if [[ ${#architectures[@]} -gt 0 ]]
+        then
+            bt_variable_clone architectures BT_TARGET_OPTION_ARCHITECTURES
+        elif bt_array_contains BT_SDK_SUPPORTED "${BT_TARGET_OPTION_SDK}"
+        then
+            bt_variable_clone BT_SDK_${BT_TARGET_OPTION_SDK//./_}_ARCHITECURES BT_TARGET_OPTION_ARCHITECTURES
+        fi
+
+        if [[ -n "${deployment_target}" ]]
+        then
+            BT_TARGET_OPTION_DEPLOYMENT_TARGET="${deployment_target}"
+        fi
+
+        if [[ -n "${build_configuration}" ]]
+        then
+            BT_TARGET_OPTION_BUILD_CONFIGURATION="${build_configuration}"
+        fi
+
+        if [[ ${#build_settings[@]} -gt 0 ]]
+        then
+            bt_variable_clone build_settings BT_TARGET_OPTION_BUILD_SETTINGS
+        fi
+
+        if [[ -n "${out}" ]]
+        then
+            local -a arguments=("${@}")
+
+            printf "%s=" "${out}"
+            bt_variable_clone arguments
+            printf "\n"
+        fi
+
+        local target_name_uppercase="`bt_string_uppercase <<< "${BT_TARGET_NAME}"`"
+        for variable in ${!BT_TARGET_OPTION_@} `bt_variable_expand "${target_name_uppercase}"`
+        do
+            if ! bt_variable_is_readonly "${variable}"
+            then
+                bt_variable_print "${variable}"
+            fi
+        done
+
+        return 0
+    }
+
+    eval "`bt_target_getopt_internal "${@}"`"
+    unset bt_target_getopt_internal
+
+    bt_log_variable ${!BT_TARGET_OPTION_@}
+    bt_target_sanity_check
+
+    bt_variable_clone BT_XCODE_${BT_TARGET_OPTION_XCODE//./_}_PATH DEVELOPER_DIR
+    export DEVELOPER_DIR
+}
+
+function bt_target_xcodebuild
+{
+    local compiler=""
+    bt_variable_clone "BT_SDK_${BT_TARGET_OPTION_SDK//./_}_COMPILER" compiler
+
+    /usr/bin/xcodebuild -configuration "${BT_TARGET_OPTION_BUILD_CONFIGURATION}" \
+                        CONFIGURATION_BUILD_DIR="`bt_target_get_build_directory "${BT_TARGET_NAME}"`" \
+                        SDKROOT="macosx${BT_TARGET_OPTION_SDK}" \
+                        ARCHS="`bt_array_join BT_TARGET_OPTION_ARCHITECTURES " "`" \
+                        GCC_VERSION="${compiler}" \
+                        MACOSX_DEPLOYMENT_TARGET="${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" \
+                        CODE_SIGN_IDENTITY="${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
+                        "${BT_TARGET_OPTION_BUILD_SETTINGS[@]}" \
+                        "${@}" 1>&3 2>&4
+}
+
+function bt_target_configure
+{
+    local sdk_path="`xcodebuild -version -sdk macosx${BT_TARGET_OPTION_SDK} Path`"
+    if [[ "${sdk_path}" =~ [[:space:]] ]]
+    then
+        bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK path '${sdk_path}' contains whitespace"
+    fi
+
+    local compiler=""
+    bt_variable_clone "BT_SDK_${BT_TARGET_OPTION_SDK//./_}_COMPILER" compiler
+
+    local compiler_binary=""
+    case "${compiler}" in
+        4.0|4.2)
+            compiler_binary="gcc-${compiler}"
+            ;;
+        com.apple.compilers.llvmgcc42)
+            compiler_binary="llvm-gcc-4.2"
+            ;;
+        com.apple.compilers.llvm.clang.1_0)
+            compiler_binary="clang"
+            ;;
+        *)
+            bt_error "Compiler '${compiler}' is not supported"
+            ;;
+    esac
+
+    MAKE="`xcrun --find make`" \
+    CPP="`xcrun --find cpp`" \
+    CC="`xcrun --find "${compiler_binary}"`" \
+    LD="`xcrun --find ld`" \
+    CPPFLAGS="-Wp,-isysroot,${sdk_path} ${CPPFLAGS}" \
+    CFLAGS="${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-arch } -isysroot ${sdk_path} -mmacosx-version-min=${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${CFLAGS}" \
+    LDFLAGS="-Wl,-syslibroot,${sdk_path} -Wl,-macosx_version_min,${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${LDFLAGS}" \
+    ./configure "${@}" 1>&3 2>&4
+}
+
+function bt_target_make
+{
+    local -a options=()
+    bt_getopt options "root,no-root" "${@}"
+    bt_exit_on_error "${options[@]}"
+
+    set -- "${options[@]}"
+
+    local -i root="${BT_TARGET_OPTION_ROOT}"
+
+    while [[ ${#} -gt 0 ]]
+    do
+        case "${1}" in
+            --)
+                shift
+                break
+                ;;
+            --root)
+                root=1
+                shift
+                ;;
+            --no-root)
+                root=0
+                shift
+                ;;
+        esac
+    done
+
+    local -a command=(xcrun make "${@}")
+    if (( root == 0 ))
+    then
+        "${command[@]}" 1>&3 2>&4
+    else
+        bt_sudo "Enter password to run make" "${command[@]}" 1>&3 2>&4
+    fi
+}
+
+function bt_target_codesign
+{
+    if [[ -n "${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" ]]
+    then
+        /usr/bin/codesign -s "${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" -f "${@}" 1>&3 2>&4
+    else
+        return 0
+    fi
+}
+
+function bt_target_pkgbuild
+{
+    /usr/bin/pkgbuild --sign "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}" "${@}" 1>&3 2>&4
+}
+
+function bt_target_pkgbuild_component_plist_foreach
+{
+    bt_assert "bt_is_function `bt_string_escape "${3}"`"
+    bt_assert "[[ ! `bt_string_escape "${3}"` =~ ^bt_pkgbuild_component_plist_foreach_ ]]"
+
+    if [[ "`bt_plist_array_size "${1}" "${2}"`" -gt 0 ]]
+    then
+        eval "
+            function bt_pkgbuild_component_plist_foreach_internal
+            {
+                while [[ \${#} -gt 0 ]]
+                do
+                    ${3} `bt_string_escape "${1}"` ${2}:\${1}
+
+                    if /usr/libexec/PlistBuddy -c \"Print '${2}:\${1}:ChildBundles'\" `bt_string_escape "${1}"` > /dev/null 2>&1
+                    then
+                        bt_target_pkgbuild_component_plist_foreach `bt_string_escape "${1}"` \"${2}:\${1}:ChildBundles\" ${3}
+                    fi
+                    shift
+                done
+            }
+        " && bt_pkgbuild_component_plist_foreach_internal $(seq 0 $(( $(bt_plist_array_size "${1}" "${2}") - 1 )))
+    fi
+}
+
+function bt_target_productbuild
+{
+    /usr/bin/productbuild --sign "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}" "${@}" 1>&3 2>&4
+}
+
+function bt_target_install
+{
+    local -a options=()
+    bt_getopt options "r,root,o:,owner:,g:,group:" "${@}"
+    bt_exit_on_error "${options[@]}"
+
+    set -- "${options[@]}"
+
+    local -i root="${BT_TARGET_OPTION_ROOT}"
+    local    owner="${BT_TARGET_OPTION_OWNER}"
+    local    group="${BT_TARGET_OPTION_GROUP}"
+
+    while [[ ${#} -gt 0 ]]
+    do
+        case "${1}" in
+            --)
+                shift
+                break
+                ;;
+            -r|--root)
+                root=1
+                shift
+                ;;
+            -o|--owner)
+                owner="${2}"
+                shift 2
+                ;;
+            -g|--group)
+                group="${2}"
+                shift 2
+                ;;
+        esac
+    done
+
+    local source="${1}"
+    local target_directory="${2}"
+
+    bt_assert "[[ -e `bt_string_escape "${source}"` ]]"
+    bt_assert "[[ -d `bt_string_escape "${target_directory}"` ]]"
+
+    local target="${target_directory}"
+    if [[ ! "${source}" =~ /$ ]]
+    then
+        target="${target}/`basename "${source}"`"
+        bt_assert "[[ ! -e `bt_string_escape "${target}"` ]]" "Target is already installed"
+    fi
+
+    local -a command=(/bin/cp -a "${source}" "${target}")
+    if (( root == 0 ))
+    then
+        "${command[@]}" 1>&3 2>&4
+    else
+        bt_sudo "Enter password to install target" "${command[@]}" 1>&3 2>&4
+    fi
+    bt_exit_on_error "Failed to install target"
+
+    if [[ -n "${owner}" || -n "${group}" ]]
+    then
+        bt_sudo "Enter password to change owner and/or group of installed target" chown -R "${owner}:${group}" "${target}" 1>&3 2>&4
+        bt_exit_on_error "Failed to change owner and/or group of installed target"
+    fi
+}
+
+function bt_target_invoke
+{
+    local target_name="${1}"
+    local action="${2}"
+
+    local target_path="${BT_BUILD_D}/targets/${target_name}.sh"
+
+    bt_assert "bt_function_is_legal_name `bt_string_escape "${target_name}"`"
+    bt_assert "[[ -f `bt_string_escape "${target_path}"` ]]" "Target '${target_name}' does not exist"
+
+    (
+        eval "
+            function ${target_name}_build
+            {
+                bt_error -t \"Action '\${BT_TARGET_ACTION}' of target '\${BT_TARGET_NAME}' needs to be overridden\"
+            }
+
+            function ${target_name}_clean
+            {
+                bt_target_getopt -p clean -- \"\${@}\"
+
+                bt_log -v 3 \"Removing target build directory '\${BT_TARGET_BUILD_DIRECTORY}'\"
+
+                if [[ -e \"\${BT_TARGET_BUILD_DIRECTORY}\" ]]
+                then
+                    local command=(rm -rf \"\${BT_TARGET_BUILD_DIRECTORY}\")
+                    if (( BT_TARGET_OPTION_ROOT == 0 ))
+                    then
+                        \"\${command[@]}\" 1>&3 2>&4
+                    else
+                        bt_sudo \"Enter password to remove target build directory\" \"\${command[@]}\" 1>&3 2>&4
+                    fi
+                fi
+            }
+
+            function ${target_name}_help
+            {
+                bt_help
+
+                printf \"Target:   %s\n\n\" \"\${BT_TARGET_NAME}\"
+
+                printf \"Actions:\r\"
+                for action in \"\${BT_TARGET_ACTIONS[@]}\"
+                do
+                    printf \"\033[10C%s\n\" \"\${action}\"
+                done
+            }
+        "
+
+        declare -r  BT_TARGET_NAME="${target_name}"
+        declare -r  BT_TARGET_PATH="${target_path}"
+
+        declare -r  BT_TARGET_ACTION="${action}"
+        declare -ra BT_TARGET_ACTION_ARGUMENTS=("${@:3}")
+
+        declare -a  BT_TARGET_ACTIONS=()
+        declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}"
+        declare     BT_TARGET_BUILD_DIRECTORY="`bt_target_get_build_directory "${BT_TARGET_NAME}"`"
+
+        # Options
+
+        declare     BT_TARGET_OPTION_SDK="${BT_DEFAULT_SDK}"
+        declare     BT_TARGET_OPTION_XCODE=""
+        declare -a  BT_TARGET_OPTION_ARCHITECTURES=()
+        declare     BT_TARGET_OPTION_DEPLOYMENT_TARGET="${BT_DEFAULT_SDK}"
+        declare     BT_TARGET_OPTION_BUILD_CONFIGURATION="${BT_DEFAULT_BUILD_CONFIGURATION}"
+        declare -a  BT_TARGET_OPTION_BUILD_SETTINGS=()
+        declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY=""
+        declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY=""
+        declare -i  BT_TARGET_OPTION_ROOT=0
+        declare     BT_TARGET_OPTION_OWNER=""
+        declare     BT_TARGET_OPTION_GROUP=""
+        declare     BT_TARGET_OPTION_DEBUG_DIRECTORY=""
+
+        bt_array_get BT_SDK_${BT_TARGET_OPTION_SDK/./_}_XCODE 0 BT_TARGET_OPTION_XCODE
+        bt_variable_clone BT_SDK_${BT_TARGET_OPTION_SDK/./_}_ARCHITECURES BT_TARGET_OPTION_ARCHITECTURES
+
+        # Source target
+
+        bt_log -v 3 "Source target ${BT_TARGET_NAME}"
+
+        bt_stack_push BT_LOG_PREFIX "T:${BT_TARGET_NAME}"
+
+        source "${target_path}" 1>&3 2>&4
+        bt_exit_on_error "Failed to source target"
+
+        bt_assert "bt_is_array BT_TARGET_ACTIONS"
+        bt_assert "bt_array_contains BT_TARGET_ACTIONS `bt_string_escape "${BT_TARGET_ACTION}"`" \
+                  "Unsupported target action: '${BT_TARGET_ACTION}'"
+
+        declare DEVELOPER_DIR=""
+        bt_variable_clone BT_XCODE_${BT_TARGET_OPTION_XCODE//./_}_PATH DEVELOPER_DIR
+        export DEVELOPER_DIR
+
+        # Invoke target action
+
+        pushd "${BT_TARGET_SOURCE_DIRECTORY}" > /dev/null 2>&1
+        bt_warn_on_error "Target source directory '${BT_TARGET_SOURCE_DIRECTORY}' does not exist"
+
+        bt_log -v 3 "Invoke action ${BT_TARGET_ACTION}"
+
+        "${target_name}_${BT_TARGET_ACTION}" "${BT_TARGET_ACTION_ARGUMENTS[@]}"
+        declare -i rc=${?}
+
+        bt_log -v 3 "Completed action ${BT_TARGET_ACTION}"
+
+        popd > /dev/null 2>&1
+
+        bt_stack_pop BT_LOG_PREFIX
+        exit ${rc}
+    )
+}
+
+
+function bt_clean
+{
+    bt_log -v 2 "Removing build directory '${BT_BUILD_DIRECTORY}'"
+    if [[ -e "${BT_BUILD_DIRECTORY}" ]]
+    then
+        rm -rf "${BT_BUILD_DIRECTORY}"
+    fi
+}
+
+function bt_help
+{
+    local script="${0##*/}"
+
+/bin/cat <<EOF
+Copyright (c) 2011-2014 Benjamin Fleischer
+All rights reserved.
+
+Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) 'target name']
+           ${script} [options ...] (-c|--clean) [(-t|--target) 'target name']
+
+           ${script} [options ...] (-t|--target) 'target name' [(-a|--action) 'action'] -- [action options ...]
+
+
+Options:  [-v 'verbosity level'|--verbosity='verbosity level']
+
+Installed Xcode versions: `bt_array_join BT_XCODE_INSTALLED ", "`
+Installed OS X SDKs:      `bt_array_join BT_SDK_INSTALLED ", "`
+EOF
+}
+
+function bt_main
+{
+    local -a options=()
+    bt_getopt options "h,help,c,clean,v:,verbosity:,t:,target:,a:,action:" "${@}"
+    bt_exit_on_error "${options[@]}"
+
+    set -- "${options[@]}"
+
+    local -i help=0
+    local -i clean=0
+    local    target_name=""
+    local    action="build"
+
+    while [[ ${#} -gt 0 ]]
+    do
+        case "${1}" in
+            --)
+                shift
+                break
+                ;;
+            -h|--help)
+                help=1
+                shift
+                ;;
+            -c|--clean)
+                clean=1
+                shift
+                ;;
+            -v|--verbosity)
+                if ! bt_math_is_integer "${2}" || [[ ${2} -lt 1 ]]
+                then
+                    bt_error "Verbosity must be a positive integer"
+                fi
+                BT_LOG_VERBOSITY=${2}
+                shift 2
+                ;;
+            -t|--target)
+                target_name="${2}"
+                shift 2
+                ;;
+            -a|--action)
+                action="${2}"
+                shift 2
+                ;;
+        esac
+    done
+
+    if (( BT_LOG_VERBOSITY > 4 ))
+    then
+        exec 3>&1
+        exec 4>&2
+    else
+        exec 3> /dev/null
+        exec 4> /dev/null
+    fi
+
+    # Source extensions
+
+    local extension_path=""
+    for extension_path in "${BT_BUILD_D}/extensions"/*.sh
+    do
+        local extension_basename="`basename "${extension_path}"`"
+        local extension_name="${extension_basename%.*}"
+
+        bt_log -v 3 "Source extension ${extension_name}"
+
+        bt_stack_push BT_LOG_PREFIX "E:${extension_name}"
+
+        source "${extension_path}"
+        bt_exit_on_error "Failed to source extension '${extension_path}'"
+
+        bt_stack_pop BT_LOG_PREFIX
+    done
+
+    readonly BT_SOURCE_DIRECTORY
+    readonly BT_BUILD_DIRECTORY
+
+    # Find Xcode installations
+
+    bt_xcode_find
+
+    if [[ ${#BT_XCODE_INSTALLED[@]} -eq 0 ]]
+    then
+        bt_error "No version of Xcode found"
+    fi
+    if [[ ${#BT_SDK_INSTALLED} -eq 0 ]]
+    then
+        bt_error "No supported OS X SDK installed"
+    fi
+
+    if ! bt_array_contains BT_SDK_INSTALLED "${BT_DEFAULT_SDK}"
+    then
+        function bt_main_default_sdk
+        {
+            if [[ -z "${BT_DEFAULT_SDK}" ]]
+            then
+                BT_DEFAULT_SDK="${1}"
+            else
+                bt_version_compare "${1}" "${BT_OSX_VERSION}"
+                if [[ ${?} -eq 2 ]]
+                then
+                    return 1
+                else
+                    BT_DEFAULT_SDK="${1}"
+                fi
+            fi
+        }
+
+        BT_DEFAULT_SDK=""
+        bt_array_foreach BT_SDK_INSTALLED bt_main_default_sdk
+
+        unset bt_main_default_sdk
+
+        bt_assert "[[ -n `bt_string_escape "${BT_DEFAULT_SDK}"` ]]"
+        bt_warn "Default OS X SDK not installed. Falling back to OS X ${BT_DEFAULT_SDK} SDK."
+    fi
+
+    bt_variable_require BT_BUILD_DIRECTORY BT_DEFAULT_BUILD_CONFIGURATION BT_DEFAULT_SDK
+
+    local variable=""
+    for variable in ${!BT_DEFAULT_@}
+    do
+        readonly ${variable}
+    done
+
+    bt_log_variable BT_SOURCE_DIRECTORY BT_BUILD_DIRECTORY ${!BT_DEFAULT_@}
+
+    # Invoke target action
+
+    pushd "${BT_SOURCE_DIRECTORY}" > /dev/null 2>&1
+    bt_warn_on_error "Source directory '${BT_SOURCE_DIRECTORY}' does not exist"
+
+    if (( help != 0 ))
+    then
+        if [[ -n "${target_name}" ]]
+        then
+            action="help"
+        else
+            bt_help
+        fi
+    elif (( clean != 0 ))
+    then
+        if [[ -n "${target_name}" ]]
+        then
+            action="clean"
+        else
+            bt_clean
+        fi
+    elif [[ -z "${target_name}" ]]
+    then
+        bt_error "No target specified"
+    fi
+
+    if [[ -n "${target_name}" ]]
+    then
+        bt_target_invoke "${target_name}" "${action}" "${@}"
+        bt_exit_on_error "Action '${action}' of target '${target_name}' failed"
+    fi
+
+    popd > /dev/null 2>&1
+
+    exec 3>&-
+    exec 4>&-
+    return 0
+}
+
+
+# Build tool defaults
+
+declare -r  BT_OSX_VERSION="`sw_vers -productVersion | /usr/bin/cut -d . -f 1,2`"
+
+declare -r  BT_BUILD_D="$(bt_path_absolute "${0%/*}/build.d")"
+declare     BT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
+declare     BT_BUILD_DIRECTORY="/tmp/build"
+
+declare -a  BT_LOG_PREFIX=("")
+declare -i  BT_LOG_VERBOSITY=2
+
+
+# Xcode defaults
+
+declare -a  BT_XCODE_INSTALLED=()
+
+declare -ra BT_SDK_10_5_ARCHITECURES=("ppc" "ppc64" "i386" "x86_64")
+declare -r  BT_SDK_10_5_COMPILER="4.2"
+
+declare -ra BT_SDK_10_6_ARCHITECURES=("i386" "x86_64")
+declare -r  BT_SDK_10_6_COMPILER="4.2"
+
+declare -ra BT_SDK_10_7_ARCHITECURES=("i386" "x86_64")
+declare -r  BT_SDK_10_7_COMPILER="com.apple.compilers.llvmgcc42"
+
+declare -ra BT_SDK_10_8_ARCHITECURES=("i386" "x86_64")
+declare -r  BT_SDK_10_8_COMPILER="com.apple.compilers.llvm.clang.1_0"
+
+declare -ra BT_SDK_10_9_ARCHITECURES=("i386" "x86_64")
+declare -r  BT_SDK_10_9_COMPILER="com.apple.compilers.llvm.clang.1_0"
+
+declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9")
+declare -a  BT_SDK_INSTALLED=()
+
+declare     BT_DEFAULT_SDK="${BT_OSX_VERSION}"
+declare     BT_DEFAULT_BUILD_CONFIGURATION="Release"
+
+
+for signal in SIGINT SIGTERM
+do
+    trap "bt_signal_handler \"${signal}\"" "${signal}"
+done
+
+bt_main "${@}"
