@@ -17,17 +17,7 @@ For more information visit the website of the [FUSE for OS X Project](http://osx
 Build Instructions
 ------------------
 
-The build script locates automatically all supported installations of Xcode in the top level of the Mac OS X startup volume and the Applications folder. It builds a distribution package compatible with as many versions of OS X as possible (depending on the versions of Xcode that are installed).
-
-* Xcode 3.2: FUSE for OS X can be built for Mac OS X 10.5 to 10.8.
-
-* Xcode 4.0, 4.1, 4.2, 4.3: FUSE for OS X can be built for Mac OS X 10.6 to 10.8.
-
-* Xcode 4.4, 4.5, 4.6: FUSE for OS X can be built for OS X 10.7 and 10.8.
-
-* Xcode 5.0: FUSE for OS X can be built for OS X 10.8
-
-* Xcode 5.0.1: FUSE for OS X can be built for OS X 10.8 and 10.9
+The build script automatically locates all supported installations of Xcode in the top level of the Mac OS X startup volume and the Applications folder. It builds a distribution package compatible with the currently running version of OS X.
 
 ---
 
@@ -51,4 +41,6 @@ To clone the source repository into a newly created subdirectory named `osxfuse`
 
 Run the following command in the cloned repository to build FUSE for OS X from source:
 
-    ./build.sh -t dist
+    ./build.sh -t distribution
+    
+The resulting distribution package can be found in `/tmp/osxfuse/distribution`.
