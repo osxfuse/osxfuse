@@ -1994,7 +1994,10 @@ declare -r  BT_SDK_10_8_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare -ra BT_SDK_10_9_ARCHITECURES=("i386" "x86_64")
 declare -r  BT_SDK_10_9_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
-declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9")
+declare -ra BT_SDK_10_10_ARCHITECURES=("i386" "x86_64")
+declare -r  BT_SDK_10_10_COMPILER="com.apple.compilers.llvm.clang.1_0"
+
+declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10")
 declare -a  BT_SDK_INSTALLED=()
 
 declare     BT_DEFAULT_SDK="${BT_OSX_VERSION}"
