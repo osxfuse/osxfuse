@@ -108,6 +108,9 @@ function release_build
     /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/Resources" "${disk_image_mount_point}/Resources" 1>&3 2>&4
     detach_exit_on_error "Failed to copy resources to disk image"
 
+    /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Resources"/* 1>&3 2>&4
+    detach_exit_on_error "Failed to hide extension of resources"
+
     # Copy distribution package to disk image
 
     local disk_image_distribution_package_relative_path="Resources/FUSE for OS X ${osxfuse_version}.pkg"
@@ -119,7 +122,7 @@ function release_build
     /usr/bin/xcrun SetFile -a E "${disk_image_distribution_package_path}" 1>&3 2>&4
     detach_exit_on_error "Failed to hide extension of distribution package"
 
-    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/Install FUSE for OS X"
+    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for OS X"
     detach_exit_on_error "Failed to create distribution package link"
 
     # Create autoinstaller engine file
@@ -148,14 +151,14 @@ tell application "Finder"
         open
         set current view of container window to icon view
         set toolbar visible of container window to false
-        set the bounds of container window to {0, 0, 500, 450}
+        set the bounds of container window to {0, 0, 600, 400}
         set theViewOptions to the icon view options of container window
         set arrangement of theViewOptions to not arranged
-        set icon size of theViewOptions to 128
-        set text size of theViewOptions to 14
+        set icon size of theViewOptions to 100
+        set text size of theViewOptions to 12
         set background picture of theViewOptions to file ".background:background.tiff"
-        set position of item "Install FUSE for OS X" of container window to {150, 175}
-        set position of item "Resources" of container window to {350, 175}
+        set position of item "FUSE for OS X" of container window to {185, 305}
+        set position of item "Resources" of container window to {415, 305}
         close
         open
         update without registering applications
