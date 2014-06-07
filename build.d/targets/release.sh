@@ -157,8 +157,8 @@ tell application "Finder"
         set icon size of theViewOptions to 100
         set text size of theViewOptions to 12
         set background picture of theViewOptions to file ".background:background.tiff"
-        set position of item "FUSE for OS X" of container window to {185, 305}
-        set position of item "Resources" of container window to {415, 305}
+        set position of item "FUSE for OS X" of container window to {185, 300}
+        set position of item "Resources" of container window to {415, 300}
         close
         open
         update without registering applications
