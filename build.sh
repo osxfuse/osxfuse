@@ -114,7 +114,7 @@ function bt_log
     do
         if [[ ${#BT_LOG_PREFIX[@]} -gt 0 ]]
         then
-            printf "\033[0;30m%-20s |\033[0m " "${BT_LOG_PREFIX}" >&2
+            printf "%-20s | " "${BT_LOG_PREFIX}" >&2
         fi
         printf "\033[${color}m%s\033[0m\n" "${1}" >&2
         shift
@@ -401,7 +401,7 @@ function bt_sudo
     bt_assert "[[ -n `bt_string_escape "${prompt}"` ]]"
     bt_assert "[[ ${#} -gt 1 ]]"
 
-    if [[ ${#BT_LOG_PREFIX[@]} ]]
+    if [[ ${#BT_LOG_PREFIX[@]} -gt 0 ]]
     then
         prompt="`printf "%-20s | %s" "${BT_LOG_PREFIX}" "${prompt}"`"
     fi
@@ -1971,7 +1971,7 @@ declare -r  BT_BUILD_D="$(bt_path_absolute "${0%/*}/build.d")"
 declare     BT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
 declare     BT_BUILD_DIRECTORY="/tmp/build"
 
-declare -a  BT_LOG_PREFIX=("")
+declare -a  BT_LOG_PREFIX=()
 declare -i  BT_LOG_VERBOSITY=2
 
 
