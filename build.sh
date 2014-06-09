@@ -93,6 +93,9 @@ readonly M_XCODE50_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare M_XCODE51=""
 declare M_XCODE51_VERSION=5.1
 readonly M_XCODE51_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare M_XCODE60=""
+declare M_XCODE60_VERSION=6.0
+readonly M_XCODE60_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -129,6 +132,12 @@ readonly M_SDK_109_ARCHS="i386 x86_64"
 declare M_SDK_109=""
 declare M_SDK_109_XCODE=""
 declare M_SDK_109_COMPILER=""
+
+# SDK 10.10
+readonly M_SDK_1010_ARCHS="i386 x86_64"
+declare M_SDK_1010=""
+declare M_SDK_1010_XCODE=""
+declare M_SDK_1010_COMPILER=""
 
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
@@ -332,6 +341,13 @@ function m_set_platform()
         m_usdk_dir="$M_SDK_109"
         m_compiler="$M_SDK_109_COMPILER"
         m_archs="$M_SDK_109_ARCHS"
+    ;;
+    10.10*)
+        m_osname="Yosemite"
+        m_xcode_dir="$M_SDK_1010_XCODE"
+        m_usdk_dir="$M_SDK_1010"
+        m_compiler="$M_SDK_1010_COMPILER"
+        m_archs="$M_SDK_1010_ARCHS"
     ;;
     *)
         m_osname="Unknown"
@@ -1312,6 +1328,26 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
   <key>Rules</key>
   <array>
 __END_RULES_PLIST
+
+    if [[ "$M_PLATFORMS" =~ "10.10" ]]
+    then
+cat >> "$md_rules_plist" <<__END_RULES_PLIST
+    <dict>
+      <key>ProductID</key>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
+      <key>Predicate</key>
+      <string>SystemVersion.ProductVersion beginswith "10.10" AND Ticket.version != "$m_release_full"</string>
+      <key>Version</key>
+      <string>$m_release_full</string>
+      <key>Codebase</key>
+      <string>$md_download_url</string>
+      <key>Hash</key>
+      <string>$md_dmg_hash</string>
+      <key>Size</key>
+      <string>$md_dmg_size</string>
+    </dict>
+__END_RULES_PLIST
+    fi
 
     if [[ "$M_PLATFORMS" =~ "10.9" ]]
     then
@@ -2499,6 +2535,8 @@ function m_handler()
             M_SDK_109_XCODE="$M_XCODE50"
             M_SDK_109_COMPILER="$M_XCODE50_COMPILER"
             m_platform_realistic_add "10.9"
+
+            m_platform_add "10.10"
         fi
     fi
     if [[ -n "$M_XCODE51" ]]
@@ -2514,6 +2552,23 @@ function m_handler()
         M_SDK_109_XCODE="$M_XCODE51"
         M_SDK_109_COMPILER="$M_XCODE51_COMPILER"
         m_platform_realistic_add "10.9"
+
+        m_platform_add "10.10"
+    fi
+    if [[ -n "$M_XCODE60" ]]
+    then
+        m_xcode_latest="$M_XCODE60"
+
+        M_SDK_109="$M_XCODE60/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+        M_SDK_109_XCODE="$M_XCODE60"
+        M_SDK_109_COMPILER="$M_XCODE60_COMPILER"
+        m_platform_realistic_add "10.9"
+        m_platform_add "10.10"
+
+        M_SDK_1010="$M_XCODE60/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
+        M_SDK_1010_XCODE="$M_XCODE60"
+        M_SDK_1010_COMPILER="$M_XCODE60_COMPILER"
+        m_platform_realistic_add "10.10"
     fi
 
     m_read_input "$@"
