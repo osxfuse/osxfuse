@@ -2387,6 +2387,14 @@ function m_handler()
                     M_XCODE51_VERSION=$m_xcode_version
                 fi
                 ;;
+            6.0*)
+                m_version_compare $M_XCODE60_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE60="$m_xcode_root"
+                    M_XCODE60_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
