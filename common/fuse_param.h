@@ -70,6 +70,7 @@
 
 #define OSXFUSE_BUNDLE_PATH    "/Library/Filesystems/osxfuse.fs"
 #define OSXFUSE_RESOURCES_PATH OSXFUSE_BUNDLE_PATH "/Contents/Resources"
+#define OSXFUSE_EXTENSIONS_PATH OSXFUSE_BUNDLE_PATH "/Contents/Extensions"
 #define OSXFUSE_KEXT_NAME      "osxfuse.kext"
 #define OSXFUSE_LOAD_PROG      OSXFUSE_RESOURCES_PATH "/load_osxfuse"
 #define OSXFUSE_MOUNT_PROG     OSXFUSE_RESOURCES_PATH "/mount_osxfuse"

@@ -71,7 +71,7 @@ function fsbundle_build
     # Build kernel extensions
 
     local kext_build_directory="`bt_target_get_build_directory kext`"
-    local fsbundle_kext_directory="${fsbundle_path}/Contents/Resources"
+    local fsbundle_kext_directory="${fsbundle_path}/Contents/Extensions"
 
     for task in "${FSBUNDLE_KEXT_TASKS[@]}"
     do
