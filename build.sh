@@ -1076,6 +1076,11 @@ function bt_xcode_find
 
     for xcodebuild_path in /*/usr/bin/xcodebuild
     do
+        if [[ ! -e  "${xcodebuild_path}" ]]
+        then
+            continue
+        fi
+
         xcode_path=`/bin/expr "${xcodebuild_path}" : '^\(\/[^\/]\{1,\}\)\/usr\/bin\/xcodebuild$'`
         bt_xcode_find_process "${xcode_path}"
     done
@@ -1084,7 +1089,7 @@ function bt_xcode_find
     do
         xcode_path="${xcode_app_path}/Contents/Developer"
         bt_xcode_find_process "${xcode_path}"
-    done < <(mdfind 'kMDItemCFBundleIdentifier == "com.apple.dt.Xcode"')
+    done < <(mdfind -onlyin "/Applications" 'kMDItemCFBundleIdentifier == "com.apple.dt.Xcode"')
 
     unset -f bt_xcode_find_is_supported
     unset -f bt_xcode_find_sdk_add
@@ -1556,7 +1561,16 @@ function bt_target_codesign
 
 function bt_target_pkgbuild
 {
-    /usr/bin/pkgbuild --sign "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}" "${@}" 1>&3 2>&4
+    local command=(/usr/bin/pkgbuild)
+
+    if [[ -n "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}" ]]
+    then
+        command+=(--sign "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
+    fi
+
+    command+=("${@}")
+
+    "${command[@]}" 1>&3 2>&4
 }
 
 function bt_target_pkgbuild_component_plist_foreach
@@ -1586,7 +1600,16 @@ function bt_target_pkgbuild_component_plist_foreach
 
 function bt_target_productbuild
 {
-    /usr/bin/productbuild --sign "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}" "${@}" 1>&3 2>&4
+    local command=(/usr/bin/productbuild)
+
+    if [[ -n "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}" ]]
+    then
+        command+=(--sign "${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
+    fi
+
+    command+=("${@}")
+
+    "${command[@]}" 1>&3 2>&4
 }
 
 function bt_target_install
