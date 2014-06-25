@@ -1095,6 +1095,8 @@ function bt_xcode_find
     unset -f bt_xcode_find_sdk_add
     unset -f bt_xcode_find_process
 
+    bt_array_sort "BT_SDK_INSTALLED" bt_version_compare
+
     function bt_xcode_find_sdk_sort
     {
         bt_array_sort "BT_SDK_${1//./_}_XCODE" bt_version_compare !
@@ -1875,6 +1877,19 @@ function bt_main
         exec 4> /dev/null
     fi
 
+    # Source defaults
+
+    local defaults_path="${BT_BUILD_D}/defaults.sh"
+
+    bt_log -v 3 "Source defaults"
+
+    bt_stack_push BT_LOG_PREFIX "Defaults"
+
+    source "${defaults_path}" 1>&3 2>&4
+    bt_exit_on_error "Failed to source defaults '${defaults_path}'"
+
+    bt_stack_pop BT_LOG_PREFIX
+
     # Source extensions
 
     local extension_path=""
@@ -1887,7 +1902,7 @@ function bt_main
 
         bt_stack_push BT_LOG_PREFIX "E:${extension_name}"
 
-        source "${extension_path}"
+        source "${extension_path}" 1>&3 2>&4
         bt_exit_on_error "Failed to source extension '${extension_path}'"
 
         bt_stack_pop BT_LOG_PREFIX
@@ -1986,46 +2001,20 @@ function bt_main
 }
 
 
-# Build tool defaults
+# Defaults
 
-declare -r  BT_OSX_VERSION="`sw_vers -productVersion | /usr/bin/cut -d . -f 1,2`"
+declare -r BT_OSX_VERSION="`sw_vers -productVersion | /usr/bin/cut -d . -f 1,2`"
 
-declare -r  BT_BUILD_D="$(bt_path_absolute "${0%/*}/build.d")"
-declare     BT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
-declare     BT_BUILD_DIRECTORY="/tmp/build"
+declare -r BT_BUILD_D="$(bt_path_absolute "${0%/*}/build.d")"
 
-declare -a  BT_LOG_PREFIX=()
-declare -i  BT_LOG_VERBOSITY=2
+declare -a BT_LOG_PREFIX=()
+declare -i BT_LOG_VERBOSITY=2
+
+declare -a BT_XCODE_INSTALLED=()
+declare -a BT_SDK_INSTALLED=()
 
 
-# Xcode defaults
-
-declare -a  BT_XCODE_INSTALLED=()
-
-declare -ra BT_SDK_10_5_ARCHITECURES=("ppc" "ppc64" "i386" "x86_64")
-declare -r  BT_SDK_10_5_COMPILER="4.2"
-
-declare -ra BT_SDK_10_6_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_6_COMPILER="4.2"
-
-declare -ra BT_SDK_10_7_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_7_COMPILER="com.apple.compilers.llvmgcc42"
-
-declare -ra BT_SDK_10_8_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_8_COMPILER="com.apple.compilers.llvm.clang.1_0"
-
-declare -ra BT_SDK_10_9_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_9_COMPILER="com.apple.compilers.llvm.clang.1_0"
-
-declare -ra BT_SDK_10_10_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_10_COMPILER="com.apple.compilers.llvm.clang.1_0"
-
-declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10")
-declare -a  BT_SDK_INSTALLED=()
-
-declare     BT_DEFAULT_SDK="${BT_OSX_VERSION}"
-declare     BT_DEFAULT_BUILD_CONFIGURATION="Release"
-
+# Register signal handlers
 
 for signal in SIGINT SIGTERM
 do

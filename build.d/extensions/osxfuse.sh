@@ -315,6 +315,4 @@ EOF
 
 # Defaults
 
-declare -r BT_BUILD_DIRECTORY="/tmp/osxfuse"
-
 declare -r OSXFUSE_PACKAGE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support/Packages"
