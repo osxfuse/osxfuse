@@ -30,8 +30,8 @@
 
 # Build tool defaults
 
-declare -r  BT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
-declare -r  BT_BUILD_DIRECTORY="/tmp/osxfuse"
+declare -r  BT_DEFAULT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
+declare -r  BT_DEFAULT_BUILD_DIRECTORY="/tmp/osxfuse"
 
 declare -ri BT_DEFAULT_LOG_VERBOSITY=2
 
@@ -58,5 +58,5 @@ declare -r  BT_SDK_10_10_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10")
 
-declare -r  BT_DEFAULT_SDK="${BT_OSX_VERSION}"
+declare     BT_DEFAULT_SDK="`bt_osx_get_version`"
 declare -r  BT_DEFAULT_BUILD_CONFIGURATION="Release"

@@ -28,6 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/framework"
+
+declare FRAMEWORK_LIBRARY_PREFIX="/usr/local"
+
+
 function framework_build
 {
     function framework_build_getopt_handler
@@ -56,10 +62,24 @@ function framework_build
     bt_exit_on_error "Failed to determine osxfuse version number"
 
     bt_target_xcodebuild -project OSXFUSE.xcodeproj -target OSXFUSE \
-            OSXFUSE_LIBRARY_PREFIX="${FRAMEWORK_LIBRARY_PREFIX}" \
-            OSXFUSE_VERSION="${osxfuse_version}" \
-            clean build
+                         OSXFUSE_LIBRARY_PREFIX="${FRAMEWORK_LIBRARY_PREFIX}" \
+                         OSXFUSE_VERSION="${osxfuse_version}" \
+                         clean build
     bt_exit_on_error "Failed to build target"
+
+    # Modify framework
+
+    local framework_path=""
+    framework_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.framework`"
+    bt_exit_on_error "Failed to locate framework"
+
+    /bin/cp "${BT_SOURCE_DIRECTORY}/support/Icon.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
+    bt_exit_on_error "Failed to copy default volume icon to framework"
+
+    # Sign framework
+
+    bt_target_codesign "${framework_path}"
+    bt_exit_on_error "Failed to sign framework"
 }
 
 function framework_install
@@ -92,11 +112,3 @@ function framework_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/framework"
-
-declare FRAMEWORK_LIBRARY_PREFIX="/usr/local"

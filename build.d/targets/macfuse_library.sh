@@ -28,6 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_fuse"
+
+declare     MACFUSE_LIBRARY_PREFIX=""
+
+
 function macfuse_library_build
 {
     function macfuse_library_build_getopt_handler
@@ -126,11 +132,3 @@ function macfuse_library_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_fuse"
-
-declare     MACFUSE_LIBRARY_PREFIX=""

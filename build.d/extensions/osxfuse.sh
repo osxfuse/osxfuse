@@ -28,6 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -r OSXFUSE_PACKAGE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support/Packages"
+
+
 function osxfuse_find
 {
     if [[ ! -e "${1}" ]]
@@ -311,8 +314,3 @@ EOF
                            --package-path "${package_path}" \
                            "${package_target_path}"
 }
-
-
-# Defaults
-
-declare -r OSXFUSE_PACKAGE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support/Packages"

@@ -28,6 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/fuse"
+
+declare     LIBRARY_PREFIX=""
+
+
 function library_build
 {
     function library_build_getopt_handler
@@ -126,11 +132,3 @@ function library_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/fuse"
-
-declare     LIBRARY_PREFIX=""

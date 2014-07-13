@@ -28,6 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+
+declare -a DISTRIBUTION_KEXT_TASKS=()
+declare -i DISTRIBUTION_MACFUSE=0
+
+
 function distribution_create_stage_core
 {
     local stage_directory="${1}"
@@ -140,9 +146,7 @@ function distribution_build
     fsbundle_path="`osxfuse_find "${stage_directory_core}/Library/Filesystems"/*.fs`"
     bt_exit_on_error "Failed to locate file system bundle"
 
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/uninstall_osxfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_osxfuse.sh" 1>&3 2>&4 && \
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/uninstall_macfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_macfuse.sh" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy uninstaller to file system bundle"
+    # Set kernel extension loader SUID bit
 
     local loader_path=""
     loader_path="`osxfuse_find "${fsbundle_path}/Contents/Resources"/load_*`"
@@ -151,7 +155,13 @@ function distribution_build
     /bin/chmod u+s "${loader_path}"
     bt_exit_on_error "Failed to set SUID bit of kernel extension loader"
 
-    # Sign filesystem bundle
+    # Add uninstaller to file system bundle
+
+    /bin/cp "${BT_SOURCE_DIRECTORY}/support/uninstall_osxfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_osxfuse.sh" 1>&3 2>&4 && \
+    /bin/cp "${BT_SOURCE_DIRECTORY}/support/uninstall_macfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_macfuse.sh" 1>&3 2>&4
+    bt_exit_on_error "Failed to copy uninstaller to file system bundle"
+
+    # Sign file system bundle
 
     bt_target_codesign "${fsbundle_path}"
     bt_exit_on_error "Failed to sign file system bundle"
@@ -177,20 +187,6 @@ function distribution_build
 
     bt_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Frameworks"
     bt_exit_on_error "Failed to install framework"
-
-    # Modify framework
-
-    local framework_path=""
-    framework_path="`osxfuse_find "${stage_directory_core}/Library/Frameworks"/*.framework`"
-    bt_exit_on_error "Failed to locate framework"
-
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/Icon.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy default volume icon to framework"
-
-    # Sign framework
-
-    bt_target_codesign "${framework_path}"
-    bt_exit_on_error "Failed to sign framework"
 
     # Build core component package
 
@@ -308,11 +304,3 @@ function distribution_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-
-declare -a DISTRIBUTION_KEXT_TASKS=()
-declare -i DISTRIBUTION_MACFUSE=0

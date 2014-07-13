@@ -28,6 +28,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/kext"
+
+declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
+declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
+
+
 function kext_build
 {
     bt_target_getopt -p build -- "${@}"
@@ -67,12 +74,3 @@ function kext_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/kext"
-
-declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"

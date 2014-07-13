@@ -28,6 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_framework"
+
+declare MACFUSE_FRAMEWORK_LIBRARY_PREFIX="/usr/local"
+
+
 function macfuse_framework_build
 {
     function macfuse_framework_build_getopt_handler
@@ -52,8 +58,8 @@ function macfuse_framework_build
     bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
     bt_target_xcodebuild -project MacFUSE.xcodeproj -target MacFUSE \
-            MACFUSE_LIBRARY_PREFIX="${MACFUSE_FRAMEWORK_LIBRARY_PREFIX}" \
-            clean build
+                         MACFUSE_LIBRARY_PREFIX="${MACFUSE_FRAMEWORK_LIBRARY_PREFIX}" \
+                         clean build
     bt_exit_on_error "Failed to build target"
 }
 
@@ -87,11 +93,3 @@ function macfuse_framework_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_framework"
-
-declare MACFUSE_FRAMEWORK_LIBRARY_PREFIX="/usr/local"

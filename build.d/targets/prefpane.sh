@@ -28,6 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/prefpane"
+
+
 function prefpane_build
 {
     bt_target_getopt -p build -- "${@}"
@@ -94,9 +98,3 @@ function prefpane_install
     bt_target_install "${prefpane_source_path}" "${target_directory}"
     bt_exit_on_error "Failed to install target"
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/prefpane"

@@ -28,6 +28,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support"
+
+declare -a  FSBUNDLE_KEXT_TASKS=()
+declare     FSBUNDLE_TARGET_DIRECTORY_DEBUG=""
+
+
 function fsbundle_build
 {
     function fsbundle_build_getopt_handler
@@ -153,12 +160,3 @@ function fsbundle_install
         bt_exit_on_error "Failed to Install debug files"
     fi
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support"
-
-declare -a  FSBUNDLE_KEXT_TASKS=()
-declare     FSBUNDLE_TARGET_DIRECTORY_DEBUG=""

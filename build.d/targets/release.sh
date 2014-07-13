@@ -28,6 +28,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -ra BT_TARGET_ACTIONS=("build" "clean")
+
+declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
+declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
+
+declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"
+
+
 function release_build
 {
     bt_log "Clean target"
@@ -257,13 +265,3 @@ EOF
     /bin/rm -rf "${distribution_package_path}" "${debug_directory}"
     bt_warn_on_error "Failed to clean up"
 }
-
-
-# Defaults
-
-declare -ra BT_TARGET_ACTIONS=("build" "clean")
-
-declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
-
-declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"

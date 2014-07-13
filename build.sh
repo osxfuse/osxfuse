@@ -28,6 +28,37 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+declare -a BT_LOG_PREFIX=()
+declare -i BT_LOG_VERBOSITY=2
+
+declare -a BT_XCODE_INSTALLED=()
+declare -a BT_SDK_INSTALLED=()
+
+
+function bt_log_initialize
+{
+    bt_log_set_verbosity ${BT_LOG_VERBOSITY}
+}
+
+function bt_log_set_verbosity
+{
+    local verbosity="${1}"
+
+    bt_assert "bt_math_is_integer `bt_string_escape "${verbosity}"`"
+    bt_assert "[[ ${verbosity} -gt 0 ]]"
+
+    BT_LOG_VERBOSITY=${verbosity}
+
+    if (( BT_LOG_VERBOSITY > 4 ))
+    then
+        exec 3>&1
+        exec 4>&2
+    else
+        exec 3> /dev/null
+        exec 4> /dev/null
+    fi
+}
+
 function bt_log
 {
     local -a options=()
@@ -418,74 +449,6 @@ function bt_is_function
 function bt_function_is_legal_name
 {
     [[ "${1}" =~ ^[a-zA-Z_][0-9a-zA-Z_]*$ ]]
-}
-
-function bt_function_local
-{
-    local function_name="${1}"
-    local function_definition=""
-    local backup_name=""
-    local backup_definition=""
-    local stack_name=""
-
-    bt_assert "bt_is_function `bt_string_escape "${function_name}"`"
-
-    while true
-    do
-        backup_name="bt_function_stack_${function_name}_${RANDOM}"
-        if ! bt_is_function "${backup_name}"
-        then
-            break
-        fi
-    done
-
-    stack_name="BT_FUNCTION_STACK_`bt_string_uppercase <<< "${function_name}"`"
-    if ! bt_is_array "${stack_name}"
-    then
-        bt_array_create "${stack_name}"
-    fi
-
-    function_definition=`declare -f "${function_name}"`
-    backup_definition="${backup_name}${function_definition#${function_name}}"
-
-    eval "
-        ${backup_definition}
-
-        function ${function_name}
-        {
-            bt_error -t \"Function needs to be overridden\"
-        }
-
-        bt_stack_push \"\${stack_name}\" \"${backup_name}\"
-    "
-}
-
-function bt_function_unset
-{
-    local function_name="${1}"
-    local stack_name=""
-
-    bt_assert "bt_is_function `bt_string_escape "${function_name}"`"
-
-    stack_name="BT_FUNCTION_STACK_`bt_string_uppercase <<< "${function_name}"`"
-    if bt_is_array "${stack_name}" && [[ `bt_array_size "${stack_name}"` -gt 0 ]]
-    then
-        local function_defintion=""
-        local backup_name=""
-        local backup_defintion=""
-
-        backup_name="`bt_array_get "${stack_name}" 0`"
-        backup_definition=`declare -f "${backup_name}"`
-
-        function_definition="${function_name}${backup_definition#${backup_name}}"
-        eval "
-            ${function_definition}
-
-            bt_stack_pop \"\${stack_name}\"
-        "
-    else
-        unset "${function_name}"
-    fi
 }
 
 
@@ -979,6 +942,12 @@ function bt_version_compare
 }
 
 
+function bt_osx_get_version
+{
+    sw_vers -productVersion | /usr/bin/cut -d . -f 1,2
+}
+
+
 function bt_plist_get
 {
     local file="${1}"
@@ -1125,6 +1094,47 @@ function bt_xcode_find
     bt_log -v 3 "Done searching for Xcode"
 }
 
+function bt_xcode_get_path
+{
+    local xcode_version="${1}"
+
+    local variable="BT_XCODE_${xcode_version//./_}_PATH"
+    bt_assert "bt_is_variable `bt_string_escape "${variable}"`"
+
+    printf "%s" "${!variable}"
+}
+
+function bt_xcode_contains_sdk
+{
+    local xcode_version="${1}"
+    local sdk_version="${2}"
+
+    bt_assert "bt_is_version `bt_string_escape "${xcode_version}"`"
+    bt_assert "bt_is_version `bt_string_escape "${sdk_version}"`"
+
+    local variable="BT_SDK_${sdk_version/./_}_XCODE"
+
+    bt_is_variable `bt_string_escape "${variable}"` && \
+    bt_array_contains "${variable}" "${xcode_version}"
+}
+
+function bt_sdk_is_supported
+{
+    local sdk_version="${1}"
+
+    bt_assert "bt_is_version `bt_string_escape "${sdk_version}"`"
+
+    bt_array_contains BT_SDK_SUPPORTED "${sdk_version}"
+}
+
+function bt_sdk_is_installed
+{
+    local sdk_version="${1}"
+
+    bt_assert "bt_is_version `bt_string_escape "${sdk_version}"`"
+
+    bt_array_contains BT_SDK_INSTALLED "${sdk_version}"
+}
 
 function bt_sdk_get_path
 {
@@ -1159,7 +1169,7 @@ function bt_sdk_get_path
     bt_assert "bt_is_version `bt_string_escape "${xcode_version}"`"
     bt_assert "bt_is_version `bt_string_escape "${sdk_version}"`"
 
-    bt_variable_clone "BT_XCODE_${xcode_version//./_}_PATH" xcode_path
+    xcode_path="`bt_xcode_get_path "${xcode_version}"`"
     DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk "macosx${sdk_version}" Path
 }
 
@@ -1173,11 +1183,11 @@ function bt_target_get_build_directory
 
 function bt_target_sanity_check
 {
-    if ! bt_array_contains BT_SDK_SUPPORTED "${BT_TARGET_OPTION_SDK}"
+    if ! bt_sdk_is_supported "${BT_TARGET_OPTION_SDK}"
     then
         bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK not supported"
     fi
-    if ! bt_array_contains BT_SDK_INSTALLED "${BT_TARGET_OPTION_SDK}"
+    if ! bt_sdk_is_installed "${BT_TARGET_OPTION_SDK}"
     then
         bt_error "OS X ${BT_TARGET_OPTION_SDK} SDK not found"
     fi
@@ -1186,7 +1196,7 @@ function bt_target_sanity_check
     then
         bt_error "Xcode ${BT_TARGET_OPTION_XCODE} not found"
     fi
-    if ! bt_array_contains "BT_SDK_${BT_TARGET_OPTION_SDK/./_}_XCODE" "${BT_TARGET_OPTION_XCODE}"
+    if ! bt_xcode_contains_sdk "${BT_TARGET_OPTION_XCODE}" "${BT_TARGET_OPTION_SDK}"
     then
         bt_error "Xcode ${BT_TARGET_OPTION_XCODE} does not include OS X ${BT_TARGET_OPTION_SDK} SDK"
     fi
@@ -1402,7 +1412,7 @@ function bt_target_getopt
         if [[ -n "${xcode}" ]]
         then
             BT_TARGET_OPTION_XCODE="${xcode}"
-        elif bt_array_contains BT_SDK_INSTALLED "${BT_TARGET_OPTION_SDK}"
+        elif bt_sdk_is_installed "${BT_TARGET_OPTION_SDK}"
         then
             bt_array_get BT_SDK_${BT_TARGET_OPTION_SDK//./_}_XCODE 0 BT_TARGET_OPTION_XCODE
         fi
@@ -1410,7 +1420,7 @@ function bt_target_getopt
         if [[ ${#architectures[@]} -gt 0 ]]
         then
             bt_variable_clone architectures BT_TARGET_OPTION_ARCHITECTURES
-        elif bt_array_contains BT_SDK_SUPPORTED "${BT_TARGET_OPTION_SDK}"
+        elif bt_sdk_is_supported "${BT_TARGET_OPTION_SDK}"
         then
             bt_variable_clone BT_SDK_${BT_TARGET_OPTION_SDK//./_}_ARCHITECURES BT_TARGET_OPTION_ARCHITECTURES
         fi
@@ -1457,7 +1467,7 @@ function bt_target_getopt
     bt_log_variable ${!BT_TARGET_OPTION_@}
     bt_target_sanity_check
 
-    bt_variable_clone BT_XCODE_${BT_TARGET_OPTION_XCODE//./_}_PATH DEVELOPER_DIR
+    DEVELOPER_DIR="`bt_xcode_get_path "${BT_TARGET_OPTION_XCODE}"`"
     export DEVELOPER_DIR
 }
 
@@ -1756,9 +1766,9 @@ function bt_target_invoke
 
         # Source target
 
-        bt_log -v 3 "Source target ${BT_TARGET_NAME}"
-
         bt_stack_push BT_LOG_PREFIX "T:${BT_TARGET_NAME}"
+
+        bt_log -v 3 "Source target ${BT_TARGET_NAME}"
 
         source "${target_path}" 1>&3 2>&4
         bt_exit_on_error "Failed to source target"
@@ -1767,8 +1777,7 @@ function bt_target_invoke
         bt_assert "bt_array_contains BT_TARGET_ACTIONS `bt_string_escape "${BT_TARGET_ACTION}"`" \
                   "Unsupported target action: '${BT_TARGET_ACTION}'"
 
-        declare DEVELOPER_DIR=""
-        bt_variable_clone BT_XCODE_${BT_TARGET_OPTION_XCODE//./_}_PATH DEVELOPER_DIR
+        declare DEVELOPER_DIR="`bt_xcode_get_path "${BT_TARGET_OPTION_XCODE}"`"
         export DEVELOPER_DIR
 
         # Invoke target action
@@ -1802,19 +1811,19 @@ function bt_clean
 
 function bt_help
 {
-    local script="${0##*/}"
+    local script="${BASH_SOURCE[0]##*/}"
 
 /bin/cat <<EOF
 Copyright (c) 2011-2014 Benjamin Fleischer
 All rights reserved.
 
-Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) 'target name']
-           ${script} [options ...] (-c|--clean) [(-t|--target) 'target name']
+Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) {target name}]
+           ${script} [options ...] (-c|--clean) [(-t|--target) {target name}]
 
-           ${script} [options ...] (-t|--target) 'target name' [(-a|--action) 'action'] -- [action options ...]
+           ${script} [options ...] (-t|--target) {target name} [(-a|--action) {action}] -- [action options ...]
 
 
-Options:  [-v 'verbosity level'|--verbosity='verbosity level']
+Options:   [-v {verbosity}|--verbosity={verbosity}]
 
 Installed Xcode versions: `bt_array_join BT_XCODE_INSTALLED ", "`
 Installed OS X SDKs:      `bt_array_join BT_SDK_INSTALLED ", "`
@@ -1823,14 +1832,48 @@ EOF
 
 function bt_main
 {
+    bt_log_initialize
+
+    declare -r BT_BUILD_D="$(bt_path_absolute "${BASH_SOURCE[0]%/*}/build.d")"
+
+    # Source defaults
+
+    local defaults_path="${BT_BUILD_D}/defaults.sh"
+
+    bt_log -v 3 "Source defaults"
+
+    bt_stack_push BT_LOG_PREFIX "Defaults"
+
+    source "${defaults_path}" 1>&3 2>&4
+    bt_exit_on_error "Failed to source defaults '${defaults_path}'"
+
+    bt_variable_require BT_DEFAULT_SOURCE_DIRECTORY \
+                        BT_DEFAULT_BUILD_DIRECTORY \
+                        BT_DEFAULT_LOG_VERBOSITY \
+                        BT_SDK_SUPPORTED \
+                        BT_DEFAULT_SDK \
+                        BT_DEFAULT_BUILD_CONFIGURATION
+
+    bt_stack_pop BT_LOG_PREFIX
+
+    # Initialize settings
+
+    BT_SOURCE_DIRECTORY="${BT_DEFAULT_SOURCE_DIRECTORY}"
+    BT_BUILD_DIRECTORY="${BT_DEFAULT_BUILD_DIRECTORY}"
+
+    bt_log_set_verbosity "${BT_DEFAULT_LOG_VERBOSITY}"
+
+    # Parse options
+
     local -a options=()
-    bt_getopt options "h,help,c,clean,v:,verbosity:,t:,target:,a:,action:" "${@}"
+    bt_getopt options "h,help,c,clean,v:,verbosity:,s:,source-directory:,b:,build-directory:,t:,target:,a:,action:" "${@}"
     bt_exit_on_error "${options[@]}"
 
     set -- "${options[@]}"
 
     local -i help=0
     local -i clean=0
+    local    verbosity=2
     local    target_name=""
     local    action="build"
 
@@ -1850,11 +1893,15 @@ function bt_main
                 shift
                 ;;
             -v|--verbosity)
-                if ! bt_math_is_integer "${2}" || [[ ${2} -lt 1 ]]
-                then
-                    bt_error "Verbosity must be a positive integer"
-                fi
-                BT_LOG_VERBOSITY=${2}
+                verbosity="${2}"
+                shift 2
+                ;;
+            -s|--source-directory)
+                BT_SOURCE_DIRECTORY="${2}"
+                shift 2
+                ;;
+            -b|--build-directory)
+                BT_BUILD_DIRECTORY="${2}"
                 shift 2
                 ;;
             -t|--target)
@@ -1868,27 +1915,75 @@ function bt_main
         esac
     done
 
-    if (( BT_LOG_VERBOSITY > 4 ))
+    if ! bt_math_is_integer "${verbosity}" || [[ ${verbosity} -lt 1 ]]
     then
-        exec 3>&1
-        exec 4>&2
-    else
-        exec 3> /dev/null
-        exec 4> /dev/null
+        bt_error "Verbosity must be a positive integer"
+    fi
+    bt_log_set_verbosity "${verbosity}"
+
+    # Find Xcode installations
+
+    bt_xcode_find
+
+    if [[ ${#BT_XCODE_INSTALLED[@]} -eq 0 ]]
+    then
+        bt_error "No version of Xcode found"
+    fi
+    if [[ ${#BT_SDK_INSTALLED} -eq 0 ]]
+    then
+        bt_error "No supported OS X SDK installed"
     fi
 
-    # Source defaults
+    # Check settings
 
-    local defaults_path="${BT_BUILD_D}/defaults.sh"
+    if [[ ! -e "${BT_SOURCE_DIRECTORY}" ]]
+    then
+        bt_warn "Source directory '${BT_SOURCE_DIRECTORY}' does not exist"
+    fi
 
-    bt_log -v 3 "Source defaults"
+    if [[ -z "${BT_DEFAULT_SDK}" ]] || ! bt_sdk_is_installed "${BT_DEFAULT_SDK}"
+    then
+        if bt_variable_is_readonly BT_DEFAULT_SDK
+        then
+            bt_error "Default OS X SDK not available"
+        else
+            local osx_version="`bt_osx_get_version`"
 
-    bt_stack_push BT_LOG_PREFIX "Defaults"
+            function bt_main_default_sdk
+            {
+                if [[ -z "${BT_DEFAULT_SDK}" ]]
+                then
+                    BT_DEFAULT_SDK="${1}"
+                else
+                    bt_version_compare "${1}" "${osx_version}"
+                    if [[ ${?} -eq 2 ]]
+                    then
+                        return 1
+                    else
+                        BT_DEFAULT_SDK="${1}"
+                    fi
+                fi
+            }
 
-    source "${defaults_path}" 1>&3 2>&4
-    bt_exit_on_error "Failed to source defaults '${defaults_path}'"
+            BT_DEFAULT_SDK=""
+            bt_array_foreach BT_SDK_INSTALLED bt_main_default_sdk
 
-    bt_stack_pop BT_LOG_PREFIX
+            unset bt_main_default_sdk
+
+            bt_assert "[[ -n `bt_string_escape "${BT_DEFAULT_SDK}"` ]]"
+            bt_warn "Falling back to OS X ${BT_DEFAULT_SDK} SDK as default SDK"
+        fi
+    fi
+
+    local variable=""
+    for variable in BT_SOURCE_DIRECTORY BT_BUILD_DIRECTORY ${!BT_DEFAULT_@}
+    do
+        readonly ${variable}
+    done
+
+    bt_log_variable BT_SOURCE_DIRECTORY \
+                    BT_BUILD_DIRECTORY \
+                    ${!BT_DEFAULT_@}
 
     # Source extensions
 
@@ -1907,59 +2002,6 @@ function bt_main
 
         bt_stack_pop BT_LOG_PREFIX
     done
-
-    readonly BT_SOURCE_DIRECTORY
-    readonly BT_BUILD_DIRECTORY
-
-    # Find Xcode installations
-
-    bt_xcode_find
-
-    if [[ ${#BT_XCODE_INSTALLED[@]} -eq 0 ]]
-    then
-        bt_error "No version of Xcode found"
-    fi
-    if [[ ${#BT_SDK_INSTALLED} -eq 0 ]]
-    then
-        bt_error "No supported OS X SDK installed"
-    fi
-
-    if ! bt_array_contains BT_SDK_INSTALLED "${BT_DEFAULT_SDK}"
-    then
-        function bt_main_default_sdk
-        {
-            if [[ -z "${BT_DEFAULT_SDK}" ]]
-            then
-                BT_DEFAULT_SDK="${1}"
-            else
-                bt_version_compare "${1}" "${BT_OSX_VERSION}"
-                if [[ ${?} -eq 2 ]]
-                then
-                    return 1
-                else
-                    BT_DEFAULT_SDK="${1}"
-                fi
-            fi
-        }
-
-        BT_DEFAULT_SDK=""
-        bt_array_foreach BT_SDK_INSTALLED bt_main_default_sdk
-
-        unset bt_main_default_sdk
-
-        bt_assert "[[ -n `bt_string_escape "${BT_DEFAULT_SDK}"` ]]"
-        bt_warn "Default OS X SDK not installed. Falling back to OS X ${BT_DEFAULT_SDK} SDK."
-    fi
-
-    bt_variable_require BT_BUILD_DIRECTORY BT_DEFAULT_BUILD_CONFIGURATION BT_DEFAULT_SDK
-
-    local variable=""
-    for variable in ${!BT_DEFAULT_@}
-    do
-        readonly ${variable}
-    done
-
-    bt_log_variable BT_SOURCE_DIRECTORY BT_BUILD_DIRECTORY ${!BT_DEFAULT_@}
 
     # Invoke target action
 
@@ -1994,27 +2036,9 @@ function bt_main
     fi
 
     popd > /dev/null 2>&1
-
-    exec 3>&-
-    exec 4>&-
     return 0
 }
 
-
-# Defaults
-
-declare -r BT_OSX_VERSION="`sw_vers -productVersion | /usr/bin/cut -d . -f 1,2`"
-
-declare -r BT_BUILD_D="$(bt_path_absolute "${0%/*}/build.d")"
-
-declare -a BT_LOG_PREFIX=()
-declare -i BT_LOG_VERBOSITY=2
-
-declare -a BT_XCODE_INSTALLED=()
-declare -a BT_SDK_INSTALLED=()
-
-
-# Register signal handlers
 
 for signal in SIGINT SIGTERM
 do
