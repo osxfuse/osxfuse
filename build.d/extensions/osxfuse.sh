@@ -47,7 +47,7 @@ function osxfuse_get_define
     local file="${2}"
 
     bt_assert "[[ -e `bt_string_escape "${file}"` ]]" "File '${file}' does not exist"
-    /usr/bin/sed -n -e "s/^[[:space:]]*#[[:space:]]*define[[:space:]]${name}[[:space:]]*\([^[:space:]]*\)[[:space:]]*$/\1/p" "${file}"
+    /usr/bin/sed -E -n -e "s/^[[:space:]]*#[[:space:]]*define[[:space:]]${name}[[:space:]]*([^[:space:]]*)[[:space:]]*$/\1/p" "${file}"
 }
 
 function osxfuse_get_version

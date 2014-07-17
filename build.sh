@@ -296,8 +296,8 @@ function bt_getopt
 		            option="${1:2}"
 		            shift
 
-		            option_name="`/usr/bin/sed -n -e 's/^\([^=]*\).*$/\1/p' <<< "${option}"`"
-		            option_argument="`sed -n -e 's/^[^=]*=\(.*\)$/\1/p' <<< "${option}"`"
+		            option_name="`/usr/bin/sed -E -n -e 's/^([^=]*).*$/\1/p' <<< "${option}"`"
+		            option_argument="`/usr/bin/sed -E -n -e 's/^[^=]*=(.*)$/\1/p' <<< "${option}"`"
 
 		            [[ ! "${option}" =~ "=" ]]
 		            option_has_argument=${?}
@@ -1027,7 +1027,7 @@ function bt_xcode_find
         bt_variable_set "BT_XCODE_${xcode_version//./_}_PATH" "${xcode_path}"
         bt_array_create "BT_XCODE_${xcode_version//./_}_SDKS"
 
-        for sdk_name in `DEVELOPER_DIR="${xcode_path}" xcodebuild -showsdks | /usr/bin/sed -n -e 's/.*-sdk \(macosx.*\)/\1/p'`
+        for sdk_name in `DEVELOPER_DIR="${xcode_path}" xcodebuild -showsdks | /usr/bin/sed -E -n -e 's/.*-sdk (macosx.*)/\1/p'`
         do
             sdk_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk ${sdk_name} SDKVersion`"
             if ! bt_is_version "${sdk_version}"
@@ -1897,11 +1897,11 @@ function bt_main
                 shift 2
                 ;;
             -s|--source-directory)
-                BT_SOURCE_DIRECTORY="${2}"
+                BT_SOURCE_DIRECTORY="`bt_path_absolute "${2}"`"
                 shift 2
                 ;;
             -b|--build-directory)
-                BT_BUILD_DIRECTORY="${2}"
+                BT_BUILD_DIRECTORY="`bt_path_absolute "${2}"`"
                 shift 2
                 ;;
             -t|--target)
