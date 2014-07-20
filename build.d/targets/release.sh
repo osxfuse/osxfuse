@@ -203,7 +203,7 @@ EOF
     bt_exit_on_error "Failed to compute hash of disk image"
 
     local rules_plist_path="${BT_TARGET_BUILD_DIRECTORY}/Release.plist"
-    local download_url="http://sourceforge.net/projects/osxfuse/files/osxfuse-${osxfuse_version}/`basename "${disk_image_path}"`/download"
+    local download_url="http://sourceforge.net/projects/osxfuse/files/osxfuse-${osxfuse_version}/${disk_image_path##*/}/download"
 
 /bin/cat > "${rules_plist_path}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -253,11 +253,10 @@ EOF
 
     bt_log -v 3 "Archive debug information"
 
-    local debug_directory_basename="`basename "${debug_directory}"`"
     /usr/bin/tar -cjv \
                  -f "${BT_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug.tbz" \
                  -C "${debug_directory}/.." \
-                 "${debug_directory_basename}" 1>&3 2>&4
+                 "${debug_directory##*/}" 1>&3 2>&4
     bt_exit_on_error "Failed to archive debug information"
 
     # Cean up

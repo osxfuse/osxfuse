@@ -46,13 +46,29 @@ function osxfuse_get_define
     local name="${1}"
     local file="${2}"
 
-    bt_assert "[[ -e `bt_string_escape "${file}"` ]]" "File '${file}' does not exist"
-    /usr/bin/sed -E -n -e "s/^[[:space:]]*#[[:space:]]*define[[:space:]]${name}[[:space:]]*([^[:space:]]*)[[:space:]]*$/\1/p" "${file}"
+    if [[ "${file}" =~ ^/ ]]
+    then
+        bt_assert "[[ -e `bt_string_escape "${file}"` ]]" "File '${file}' does not exist"
+    fi
+
+    local value="$(
+/bin/cat <<EOF | /usr/bin/xcrun clang -E -I"${BT_SOURCE_DIRECTORY}/common" - | /usr/bin/tail -1
+#include "${file}"
+${name}
+EOF
+)"
+
+    if [[ "${value}" =~ ^\".*\"$ ]]
+    then
+        eval "printf \"%b\" ${value}"
+    else
+        printf "%s" "${value}"
+    fi
 }
 
 function osxfuse_get_version
 {
-    local version="`osxfuse_get_define OSXFUSE_VERSION_LITERAL "${BT_SOURCE_DIRECTORY}/common/fuse_version.h"`"
+    local version="`osxfuse_get_define OSXFUSE_VERSION "fuse_version.h"`"
     if [[ -n "${version}" ]]
     then
         printf "%s" "${version}"
@@ -218,7 +234,7 @@ EOF
     for (( ; i < ${#component_packages[@]} ; i++ ))
     do
         local identifier="${component_packages_identifiers[${i}]}"
-        local basename="`basename "${component_packages[${i}]}"`"
+        local basename="${component_packages[${i}]##*/}"
         local name="`bt_string_uppercase <<< "${identifier##*.}"`"
 
 /bin/cat >> Distribution <<EOF

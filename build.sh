@@ -1514,10 +1514,10 @@ function bt_target_configure
             ;;
     esac
 
-    MAKE="`xcrun --find make`" \
-    CPP="`xcrun --find cpp`" \
-    CC="`xcrun --find "${compiler_binary}"`" \
-    LD="`xcrun --find ld`" \
+    MAKE="`/usr/bin/xcrun --find make`" \
+    CPP="`/usr/bin/xcrun --find cpp`" \
+    CC="`/usr/bin/xcrun --find "${compiler_binary}"`" \
+    LD="`/usr/bin/xcrun --find ld`" \
     CPPFLAGS="-Wp,-isysroot,${sdk_path} ${CPPFLAGS}" \
     CFLAGS="${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-arch } -isysroot ${sdk_path} -mmacosx-version-min=${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${CFLAGS}" \
     LDFLAGS="-Wl,-syslibroot,${sdk_path} -Wl,-macosx_version_min,${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${LDFLAGS}" \
@@ -1552,7 +1552,7 @@ function bt_target_make
         esac
     done
 
-    local -a command=(xcrun make "${@}")
+    local -a command=(/usr/bin/xcrun make "${@}")
     if (( root == 0 ))
     then
         "${command[@]}" 1>&3 2>&4
@@ -1667,7 +1667,7 @@ function bt_target_install
     local target="${target_directory}"
     if [[ ! "${source}" =~ /$ ]]
     then
-        target="${target}/`basename "${source}"`"
+        target="${target}/${source##*/}"
         bt_assert "[[ ! -e `bt_string_escape "${target}"` ]]" "Target is already installed"
     fi
 
@@ -1990,7 +1990,7 @@ function bt_main
     local extension_path=""
     for extension_path in "${BT_BUILD_D}/extensions"/*.sh
     do
-        local extension_basename="`basename "${extension_path}"`"
+        local extension_basename="${extension_path##*/}"
         local extension_name="${extension_basename%.*}"
 
         bt_log -v 3 "Source extension ${extension_name}"

@@ -67,7 +67,6 @@ function fsbundle_build
     # Build file system bundle
 
     bt_target_xcodebuild -project osxfusefs.xcodeproj -target osxfuse.fs \
-                         CODE_SIGN_IDENTITY="" \
                          clean build
     bt_exit_on_error "Failed to build target"
 

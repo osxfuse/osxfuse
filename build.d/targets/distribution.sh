@@ -94,6 +94,12 @@ function distribution_build
     bt_log_variable DISTRIBUTION_KEXT_TASKS
     bt_log_variable DISTRIBUTION_MACFUSE
 
+    bt_log "Clean target"
+    bt_target_invoke "${BT_TARGET_NAME}" clean
+    bt_exit_on_error "Failed to clean target"
+
+    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+
     local -a default_build_options=("-s${BT_TARGET_OPTION_SDK}" \
                                     "-x${BT_TARGET_OPTION_XCODE}" \
                                     "${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}" \
@@ -103,12 +109,6 @@ function distribution_build
                                     "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
                                     "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                     "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
-
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
-
-    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
     local stage_directory_core="${BT_TARGET_BUILD_DIRECTORY}/Core"
     local stage_directory_prefpane="${BT_TARGET_BUILD_DIRECTORY}/PrefPane"

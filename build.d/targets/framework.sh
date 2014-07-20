@@ -73,6 +73,8 @@ function framework_build
     framework_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.framework`"
     bt_exit_on_error "Failed to locate framework"
 
+    # Copy default volume icon to framework
+
     /bin/cp "${BT_SOURCE_DIRECTORY}/support/Icon.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
     bt_exit_on_error "Failed to copy default volume icon to framework"
 

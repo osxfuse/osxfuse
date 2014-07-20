@@ -31,7 +31,7 @@
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
 declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/fuse"
 
-declare     LIBRARY_PREFIX=""
+declare     LIBRARY_PREFIX="/usr/local"
 
 
 function library_build
@@ -63,14 +63,18 @@ function library_build
     /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
     bt_exit_on_error "Failed to create build directory"
 
-    /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}/Source" 1>&3 2>&4
-    bt_exit_on_error "Failed to create source directory"
+    /bin/mkdir -p "${source_directory}" 1>&3 2>&4
+    bt_exit_on_error "Failed to create source code directory"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
     bt_exit_on_error "Failed to create debug directory"
 
-    rsync -a --exclude=".git*" "${BT_TARGET_SOURCE_DIRECTORY}/" "${source_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy source to directory '${source_directory}'"
+    # Copy source code to build directory
+
+    /usr/bin/rsync -a --exclude=".git*" "${BT_TARGET_SOURCE_DIRECTORY}/" "${source_directory}" 1>&3 2>&4
+    bt_exit_on_error "Failed to copy source code to build directory"
+
+    # Build library
 
     pushd "${source_directory}" > /dev/null 2>&1
     bt_exit_on_error "Source directory '${source_directory}' does not exist"
@@ -80,7 +84,7 @@ function library_build
 
     CFLAGS="-D_DARWIN_USE_64_BIT_INODE ${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-D} -I${BT_SOURCE_DIRECTORY}/common" \
     LDFLAGS="-Wl,-framework,CoreFoundation" \
-    bt_target_configure ${LIBRARY_PREFIX:+--prefix="${LIBRARY_PREFIX}"} \
+    bt_target_configure --prefix="${LIBRARY_PREFIX}" \
                         --disable-dependency-tracking --disable-static --disable-example
     bt_exit_on_error "Failed to configure target"
 
@@ -90,10 +94,19 @@ function library_build
     local executable_path=""
     while IFS=$'\0' read -r -d $'\0' executable_path
     do
-        local executable_name="`basename "${executable_path}"`"
+        local executable_name="${executable_path##*/}"
+
+        # Link library debug information
 
         /usr/bin/xcrun dsymutil -o "${debug_directory}/${executable_name}.dSYM" "${executable_path}" 1>&3 2>&4
         bt_exit_on_error "Failed to link debug information: '${executable_path}'"
+
+        # Strip library
+
+        /usr/bin/xcrun strip -S -x "${executable_path}" 1>&3 2>&4
+        bt_exit_on_error "Failed to strip executable: '${executable_path}'"
+
+        # Sign library
 
         bt_target_codesign "${executable_path}"
         bt_exit_on_error "Failed to sign executable: '${executable_path}'"
