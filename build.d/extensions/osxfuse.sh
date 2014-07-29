@@ -198,7 +198,7 @@ function osxfuse_build_distribution_package
     for path in "${component_packages[@]}"
     do
         /usr/bin/xar -x -f "${path}" PackageInfo && \
-        component_packages_identifiers+=("`/usr/bin/xmllint --xpath 'string(/pkg-info/@identifier)' PackageInfo`") && \
+        component_packages_identifiers+=("`/usr/bin/xpath PackageInfo 'string(/pkg-info/@identifier)' 2> /dev/null`") && \
         rm -f PackageInfo
         bt_exit_on_error "Failed to determine component package identifier of package '${path}'"
     done

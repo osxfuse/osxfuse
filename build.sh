@@ -972,7 +972,7 @@ function bt_plist_array_size
     local file="${1}"
     local entry="${2}"
 
-    bt_plist_get "${file}" "${entry}" | /usr/bin/xmllint --xpath 'count(/plist/array/*)' -
+    bt_plist_get "${file}" "${entry}" | /usr/bin/xpath 'count(/plist/array/*)' 2> /dev/null
 }
 
 
@@ -1565,7 +1565,7 @@ function bt_target_codesign
 {
     if [[ -n "${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" ]]
     then
-        /usr/bin/codesign -s "${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" -f "${@}" 1>&3 2>&4
+        /usr/bin/xcrun codesign -s "${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" -f "${@}" 1>&3 2>&4
     else
         return 0
     fi
@@ -1606,7 +1606,7 @@ function bt_target_pkgbuild_component_plist_foreach
                     shift
                 done
             }
-        " && bt_pkgbuild_component_plist_foreach_internal $(seq 0 $(( $(bt_plist_array_size "${1}" "${2}") - 1 )))
+        " && bt_pkgbuild_component_plist_foreach_internal $(/usr/bin/jot - 0 $(( $(bt_plist_array_size "${1}" "${2}") - 1 )))
     fi
 }
 
