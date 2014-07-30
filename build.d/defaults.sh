@@ -60,3 +60,8 @@ declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10")
 
 declare     BT_DEFAULT_SDK="`bt_osx_get_version`"
 declare -r  BT_DEFAULT_BUILD_CONFIGURATION="Release"
+
+
+# Autotools defaults
+
+declare -r  BT_DEFAULT_PREFIX="/usr/local"

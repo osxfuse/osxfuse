@@ -30,8 +30,8 @@
 
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
 
-declare -a DISTRIBUTION_KEXT_TASKS=()
-declare -i DISTRIBUTION_MACFUSE=0
+declare -a  DISTRIBUTION_KEXT_TASKS=()
+declare -i  DISTRIBUTION_MACFUSE=0
 
 
 function distribution_create_stage_core
@@ -110,6 +110,15 @@ function distribution_build
                                     "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                     "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
 
+    local -a library_build_options=("-s${BT_TARGET_OPTION_SDK}" \
+                                    "-x${BT_TARGET_OPTION_XCODE}" \
+                                    "${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}" \
+                                    "-d${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" \
+                                    "-bENABLE_MACFUSE_MODE=${DISTRIBUTION_MACFUSE}" \
+                                    "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
+                                    "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
+                                    "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
+
     local stage_directory_core="${BT_TARGET_BUILD_DIRECTORY}/Core"
     local stage_directory_prefpane="${BT_TARGET_BUILD_DIRECTORY}/PrefPane"
     local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
@@ -168,7 +177,7 @@ function distribution_build
 
     # Build library
 
-    bt_target_invoke library build "${default_build_options[@]}"
+    bt_target_invoke library build "${library_build_options[@]}"
     bt_exit_on_error "Failed to build library"
 
     bt_target_invoke library install --debug="${debug_directory}" -- "${stage_directory_core}"
@@ -223,7 +232,7 @@ function distribution_build
 
         # Build library
 
-        bt_target_invoke macfuse_library build "${default_build_options[@]}"
+        bt_target_invoke macfuse_library build "${library_build_options[@]}"
         bt_exit_on_error "Failed to build MacFUSE library"
 
         bt_target_invoke macfuse_library install --debug="${debug_directory}" -- "${stage_directory_macfuse}"

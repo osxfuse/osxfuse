@@ -1291,10 +1291,13 @@ function bt_target_getopt
                 preset_specs="root,no-root,o:,owner:,g:,group:,debug:"
                 ;;
             make-build)
-                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,b:,build-setting:,code-sign-identity:,product-sign-identity:"
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,b:,build-setting:,code-sign-identity:,product-sign-identity:,prefix:"
                 ;;
             make-install)
-                preset_specs="root,no-root,debug:"
+                preset_specs="prefix:,root,no-root,debug:"
+                ;;
+            meta)
+                preset_specs=""
                 ;;
         esac
 
@@ -1361,6 +1364,10 @@ function bt_target_getopt
                     ;;
                 --product-sign-identity)
                     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="${2}"
+                    shift 2
+                    ;;
+                --prefix)
+                    BT_TARGET_OPTION_PREFIX="${2}"
                     shift 2
                     ;;
                 --root)
@@ -1521,7 +1528,7 @@ function bt_target_configure
     CPPFLAGS="-Wp,-isysroot,${sdk_path} ${CPPFLAGS}" \
     CFLAGS="${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-arch } -isysroot ${sdk_path} -mmacosx-version-min=${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${CFLAGS}" \
     LDFLAGS="-Wl,-syslibroot,${sdk_path} -Wl,-macosx_version_min,${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${LDFLAGS}" \
-    ./configure "${@}" 1>&3 2>&4
+    ./configure --prefix="${BT_TARGET_OPTION_PREFIX}" "${@}" 1>&3 2>&4
 }
 
 function bt_target_make
@@ -1756,6 +1763,7 @@ function bt_target_invoke
         declare -a  BT_TARGET_OPTION_BUILD_SETTINGS=()
         declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY=""
         declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY=""
+        declare     BT_TARGET_OPTION_PREFIX="${BT_DEFAULT_PREFIX}"
         declare -i  BT_TARGET_OPTION_ROOT=0
         declare     BT_TARGET_OPTION_OWNER=""
         declare     BT_TARGET_OPTION_GROUP=""
@@ -1852,7 +1860,8 @@ function bt_main
                         BT_DEFAULT_LOG_VERBOSITY \
                         BT_SDK_SUPPORTED \
                         BT_DEFAULT_SDK \
-                        BT_DEFAULT_BUILD_CONFIGURATION
+                        BT_DEFAULT_BUILD_CONFIGURATION \
+                        BT_DEFAULT_PREFIX
 
     bt_stack_pop BT_LOG_PREFIX
 

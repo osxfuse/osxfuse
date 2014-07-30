@@ -31,7 +31,7 @@
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
 declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_framework"
 
-declare MACFUSE_FRAMEWORK_LIBRARY_PREFIX="/usr/local"
+declare     MACFUSE_FRAMEWORK_LIBRARY_PREFIX="/usr/local"
 
 
 function macfuse_framework_build

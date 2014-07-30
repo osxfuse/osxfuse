@@ -38,6 +38,8 @@ declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"
 
 function release_build
 {
+    bt_target_getopt -p meta -- "${@}"
+
     bt_log "Clean target"
     bt_target_invoke "${BT_TARGET_NAME}" clean
     bt_exit_on_error "Failed to clean target"
@@ -175,6 +177,8 @@ tell application "Finder"
 end tell
 EOF
     detach_exit_on_error "Failed to alter disk image view options"
+
+    sync
 
     # Detach disk image
 

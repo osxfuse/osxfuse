@@ -31,25 +31,10 @@
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
 declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_fuse"
 
-declare     MACFUSE_LIBRARY_PREFIX="/usr/local"
-
 
 function macfuse_library_build
 {
-    function macfuse_library_build_getopt_handler
-    {
-        case "${1}" in
-            --prefix)
-                MACFUSE_LIBRARY_PREFIX="${2}"
-                return 2
-                ;;
-        esac
-    }
-
-    bt_target_getopt -p build -s "prefix:" -h macfuse_library_build_getopt_handler -- "${@}"
-    unset macfuse_library_build_getopt_handler
-
-    bt_log_variable MACFUSE_LIBRARY_PREFIX
+    bt_target_getopt -p make-build -- "${@}"
 
     bt_log "Clean target"
     bt_target_invoke "${BT_TARGET_NAME}" clean
@@ -84,8 +69,7 @@ function macfuse_library_build
 
     CFLAGS="${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-D} -I${BT_SOURCE_DIRECTORY}/common" \
     LDFLAGS="-Wl,-framework,CoreFoundation" \
-    bt_target_configure --prefix="${MACFUSE_LIBRARY_PREFIX}" \
-                        --disable-dependency-tracking --disable-static --disable-example
+    bt_target_configure --disable-dependency-tracking --disable-static --disable-example
     bt_exit_on_error "Failed to configure target"
 
     bt_target_make -- -j 4
@@ -134,7 +118,7 @@ function macfuse_library_install
     pushd "${source_directory}" > /dev/null 2>&1
     bt_exit_on_error "Source directory '${source_directory}' does not exist"
 
-    bt_target_make -- install DESTDIR="${target_directory}"
+    bt_target_make -- install prefix="${BT_TARGET_OPTION_PREFIX}" DESTDIR="${target_directory}"
     bt_exit_on_error "Failed to install target"
 
     popd > /dev/null 2>&1
