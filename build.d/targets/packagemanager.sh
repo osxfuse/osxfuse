@@ -101,10 +101,10 @@ function packagemanager_build
 
     local -a default_build_options=("${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
                                     "-bENABLE_MACFUSE_MODE=0"
-                                    "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}/Library/Filesystems")
+                                    "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}")
 
     local -a library_build_options=("${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
-                                    "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}/Library/Filesystems")
+                                    "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}")
 
     local stage_directory="${BT_TARGET_BUILD_DIRECTORY}"
     local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
