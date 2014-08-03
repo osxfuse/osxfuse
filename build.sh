@@ -29,7 +29,7 @@
 
 
 declare -a BT_LOG_PREFIX=()
-declare -i BT_LOG_VERBOSITY=2
+declare -i BT_LOG_VERBOSE=2
 
 declare -a BT_XCODE_INSTALLED=()
 declare -a BT_SDK_INSTALLED=()
@@ -37,19 +37,19 @@ declare -a BT_SDK_INSTALLED=()
 
 function bt_log_initialize
 {
-    bt_log_set_verbosity ${BT_LOG_VERBOSITY}
+    bt_log_set_verbose ${BT_LOG_VERBOSE}
 }
 
-function bt_log_set_verbosity
+function bt_log_set_verbose
 {
-    local verbosity="${1}"
+    local verbose="${1}"
 
-    bt_assert "bt_math_is_integer `bt_string_escape "${verbosity}"`"
-    bt_assert "[[ ${verbosity} -gt 0 ]]"
+    bt_assert "bt_math_is_integer `bt_string_escape "${verbose}"`"
+    bt_assert "[[ ${verbose} -gt 0 ]]"
 
-    BT_LOG_VERBOSITY=${verbosity}
+    BT_LOG_VERBOSE=${verbose}
 
-    if (( BT_LOG_VERBOSITY > 4 ))
+    if (( BT_LOG_VERBOSE > 4 ))
     then
         exec 3>&1
         exec 4>&2
@@ -62,12 +62,12 @@ function bt_log_set_verbosity
 function bt_log
 {
     local -a options=()
-    bt_getopt options "v:,verbosity:,c:,color:,t,trace,o:,offset:" "${@}"
+    bt_getopt options "v:,verbose:,c:,color:,t,trace,o:,offset:" "${@}"
     bt_exit_on_error "${options[@]}"
 
     set -- "${options[@]}"
 
-    local -i verbosity=2
+    local -i verbose=2
     local    color=""
     local -i trace=0
     local -i trace_offset=0
@@ -79,8 +79,8 @@ function bt_log
                 shift
                 break
                 ;;
-            -v|--verbosity)
-                verbosity="${2}"
+            -v|--verbose)
+                verbose="${2}"
                 shift 2
                 ;;
             -c|--color)
@@ -98,14 +98,14 @@ function bt_log
         esac
     done
 
-    if (( verbosity > BT_LOG_VERBOSITY ))
+    if (( verbose > BT_LOG_VERBOSE ))
     then
         return 0
     fi
 
     if [[ -z "${color}" ]]
     then
-        case ${verbosity} in
+        case ${verbose} in
             1|2)
                 color="1;30"
                 ;;
@@ -1139,7 +1139,7 @@ function bt_sdk_is_installed
 function bt_sdk_get_path
 {
     local -a options=()
-    bt_getopt options "h,help,v:,verbosity:,a:,action:" "${@}"
+    bt_getopt options "h,help,v:,verbose:,a:,action:" "${@}"
     bt_exit_on_error "${options[@]}"
 
     set -- "${options[@]}"
@@ -1493,14 +1493,14 @@ function bt_target_xcodebuild
     local compiler=""
     bt_variable_clone "BT_SDK_${BT_TARGET_OPTION_SDK//./_}_COMPILER" compiler
 
-    local -a command=(/usr/bin/xcodebuild \
-                      -configuration "${BT_TARGET_OPTION_BUILD_CONFIGURATION}" \
-                      CONFIGURATION_BUILD_DIR="`bt_target_get_build_directory "${BT_TARGET_NAME}"`" \
-                      SDKROOT="macosx${BT_TARGET_OPTION_SDK}" \
-                      ARCHS="`bt_array_join BT_TARGET_OPTION_ARCHITECTURES " "`" \
-                      GCC_VERSION="${compiler}" \
-                      MACOSX_DEPLOYMENT_TARGET="${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" \
-                      CODE_SIGN_IDENTITY="${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
+    local -a command=(/usr/bin/xcodebuild
+                      -configuration "${BT_TARGET_OPTION_BUILD_CONFIGURATION}"
+                      CONFIGURATION_BUILD_DIR="`bt_target_get_build_directory "${BT_TARGET_NAME}"`"
+                      SDKROOT="macosx${BT_TARGET_OPTION_SDK}"
+                      ARCHS="`bt_array_join BT_TARGET_OPTION_ARCHITECTURES " "`"
+                      GCC_VERSION="${compiler}"
+                      MACOSX_DEPLOYMENT_TARGET="${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+                      CODE_SIGN_IDENTITY="${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}"
                       "${BT_TARGET_OPTION_BUILD_SETTINGS[@]}")
     if [[ ${#BT_TARGET_OPTION_MACROS} -gt 0 ]]
     then
@@ -1854,7 +1854,7 @@ Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) {target name}]
            ${script} [options ...] (-t|--target) {target name} [(-a|--action) {action}] -- [action options ...]
 
 
-Options:   [-v {verbosity}|--verbosity={verbosity}]
+Options:   [-v {verbose level}|--verbose={verbose level}]
 
 Installed Xcode versions: `bt_array_join BT_XCODE_INSTALLED ", "`
 Installed OS X SDKs:      `bt_array_join BT_SDK_INSTALLED ", "`
@@ -1880,7 +1880,7 @@ function bt_main
 
     bt_variable_require BT_DEFAULT_SOURCE_DIRECTORY \
                         BT_DEFAULT_BUILD_DIRECTORY \
-                        BT_DEFAULT_LOG_VERBOSITY \
+                        BT_DEFAULT_LOG_VERBOSE \
                         BT_SDK_SUPPORTED \
                         BT_DEFAULT_SDK \
                         BT_DEFAULT_BUILD_CONFIGURATION \
@@ -1893,19 +1893,19 @@ function bt_main
     BT_SOURCE_DIRECTORY="${BT_DEFAULT_SOURCE_DIRECTORY}"
     BT_BUILD_DIRECTORY="${BT_DEFAULT_BUILD_DIRECTORY}"
 
-    bt_log_set_verbosity "${BT_DEFAULT_LOG_VERBOSITY}"
+    bt_log_set_verbose "${BT_DEFAULT_LOG_VERBOSE}"
 
     # Parse options
 
     local -a options=()
-    bt_getopt options "h,help,c,clean,v:,verbosity:,s:,source-directory:,b:,build-directory:,t:,target:,a:,action:" "${@}"
+    bt_getopt options "h,help,c,clean,v:,verbose:,s:,source-directory:,b:,build-directory:,t:,target:,a:,action:" "${@}"
     bt_exit_on_error "${options[@]}"
 
     set -- "${options[@]}"
 
     local -i help=0
     local -i clean=0
-    local    verbosity=2
+    local    verbose=2
     local    target_name=""
     local    action="build"
 
@@ -1924,8 +1924,8 @@ function bt_main
                 clean=1
                 shift
                 ;;
-            -v|--verbosity)
-                verbosity="${2}"
+            -v|--verbose)
+                verbose="${2}"
                 shift 2
                 ;;
             -s|--source-directory)
@@ -1947,11 +1947,11 @@ function bt_main
         esac
     done
 
-    if ! bt_math_is_integer "${verbosity}" || [[ ${verbosity} -lt 1 ]]
+    if ! bt_math_is_integer "${verbose}" || [[ ${verbose} -lt 1 ]]
     then
         bt_error "Verbosity must be a positive integer"
     fi
-    bt_log_set_verbosity "${verbosity}"
+    bt_log_set_verbose "${verbose}"
 
     # Find Xcode installations
 

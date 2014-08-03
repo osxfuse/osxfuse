@@ -27,11 +27,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# Homebrew
+#
+# ./build.sh -v 5 -t packagemanager -a build -- --library-prefix="${prefix}"
+# ./build.sh -v 5 -t packagemanager -a install -- "${prefix}"
+
+# MacPorts
+#
+# ./build.sh -v 5 --build-directory="${build_directory}" -t packagemanager -a build -- \
+#            -a i386 -a x86_64 \
+#            --framework-prefix="${prefix}" \
+#            --fsbundle-prefix="${prefix}" \
+#            --library-prefix="${prefix}"
+# ./build.sh -v 5 -t packagemanager -a install -- "${prefix}"
+
 
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
 
+declare     PACKAGEMANAGER_FRAMEWORK_PREFIX=""
+declare     PACKAGEMANAGER_FSBUNDLE_PREFIX=""
+declare     PACKAGEMANAGER_LIBRARY_PREFIX="/usr/local"
 
-function homebrew_create_stage
+
+function packagemanager_create_stage
 {
     local stage_directory="${1}"
     bt_assert "[[ -n `bt_string_escape "${stage_directory}"` ]]"
@@ -44,9 +62,36 @@ function homebrew_create_stage
                   "${stage_directory}/lib/pkgconfig" 1>&3 2>&4
 }
 
-function homebrew_build
+function packagemanager_build
 {
-    bt_target_getopt -p meta -s "prefix:" -- "${@}"
+    function packagemanager_build_getopt_handler
+    {
+        case "${1}" in
+            --framework-prefix)
+                PACKAGEMANAGER_FRAMEWORK_PREFIX="${2}"
+                return 2
+                ;;
+            --fsbundle-prefix)
+                PACKAGEMANAGER_FSBUNDLE_PREFIX="${2}"
+                return 2
+                ;;
+            --library-prefix)
+                PACKAGEMANAGER_LIBRARY_PREFIX="${2}"
+                return 2
+                ;;
+        esac
+    }
+
+    bt_target_getopt -p meta \
+                     -s "a:,architecure:,framework-prefix:,fsbundle-prefix:,library-prefix:" \
+                     -h packagemanager_build_getopt_handler \
+                     -- \
+                     "${@}"
+    unset packagemanager_build_getopt_handler
+
+    bt_log_variable PACKAGEMANAGER_FSBUNDLE_PREFIX
+    bt_log_variable PACKAGEMANAGER_LIBRARY_PREFIX
+    bt_log_variable PACKAGEMANAGER_FRAMEWORK_PREFIX
 
     bt_log "Clean target"
     bt_target_invoke "${BT_TARGET_NAME}" clean
@@ -54,7 +99,12 @@ function homebrew_build
 
     bt_log "Build target"
 
-    local -a default_build_options=("-bENABLE_MACFUSE_MODE=0")
+    local -a default_build_options=("${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
+                                    "-bENABLE_MACFUSE_MODE=0"
+                                    "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}/Library/Filesystems")
+
+    local -a library_build_options=("${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
+                                    "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}/Library/Filesystems")
 
     local stage_directory="${BT_TARGET_BUILD_DIRECTORY}"
     local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
@@ -62,7 +112,7 @@ function homebrew_build
     /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
     bt_exit_on_error "Failed to create build directory"
 
-    homebrew_create_stage "${stage_directory}"
+    packagemanager_create_stage "${stage_directory}"
     bt_exit_on_error "Failed to create stage"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
@@ -78,7 +128,7 @@ function homebrew_build
 
     # Build library
 
-    bt_target_invoke library build "${default_build_options[@]}" --prefix="${BT_TARGET_OPTION_PREFIX}"
+    bt_target_invoke library build "${library_build_options[@]}" --prefix="${PACKAGEMANAGER_LIBRARY_PREFIX}"
     bt_exit_on_error "Failed to build library"
 
     bt_target_invoke library install --debug="${debug_directory}" --prefix="" -- "${stage_directory}"
@@ -92,14 +142,16 @@ function homebrew_build
 
     # Build framework
 
-    bt_target_invoke framework build "${default_build_options[@]}" --library-prefix="${stage_directory}"
+    bt_target_invoke framework build "${default_build_options[@]}" \
+                                     --library-prefix="${stage_directory}"
+                                     -bINSTALL_PATH="${PACKAGEMANAGER_FRAMEWORK_PREFIX}/Library/Frameworks" \
     bt_exit_on_error "Failed to build framework"
 
     bt_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory}/Library/Frameworks"
     bt_exit_on_error "Failed to install framework"
 }
 
-function homebrew_install
+function packagemanager_install
 {
     local -a arguments=()
     bt_target_getopt -p install -o arguments -- "${@}"

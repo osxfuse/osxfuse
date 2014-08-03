@@ -33,7 +33,7 @@
 declare -r  BT_DEFAULT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
 declare -r  BT_DEFAULT_BUILD_DIRECTORY="/tmp/osxfuse"
 
-declare -ri BT_DEFAULT_LOG_VERBOSITY=2
+declare -ri BT_DEFAULT_LOG_VERBOSE=2
 
 
 # Xcode defaults
@@ -64,4 +64,4 @@ declare -r  BT_DEFAULT_BUILD_CONFIGURATION="Release"
 
 # Autotools defaults
 
-declare -r  BT_DEFAULT_PREFIX="/usr/local"
+declare -r  BT_DEFAULT_PREFIX=""

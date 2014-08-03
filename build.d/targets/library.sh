@@ -31,6 +31,7 @@
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
 declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/fuse"
 
+declare     BT_TARGET_OPTION_PREFIX="/usr/local"
 
 function library_build
 {
