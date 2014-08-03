@@ -98,6 +98,7 @@ function fsbundle_build
 
             bt_target_invoke kext build -s "${osx_version}" \
                                         "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
+                                        "${BT_TARGET_OPTION_MACROS[@]/#/-m}" \
                                         "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                         "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
             bt_exit_on_error "Failed to build OS X ${osx_version} kernel extension"

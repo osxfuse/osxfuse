@@ -107,6 +107,7 @@ function distribution_build
                                     "-c${BT_TARGET_OPTION_BUILD_CONFIGURATION}" \
                                     "-bENABLE_MACFUSE_MODE=${DISTRIBUTION_MACFUSE}" \
                                     "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
+                                    "${BT_TARGET_OPTION_MACROS[@]/#/-m}" \
                                     "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                     "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
 
@@ -114,8 +115,7 @@ function distribution_build
                                     "-x${BT_TARGET_OPTION_XCODE}" \
                                     "${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}" \
                                     "-d${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" \
-                                    "-bENABLE_MACFUSE_MODE=${DISTRIBUTION_MACFUSE}" \
-                                    "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
+                                    "${BT_TARGET_OPTION_MACROS[@]/#/-m}" \
                                     "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                     "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
 

@@ -1282,7 +1282,7 @@ function bt_target_getopt
         local preset_specs=""
         case "${preset}" in
             build)
-                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,code-sign-identity:,product-sign-identity:"
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,m:,macro:,code-sign-identity:,product-sign-identity:"
                 ;;
             clean)
                 preset_specs="root,no-root"
@@ -1291,7 +1291,7 @@ function bt_target_getopt
                 preset_specs="root,no-root,o:,owner:,g:,group:,debug:"
                 ;;
             make-build)
-                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,b:,build-setting:,code-sign-identity:,product-sign-identity:,prefix:"
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,m:,macro:,code-sign-identity:,product-sign-identity:,prefix:"
                 ;;
             make-install)
                 preset_specs="prefix:,root,no-root,debug:"
@@ -1320,6 +1320,7 @@ function bt_target_getopt
         local    deployment_target=""
         local    build_configuration=""
         local -a build_settings=()
+        local -a macros=()
 
         while [[ ${#} -gt 0 ]]
         do
@@ -1356,6 +1357,10 @@ function bt_target_getopt
                     then
                         bt_array_add build_settings "${2}"
                     fi
+                    shift 2
+                    ;;
+                -m|--macro)
+                    bt_array_add macros "${2}"
                     shift 2
                     ;;
                 --code-sign-identity)
@@ -1447,6 +1452,11 @@ function bt_target_getopt
             bt_variable_clone build_settings BT_TARGET_OPTION_BUILD_SETTINGS
         fi
 
+        if [[ ${#macros[@]} -gt 0 ]]
+        then
+            bt_variable_clone macros BT_TARGET_OPTION_MACROS
+        fi
+
         if [[ -n "${out}" ]]
         then
             local -a arguments=("${@}")
@@ -1483,15 +1493,22 @@ function bt_target_xcodebuild
     local compiler=""
     bt_variable_clone "BT_SDK_${BT_TARGET_OPTION_SDK//./_}_COMPILER" compiler
 
-    /usr/bin/xcodebuild -configuration "${BT_TARGET_OPTION_BUILD_CONFIGURATION}" \
-                        CONFIGURATION_BUILD_DIR="`bt_target_get_build_directory "${BT_TARGET_NAME}"`" \
-                        SDKROOT="macosx${BT_TARGET_OPTION_SDK}" \
-                        ARCHS="`bt_array_join BT_TARGET_OPTION_ARCHITECTURES " "`" \
-                        GCC_VERSION="${compiler}" \
-                        MACOSX_DEPLOYMENT_TARGET="${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" \
-                        CODE_SIGN_IDENTITY="${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
-                        "${BT_TARGET_OPTION_BUILD_SETTINGS[@]}" \
-                        "${@}" 1>&3 2>&4
+    local -a command=(/usr/bin/xcodebuild \
+                      -configuration "${BT_TARGET_OPTION_BUILD_CONFIGURATION}" \
+                      CONFIGURATION_BUILD_DIR="`bt_target_get_build_directory "${BT_TARGET_NAME}"`" \
+                      SDKROOT="macosx${BT_TARGET_OPTION_SDK}" \
+                      ARCHS="`bt_array_join BT_TARGET_OPTION_ARCHITECTURES " "`" \
+                      GCC_VERSION="${compiler}" \
+                      MACOSX_DEPLOYMENT_TARGET="${BT_TARGET_OPTION_DEPLOYMENT_TARGET}" \
+                      CODE_SIGN_IDENTITY="${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
+                      "${BT_TARGET_OPTION_BUILD_SETTINGS[@]}")
+    if [[ ${#BT_TARGET_OPTION_MACROS} -gt 0 ]]
+    then
+        command+=(GCC_PREPROCESSOR_DEFINITIONS="\$(inherited)`printf " %q" "${BT_TARGET_OPTION_MACROS[@]}"`")
+    fi
+    command+=("${@}")
+
+    "${command[@]}" 1>&3 2>&4
 }
 
 function bt_target_configure
@@ -1521,12 +1538,17 @@ function bt_target_configure
             ;;
     esac
 
+    for macro in "${BT_TARGET_OPTION_MACROS[@]}"
+    do
+        bt_assert "[[ `bt_string_escape "${macro}"` =~ ^[^[:space:]]*$ ]]" "Macro '${macro//\'/\\\'}' contains whitespace"
+    done
+
     MAKE="`/usr/bin/xcrun --find make`" \
     CPP="`/usr/bin/xcrun --find cpp`" \
     CC="`/usr/bin/xcrun --find "${compiler_binary}"`" \
     LD="`/usr/bin/xcrun --find ld`" \
     CPPFLAGS="-Wp,-isysroot,${sdk_path} ${CPPFLAGS}" \
-    CFLAGS="${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-arch } -isysroot ${sdk_path} -mmacosx-version-min=${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${CFLAGS}" \
+    CFLAGS="${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-arch } -isysroot ${sdk_path} -mmacosx-version-min=${BT_TARGET_OPTION_DEPLOYMENT_TARGET}${BT_TARGET_OPTION_MACROS[@]/#/ -D} ${CFLAGS}" \
     LDFLAGS="-Wl,-syslibroot,${sdk_path} -Wl,-macosx_version_min,${BT_TARGET_OPTION_DEPLOYMENT_TARGET} ${LDFLAGS}" \
     ./configure --prefix="${BT_TARGET_OPTION_PREFIX}" "${@}" 1>&3 2>&4
 }
@@ -1761,6 +1783,7 @@ function bt_target_invoke
         declare     BT_TARGET_OPTION_DEPLOYMENT_TARGET="${BT_DEFAULT_SDK}"
         declare     BT_TARGET_OPTION_BUILD_CONFIGURATION="${BT_DEFAULT_BUILD_CONFIGURATION}"
         declare -a  BT_TARGET_OPTION_BUILD_SETTINGS=()
+        declare -a  BT_TARGET_OPTION_MACROS=()
         declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY=""
         declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY=""
         declare     BT_TARGET_OPTION_PREFIX="${BT_DEFAULT_PREFIX}"
