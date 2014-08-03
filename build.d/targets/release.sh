@@ -179,6 +179,7 @@ EOF
     detach_exit_on_error "Failed to alter disk image view options"
 
     sync
+    sleep 1
 
     # Detach disk image
 
