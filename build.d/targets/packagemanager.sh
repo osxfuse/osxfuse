@@ -149,6 +149,17 @@ function packagemanager_build
 
     bt_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory}/Library/Frameworks"
     bt_exit_on_error "Failed to install framework"
+
+    # Locate file system bundle
+
+    local fsbundle_path=""
+    fsbundle_path="`osxfuse_find "${stage_directory}/Library/Filesystems"/*.fs`"
+    bt_exit_on_error "Failed to locate file system bundle"
+
+    # Move debug files into file system bundle
+
+    /bin/mv "${debug_directory}" "${fsbundle_path}/Contents/"
+    bt_exit_on_error "Failed to move debug files into file system bundle"
 }
 
 function packagemanager_install

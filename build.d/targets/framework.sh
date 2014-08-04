@@ -67,7 +67,7 @@ function framework_build
                          clean build
     bt_exit_on_error "Failed to build target"
 
-    # Modify framework
+    # Locate framework
 
     local framework_path=""
     framework_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.framework`"

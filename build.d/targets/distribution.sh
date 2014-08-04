@@ -149,7 +149,7 @@ function distribution_build
     bt_target_invoke fsbundle install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Filesystems"
     bt_exit_on_error "Failed to install file system bundle"
 
-    # Modify file system bundle
+    # Locate file system bundle
 
     local fsbundle_path=""
     fsbundle_path="`osxfuse_find "${stage_directory_core}/Library/Filesystems"/*.fs`"
