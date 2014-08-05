@@ -34,12 +34,12 @@
 
 # MacPorts
 #
-# ./build.sh -v 5 --build-directory="${build_directory}" -t packagemanager -a build -- \
-#            -a i386 -a x86_64 \
-#            --framework-prefix="${prefix}" \
-#            --fsbundle-prefix="${prefix}" \
+# ./build.sh -v 5 --build-directory="${workpath}" -t packagemanager -a build --
+#            [-a i386] [-a x86_64]
+#            --framework-prefix="${prefix}"
+#            --fsbundle-prefix="${prefix}"
 #            --library-prefix="${prefix}"
-# ./build.sh -v 5 -t packagemanager -a install -- "${prefix}"
+# ./build.sh -v 5 -t packagemanager -a install -- "${destroot}"
 
 
 declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
