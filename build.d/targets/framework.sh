@@ -75,7 +75,7 @@ function framework_build
 
     # Copy default volume icon to framework
 
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/Icon.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
+    /bin/cp "${BT_SOURCE_DIRECTORY}/support/Volume.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
     bt_exit_on_error "Failed to copy default volume icon to framework"
 
     # Sign framework
