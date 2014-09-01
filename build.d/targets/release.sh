@@ -121,6 +121,15 @@ function release_build
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Resources"/* 1>&3 2>&4
     detach_exit_on_error "Failed to hide extension of resources"
 
+    # Sign resources
+
+    local application_path=""
+    for application_path in "${disk_image_mount_point}/Resources"/*.app
+    do
+        bt_target_codesign "${application_path}"
+        detach_exit_on_error "Failed to sign resource '${application_path}'"
+    done
+
     # Copy distribution package to disk image
 
     local disk_image_distribution_package_relative_path="Resources/FUSE for OS X ${osxfuse_version}.pkg"
