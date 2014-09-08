@@ -113,18 +113,26 @@ function release_build
     disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${disk_image_path_rw}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
     bt_exit_on_error "Failed to attach disk image '${disk_image_path_rw}'"
 
-    # Copy resources to disk image
+    # Copy license to disk image
 
-    /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/Resources" "${disk_image_mount_point}/Resources" 1>&3 2>&4
-    detach_exit_on_error "Failed to copy resources to disk image"
+    /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
+    detach_exit_on_error "Failed to copy license to disk image"
 
-    /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Resources"/* 1>&3 2>&4
-    detach_exit_on_error "Failed to hide extension of resources"
+    /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
+    detach_exit_on_error "Failed to hide extension of license"
 
-    # Sign resources
+    # Copy extras to disk image
+
+    /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
+    detach_exit_on_error "Failed to copy extras to disk image"
+
+    /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Extras"/* 1>&3 2>&4
+    detach_exit_on_error "Failed to hide extension of extras"
+
+    # Sign extras
 
     local application_path=""
-    for application_path in "${disk_image_mount_point}/Resources"/*.app
+    for application_path in "${disk_image_mount_point}/Extras"/*.app
     do
         bt_target_codesign "${application_path}"
         detach_exit_on_error "Failed to sign resource '${application_path}'"
@@ -132,7 +140,7 @@ function release_build
 
     # Copy distribution package to disk image
 
-    local disk_image_distribution_package_relative_path="Resources/FUSE for OS X ${osxfuse_version}.pkg"
+    local disk_image_distribution_package_relative_path="Extras/FUSE for OS X ${osxfuse_version}.pkg"
     local disk_image_distribution_package_path="${disk_image_mount_point}/${disk_image_distribution_package_relative_path}"
 
     /bin/cp -a "${distribution_package_path}" "${disk_image_distribution_package_path}" 1>&3 2>&4
@@ -170,14 +178,15 @@ tell application "Finder"
         open
         set current view of container window to icon view
         set toolbar visible of container window to false
-        set the bounds of container window to {0, 0, 600, 400}
+        set the bounds of container window to {0, 0, 550, 325}
         set theViewOptions to the icon view options of container window
         set arrangement of theViewOptions to not arranged
-        set icon size of theViewOptions to 100
+        set icon size of theViewOptions to 96
         set text size of theViewOptions to 12
         set background picture of theViewOptions to file ".background:background.tiff"
-        set position of item "FUSE for OS X" of container window to {185, 300}
-        set position of item "Resources" of container window to {415, 300}
+        set position of item "License" of container window to {125, 165}
+        set position of item "FUSE for OS X" of container window to {275, 165}
+        set position of item "Extras" of container window to {425, 165}
         close
         open
         update without registering applications
