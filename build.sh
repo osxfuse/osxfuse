@@ -2390,7 +2390,7 @@ function m_handler()
                     M_XCODE51_VERSION=$m_xcode_version
                 fi
                 ;;
-            6.0*)
+            6.0*|6.1*)
                 m_version_compare $M_XCODE60_VERSION $m_xcode_version
                 if [[ $? != 2 ]]
                 then
