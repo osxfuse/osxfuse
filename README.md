@@ -29,7 +29,7 @@ The build script locates automatically all supported installations of Xcode in t
 
 * Xcode 5.0.1, 5.1: FUSE for OS X can be built for OS X 10.8 to 10.10
 
-* Xcode 6.0: FUSE for OS X can be built for OS X 10.9 and 10.10
+* Xcode 6.0, 6.1: FUSE for OS X can be built for OS X 10.9 and 10.10
 
 ---
 
