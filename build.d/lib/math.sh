@@ -27,50 +27,50 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
-declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/kext"
-
-declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
+# Requires common.sh
+# Requires string.sh
 
 
-function kext_build
+function math_is_integer
 {
-    build_target_getopt -p build -- "${@}"
-
-    common_log "Clean target"
-    build_target_invoke "${BUILD_TARGET_NAME}" clean
-    common_die_on_error "Failed to clean target"
-
-    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
-    build_target_xcodebuild -project osxfuse.xcodeproj -target osxfuse clean build
-    common_die_on_error "Failed to build target"
+    [[ "${1}" =~ ^-?[0-9]+$ ]]
 }
 
-function kext_install
+function math_compare
 {
-    local -a arguments=()
-    build_target_getopt -p install -o arguments -- "${@}"
-
-    local target_directory="${arguments[0]}"
-    if [[ ! -d "${target_directory}" ]]
+    if (( ${1} < ${2} ))
     then
-        common_die "Target directory '${target_directory}' does not exist"
+        return 1
     fi
-
-    common_log "Install target"
-
-    local kext_source_path=""
-    kext_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.kext`"
-    common_die_on_error "Failed to locate kernel extension"
-
-    build_target_install "${kext_source_path}" "${target_directory}"
-    common_die_on_error "Failed to install target"
-
-    if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+    if (( ${1} > ${2} ))
     then
-        build_target_install "${BUILD_TARGET_BUILD_DIRECTORY}/Debug/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
-        common_die_on_error "Failed to Install debug files"
+        return 2
+    fi 
+    return 0
+}
+
+function math_max
+{
+    common_assert "math_is_integer `string_escape "${1}"`"
+    common_assert "math_is_integer `string_escape "${2}"`"
+
+    if (( ${1} > ${2} ))
+    then
+        printf "%s" "${1}"
+    else
+        printf "%s" "${2}"
+    fi
+}
+
+function math_min
+{
+    common_assert "math_is_integer `string_escape "${1}"`"
+    common_assert "math_is_integer `string_escape "${2}"`"
+
+    if (( ${1} < ${2} ))
+    then
+        printf "%s" "${1}"
+    else
+        printf "%s" "${2}"
     fi
 }

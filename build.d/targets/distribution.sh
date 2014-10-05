@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
 
 declare -a  DISTRIBUTION_KEXT_TASKS=()
 declare -i  DISTRIBUTION_MACFUSE=0
@@ -37,7 +37,7 @@ declare -i  DISTRIBUTION_MACFUSE=0
 function distribution_create_stage_core
 {
     local stage_directory="${1}"
-    bt_assert "[[ -n `bt_string_escape "${stage_directory}"` ]]"
+    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
 
     /bin/mkdir -p "${stage_directory}" \
                   "${stage_directory}/Library/Filesystems" \
@@ -50,7 +50,7 @@ function distribution_create_stage_core
 function distribution_create_stage_prefpane
 {
     local stage_directory="${1}"
-    bt_assert "[[ -n `bt_string_escape "${stage_directory}"` ]]"
+    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
 
     /bin/mkdir -p "${stage_directory}" \
                   "${stage_directory}/Library/PreferencePanes" 1>&3 2>&4
@@ -59,7 +59,7 @@ function distribution_create_stage_prefpane
 function distribution_create_stage_macfuse
 {
     local stage_directory="${1}"
-    bt_assert "[[ -n `bt_string_escape "${stage_directory}"` ]]"
+    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
 
     /bin/mkdir -p "${stage_directory}" \
                   "${stage_directory}/Library/Frameworks" \
@@ -88,201 +88,201 @@ function distribution_build
         esac
     }
 
-    bt_target_getopt -p build -s "kext:,macfuse,no-macfuse" -h distribution_build_getopt_handler -- "${@}"
+    build_target_getopt -p build -s "kext:,macfuse,no-macfuse" -h distribution_build_getopt_handler -- "${@}"
     unset distribution_build_getopt_handler
 
-    bt_log_variable DISTRIBUTION_KEXT_TASKS
-    bt_log_variable DISTRIBUTION_MACFUSE
+    common_log_variable DISTRIBUTION_KEXT_TASKS
+    common_log_variable DISTRIBUTION_MACFUSE
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
-    local -a default_build_options=("-s${BT_TARGET_OPTION_SDK}"
-                                    "-x${BT_TARGET_OPTION_XCODE}"
-                                    "${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
-                                    "-d${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
-                                    "-c${BT_TARGET_OPTION_BUILD_CONFIGURATION}"
+    local -a default_build_options=("-s${BUILD_TARGET_OPTION_SDK}"
+                                    "-x${BUILD_TARGET_OPTION_XCODE}"
+                                    "${BUILD_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
+                                    "-d${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+                                    "-c${BUILD_TARGET_OPTION_BUILD_CONFIGURATION}"
                                     "-bENABLE_MACFUSE_MODE=${DISTRIBUTION_MACFUSE}"
-                                    "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}"
-                                    "${BT_TARGET_OPTION_MACROS[@]/#/-m}"
-                                    "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}"
-                                    "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
+                                    "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}"
+                                    "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}"
+                                    "--code-sign-identity=${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
+                                    "--product-sign-identity=${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
 
-    local -a library_build_options=("-s${BT_TARGET_OPTION_SDK}"
-                                    "-x${BT_TARGET_OPTION_XCODE}"
-                                    "${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
-                                    "-d${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
-                                    "${BT_TARGET_OPTION_MACROS[@]/#/-m}"
-                                    "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}"
-                                    "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
+    local -a library_build_options=("-s${BUILD_TARGET_OPTION_SDK}"
+                                    "-x${BUILD_TARGET_OPTION_XCODE}"
+                                    "${BUILD_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
+                                    "-d${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+                                    "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}"
+                                    "--code-sign-identity=${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
+                                    "--product-sign-identity=${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
 
-    local stage_directory_core="${BT_TARGET_BUILD_DIRECTORY}/Core"
-    local stage_directory_prefpane="${BT_TARGET_BUILD_DIRECTORY}/PrefPane"
-    local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
-    local packages_directory="${BT_TARGET_BUILD_DIRECTORY}/Packages"
+    local stage_directory_core="${BUILD_TARGET_BUILD_DIRECTORY}/Core"
+    local stage_directory_prefpane="${BUILD_TARGET_BUILD_DIRECTORY}/PrefPane"
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
+    local packages_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Packages"
 
-    /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create build directory"
+    /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
+    common_die_on_error "Failed to create build directory"
 
     distribution_create_stage_core "${stage_directory_core}"
-    bt_exit_on_error "Failed to create core stage"
+    common_die_on_error "Failed to create core stage"
 
     distribution_create_stage_prefpane "${stage_directory_prefpane}"
-    bt_exit_on_error "Failed to create preference pane stage"
+    common_die_on_error "Failed to create preference pane stage"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create debug directory"
+    common_die_on_error "Failed to create debug directory"
 
     /bin/mkdir -p "${packages_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create packages directory"
+    common_die_on_error "Failed to create packages directory"
 
     local -a component_packages=()
 
     # Build file system bundle
 
-    bt_target_invoke fsbundle build "${default_build_options[@]}" "${DISTRIBUTION_KEXT_TASKS[@]/#/--kext=}"
-    bt_exit_on_error "Failed to build file system bundle"
+    build_target_invoke fsbundle build "${default_build_options[@]}" "${DISTRIBUTION_KEXT_TASKS[@]/#/--kext=}"
+    common_die_on_error "Failed to build file system bundle"
 
-    bt_target_invoke fsbundle install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Filesystems"
-    bt_exit_on_error "Failed to install file system bundle"
+    build_target_invoke fsbundle install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Filesystems"
+    common_die_on_error "Failed to install file system bundle"
 
     # Locate file system bundle
 
     local fsbundle_path=""
     fsbundle_path="`osxfuse_find "${stage_directory_core}/Library/Filesystems"/*.fs`"
-    bt_exit_on_error "Failed to locate file system bundle"
+    common_die_on_error "Failed to locate file system bundle"
 
     # Set kernel extension loader SUID bit
 
     local loader_path=""
     loader_path="`osxfuse_find "${fsbundle_path}/Contents/Resources"/load_*`"
-    bt_exit_on_error "Failed to locate kernel extension loader"
+    common_die_on_error "Failed to locate kernel extension loader"
 
     /bin/chmod u+s "${loader_path}"
-    bt_exit_on_error "Failed to set SUID bit of kernel extension loader"
+    common_die_on_error "Failed to set SUID bit of kernel extension loader"
 
     # Add uninstaller to file system bundle
 
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/uninstall_osxfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_osxfuse.sh" 1>&3 2>&4 && \
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/uninstall_macfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_macfuse.sh" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy uninstaller to file system bundle"
+    /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/uninstall_osxfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_osxfuse.sh" 1>&3 2>&4 && \
+    /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/uninstall_macfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_macfuse.sh" 1>&3 2>&4
+    common_die_on_error "Failed to copy uninstaller to file system bundle"
 
     # Sign file system bundle
 
-    bt_target_codesign "${fsbundle_path}"
-    bt_exit_on_error "Failed to sign file system bundle"
+    build_target_codesign "${fsbundle_path}"
+    common_die_on_error "Failed to sign file system bundle"
 
     # Build library
 
-    bt_target_invoke library build "${library_build_options[@]}"
-    bt_exit_on_error "Failed to build library"
+    build_target_invoke library build "${library_build_options[@]}"
+    common_die_on_error "Failed to build library"
 
-    bt_target_invoke library install --debug="${debug_directory}" -- "${stage_directory_core}"
-    bt_exit_on_error "Failed to install library"
+    build_target_invoke library install --debug="${debug_directory}" -- "${stage_directory_core}"
+    common_die_on_error "Failed to install library"
 
     /bin/ln -s "libosxfuse.2.dylib" "${stage_directory_core}/usr/local/lib/libosxfuse_i64.2.dylib" && \
     /bin/ln -s "libosxfuse.dylib" "${stage_directory_core}/usr/local/lib/libosxfuse_i64.dylib" && \
     /bin/ln -s "libosxfuse.la" "${stage_directory_core}/usr/local/lib/libosxfuse_i64.la" && \
     /bin/ln -s "osxfuse.pc" "${stage_directory_core}/usr/local/lib/pkgconfig/fuse.pc"
-    bt_exit_on_error "Failed to create legacy library links"
+    common_die_on_error "Failed to create legacy library links"
 
     # Build framework
 
-    bt_target_invoke framework build "${default_build_options[@]}" --library-prefix="${stage_directory_core}/usr/local"
-    bt_exit_on_error "Failed to build framework"
+    build_target_invoke framework build "${default_build_options[@]}" --library-prefix="${stage_directory_core}/usr/local"
+    common_die_on_error "Failed to build framework"
 
-    bt_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Frameworks"
-    bt_exit_on_error "Failed to install framework"
+    build_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Frameworks"
+    common_die_on_error "Failed to install framework"
 
     # Build core component package
 
-    bt_log -v 3 "Build core component package"
+    common_log -v 3 "Build core component package"
 
     osxfuse_build_component_package -n Core -r "${stage_directory_core}" "${packages_directory}/Core.pkg"
-    bt_exit_on_error "Failed to build core package"
+    common_die_on_error "Failed to build core package"
     component_packages+=("${packages_directory}/Core.pkg")
 
     # Build preference pane
 
-    bt_target_invoke prefpane build "${default_build_options[@]}"
-    bt_exit_on_error "Failed to build preference pane"
+    build_target_invoke prefpane build "${default_build_options[@]}"
+    common_die_on_error "Failed to build preference pane"
 
-    bt_target_invoke prefpane install -- "${stage_directory_prefpane}/Library/PreferencePanes"
-    bt_exit_on_error "Failed to install preference pane"
+    build_target_invoke prefpane install -- "${stage_directory_prefpane}/Library/PreferencePanes"
+    common_die_on_error "Failed to install preference pane"
 
     # Build preference pane component package
 
-    bt_log -v 3 "Build preference pane component package"
+    common_log -v 3 "Build preference pane component package"
 
     osxfuse_build_component_package -n PrefPane -r "${stage_directory_prefpane}" "${packages_directory}/PrefPane.pkg"
-    bt_exit_on_error "Failed to build preference pane package"
+    common_die_on_error "Failed to build preference pane package"
     component_packages+=("${packages_directory}/PrefPane.pkg")
 
     # MacFUSE
 
     if (( DISTRIBUTION_MACFUSE  != 0 ))
     then
-        local stage_directory_macfuse="${BT_TARGET_BUILD_DIRECTORY}/MacFUSE"
+        local stage_directory_macfuse="${BUILD_TARGET_BUILD_DIRECTORY}/MacFUSE"
 
         distribution_create_stage_macfuse "${stage_directory_macfuse}"
-        bt_exit_on_error "Failed to create MacFUSE stage"
+        common_die_on_error "Failed to create MacFUSE stage"
 
         # Build library
 
-        bt_target_invoke macfuse_library build "${library_build_options[@]}"
-        bt_exit_on_error "Failed to build MacFUSE library"
+        build_target_invoke macfuse_library build "${library_build_options[@]}"
+        common_die_on_error "Failed to build MacFUSE library"
 
-        bt_target_invoke macfuse_library install --debug="${debug_directory}" -- "${stage_directory_macfuse}"
-        bt_exit_on_error "Failed to install MacFUSE library"
+        build_target_invoke macfuse_library install --debug="${debug_directory}" -- "${stage_directory_macfuse}"
+        common_die_on_error "Failed to install MacFUSE library"
 
         /bin/ln -s "libfuse.dylib" "${stage_directory_macfuse}/usr/local/lib/libfuse.0.dylib" && \
-        bt_exit_on_error "Failed to create MacFUSE legacy library links"
+        common_die_on_error "Failed to create MacFUSE legacy library links"
 
         # Build framework
 
-        bt_target_invoke macfuse_framework build "${default_build_options[@]}" --library-prefix="${stage_directory_macfuse}/usr/local"
-        bt_exit_on_error "Failed to build MacFUSE framework"
+        build_target_invoke macfuse_framework build "${default_build_options[@]}" --library-prefix="${stage_directory_macfuse}/usr/local"
+        common_die_on_error "Failed to build MacFUSE framework"
 
-        bt_target_invoke macfuse_framework install --debug="${debug_directory}" -- "${stage_directory_macfuse}/Library/Frameworks"
-        bt_exit_on_error "Failed to install MacFUSE framework"
+        build_target_invoke macfuse_framework install --debug="${debug_directory}" -- "${stage_directory_macfuse}/Library/Frameworks"
+        common_die_on_error "Failed to install MacFUSE framework"
 
         # Build MacFUSE component package
 
-        bt_log -v 3 "Build MacFUSE component package"
+        common_log -v 3 "Build MacFUSE component package"
 
         osxfuse_build_component_package -n MacFUSE -r "${stage_directory_macfuse}" "${packages_directory}/MacFUSE.pkg"
-        bt_exit_on_error "Failed to build MacFUSE package"
+        common_die_on_error "Failed to build MacFUSE package"
         component_packages+=("${packages_directory}/MacFUSE.pkg")
     fi
 
     # Build distribution package
 
-    bt_log -v 3 "Build distribution package"
+    common_log -v 3 "Build distribution package"
 
-    local distribution_package_path="${BT_TARGET_BUILD_DIRECTORY}/Distribution.pkg"
+    local distribution_package_path="${BUILD_TARGET_BUILD_DIRECTORY}/Distribution.pkg"
 
     local -a osx_versions_supported=()
     for task in "${DISTRIBUTION_KEXT_TASKS[@]}"
     do
         local osx_version="`expr "${task}" : '^\([[:digit:]]\{1,\}\(\.[[:digit:]]\{1,\}\)*\)'`"
-        bt_version_compare "${osx_version}" "${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
-        if [[ ${?} -ne 1 ]]
+        version_compare "${osx_version}" "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+        if (( ${?} != 1 ))
         then
             osx_versions_supported+=("${osx_version}")
         fi
     done
 
-    pushd "${BT_TARGET_BUILD_DIRECTORY}" > /dev/null 2>&1
-    bt_exit_on_error "Build directory '${BT_TARGET_BUILD_DIRECTORY}' does not exist"
+    pushd "${BUILD_TARGET_BUILD_DIRECTORY}" > /dev/null 2>&1
+    common_die_on_error "Build directory '${BUILD_TARGET_BUILD_DIRECTORY}' does not exist"
 
     osxfuse_build_distribution_package -p "${packages_directory}" \
                                        "${component_packages[@]/#/-c}" \
                                        "${osx_versions_supported[@]/#/-d}" \
                                        "${distribution_package_path}"
-    bt_exit_on_error "Failed to build distribution package"
+    common_die_on_error "Failed to build distribution package"
 
     popd > /dev/null 2>&1
 }
@@ -290,26 +290,26 @@ function distribution_build
 function distribution_install
 {
     local -a arguments=()
-    bt_target_getopt -p install -o arguments -- "${@}"
+    build_target_getopt -p install -o arguments -- "${@}"
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
-        bt_error "Target directory '${target_directory}' does not exist"
+        common_die "Target directory '${target_directory}' does not exist"
     fi
 
-    bt_log "Install target"
+    common_log "Install target"
 
     local distribution_source_path=""
-    distribution_source_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}/Distribution.pkg"`"
-    bt_exit_on_error "Failed to locate distribution package"
+    distribution_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}/Distribution.pkg"`"
+    common_die_on_error "Failed to locate distribution package"
 
-    bt_target_install "${distribution_source_path}" "${target_directory}"
-    bt_exit_on_error "Failed to install target"
+    build_target_install "${distribution_source_path}" "${target_directory}"
+    common_die_on_error "Failed to install target"
 
-    if [[ -n "${BT_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+    if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
-        bt_target_install "${BT_TARGET_BUILD_DIRECTORY}/Debug/" "${BT_TARGET_OPTION_DEBUG_DIRECTORY}"
-        bt_exit_on_error "Failed to Install debug files"
+        build_target_install "${BUILD_TARGET_BUILD_DIRECTORY}/Debug/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
+        common_die_on_error "Failed to Install debug files"
     fi
 }

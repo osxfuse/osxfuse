@@ -28,53 +28,53 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/macfuse_fuse"
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
+declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/macfuse_fuse"
 
-declare     BT_TARGET_OPTION_PREFIX="/usr/local"
+declare     BUILD_TARGET_OPTION_PREFIX="/usr/local"
 
 function macfuse_library_build
 {
-    bt_target_getopt -p make-build -- "${@}"
+    build_target_getopt -p make-build -- "${@}"
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
-    local source_directory="${BT_TARGET_BUILD_DIRECTORY}/Source"
-    local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
+    local source_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Source"
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
 
-    /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create build directory"
+    /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
+    common_die_on_error "Failed to create build directory"
 
     /bin/mkdir -p "${source_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create source code directory"
+    common_die_on_error "Failed to create source code directory"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create debug directory"
+    common_die_on_error "Failed to create debug directory"
 
     # Copy source code to build directory
 
-    /usr/bin/rsync -a --exclude=".git*" "${BT_TARGET_SOURCE_DIRECTORY}/" "${source_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy source code to build directory"
+    /usr/bin/rsync -a --exclude=".git*" "${BUILD_TARGET_SOURCE_DIRECTORY}/" "${source_directory}" 1>&3 2>&4
+    common_die_on_error "Failed to copy source code to build directory"
 
     # Build library
 
     pushd "${source_directory}" > /dev/null 2>&1
-    bt_exit_on_error "Source directory '${source_directory}' does not exist"
+    common_die_on_error "Source directory '${source_directory}' does not exist"
 
     ./makeconf.sh 1>&3 2>&4
-    bt_exit_on_error "Failed to make configuration"
+    common_die_on_error "Failed to make configuration"
 
-    CFLAGS="${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-D} -I${BT_SOURCE_DIRECTORY}/common" \
+    CFLAGS="${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-D} -I${BUILD_SOURCE_DIRECTORY}/common" \
     LDFLAGS="-Wl,-framework,CoreFoundation" \
-    bt_target_configure --disable-dependency-tracking --disable-static --disable-example
-    bt_exit_on_error "Failed to configure target"
+    build_target_configure --disable-dependency-tracking --disable-static --disable-example
+    common_die_on_error "Failed to configure target"
 
-    bt_target_make -- -j 4
-    bt_exit_on_error "Failed to build target"
+    build_target_make -- -j 4
+    common_die_on_error "Failed to build target"
 
     local executable_path=""
     while IFS=$'\0' read -r -d $'\0' executable_path
@@ -84,17 +84,17 @@ function macfuse_library_build
         # Link library debug information
 
         /usr/bin/xcrun dsymutil -o "${debug_directory}/${executable_name}.dSYM" "${executable_path}" 1>&3 2>&4
-        bt_exit_on_error "Failed to link debug information: '${executable_path}'"
+        common_die_on_error "Failed to link debug information: '${executable_path}'"
 
         # Strip library
 
         /usr/bin/xcrun strip -S -x "${executable_path}" 1>&3 2>&4
-        bt_exit_on_error "Failed to strip executable: '${executable_path}'"
+        common_die_on_error "Failed to strip executable: '${executable_path}'"
 
         # Sign library
 
-        bt_target_codesign "${executable_path}"
-        bt_exit_on_error "Failed to sign executable: '${executable_path}'"
+        build_target_codesign "${executable_path}"
+        common_die_on_error "Failed to sign executable: '${executable_path}'"
     done < <(/usr/bin/find lib -name lib*.dylib -type f -print0)
 
     popd > /dev/null 2>&1
@@ -103,30 +103,30 @@ function macfuse_library_build
 function macfuse_library_install
 {
     local -a arguments=()
-    bt_target_getopt -p make-install -o arguments -- "${@}"
+    build_target_getopt -p make-install -o arguments -- "${@}"
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
-        bt_error "Target directory '${target_directory}' does not exist"
+        common_die "Target directory '${target_directory}' does not exist"
     fi
 
-    bt_log "Install target"
+    common_log "Install target"
 
-    local source_directory="${BT_TARGET_BUILD_DIRECTORY}/Source"
-    local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
+    local source_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Source"
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
 
     pushd "${source_directory}" > /dev/null 2>&1
-    bt_exit_on_error "Source directory '${source_directory}' does not exist"
+    common_die_on_error "Source directory '${source_directory}' does not exist"
 
-    bt_target_make -- install prefix="${BT_TARGET_OPTION_PREFIX}" DESTDIR="${target_directory}"
-    bt_exit_on_error "Failed to install target"
+    build_target_make -- install prefix="${BUILD_TARGET_OPTION_PREFIX}" DESTDIR="${target_directory}"
+    common_die_on_error "Failed to install target"
 
     popd > /dev/null 2>&1
 
-    if [[ -n "${BT_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+    if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
-        bt_target_install "${debug_directory}/" "${BT_TARGET_OPTION_DEBUG_DIRECTORY}"
-        bt_exit_on_error "Failed to Install debug files"
+        build_target_install "${debug_directory}/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
+        common_die_on_error "Failed to Install debug files"
     fi
 }

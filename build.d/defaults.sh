@@ -30,38 +30,38 @@
 
 # Build tool defaults
 
-declare -r  BT_DEFAULT_SOURCE_DIRECTORY="$(bt_path_absolute "${0%/*}")"
-declare -r  BT_DEFAULT_BUILD_DIRECTORY="/tmp/osxfuse"
+declare -r  DEFAULT_SOURCE_DIRECTORY="`common_path_absolute "${0%/*}"`"
+declare -r  DEFAULT_BUILD_DIRECTORY="/tmp/osxfuse"
 
-declare -ri BT_DEFAULT_LOG_VERBOSE=2
+declare -ri DEFAULT_LOG_VERBOSE=2
 
 
 # Xcode defaults
 
-declare -ra BT_SDK_10_5_ARCHITECURES=("ppc" "ppc64" "i386" "x86_64")
-declare -r  BT_SDK_10_5_COMPILER="4.2"
+declare -ra DEFAULT_SDK_10_5_ARCHITECURES=("ppc" "ppc64" "i386" "x86_64")
+declare -r  DEFAULT_SDK_10_5_COMPILER="4.2"
 
-declare -ra BT_SDK_10_6_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_6_COMPILER="4.2"
+declare -ra DEFAULT_SDK_10_6_ARCHITECURES=("i386" "x86_64")
+declare -r  DEFAULT_SDK_10_6_COMPILER="4.2"
 
-declare -ra BT_SDK_10_7_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_7_COMPILER="com.apple.compilers.llvmgcc42"
+declare -ra DEFAULT_SDK_10_7_ARCHITECURES=("i386" "x86_64")
+declare -r  DEFAULT_SDK_10_7_COMPILER="com.apple.compilers.llvmgcc42"
 
-declare -ra BT_SDK_10_8_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_8_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare -ra DEFAULT_SDK_10_8_ARCHITECURES=("i386" "x86_64")
+declare -r  DEFAULT_SDK_10_8_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
-declare -ra BT_SDK_10_9_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_9_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare -ra DEFAULT_SDK_10_9_ARCHITECURES=("i386" "x86_64")
+declare -r  DEFAULT_SDK_10_9_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
-declare -ra BT_SDK_10_10_ARCHITECURES=("i386" "x86_64")
-declare -r  BT_SDK_10_10_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare -ra DEFAULT_SDK_10_10_ARCHITECURES=("i386" "x86_64")
+declare -r  DEFAULT_SDK_10_10_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
-declare -ra BT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10")
+declare -ra DEFAULT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10")
 
-declare     BT_DEFAULT_SDK="`bt_osx_get_version`"
-declare -r  BT_DEFAULT_BUILD_CONFIGURATION="Release"
+declare     DEFAULT_SDK="`osx_get_version`"
+declare -r  DEFAULT_BUILD_CONFIGURATION="Release"
 
 
 # Autotools defaults
 
-declare -r  BT_DEFAULT_PREFIX=""
+declare -r  DEFAULT_PREFIX=""

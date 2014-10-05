@@ -42,7 +42,7 @@
 # ./build.sh -v 5 -t packagemanager -a install -- "${destroot}"
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
 
 declare     PACKAGEMANAGER_FRAMEWORK_PREFIX=""
 declare     PACKAGEMANAGER_FSBUNDLE_PREFIX=""
@@ -52,7 +52,7 @@ declare     PACKAGEMANAGER_LIBRARY_PREFIX="/usr/local"
 function packagemanager_create_stage
 {
     local stage_directory="${1}"
-    bt_assert "[[ -n `bt_string_escape "${stage_directory}"` ]]"
+    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
 
     /bin/mkdir -p "${stage_directory}" \
                   "${stage_directory}/Library/Filesystems" \
@@ -82,99 +82,99 @@ function packagemanager_build
         esac
     }
 
-    bt_target_getopt -p meta \
+    build_target_getopt -p meta \
                      -s "a:,architecure:,framework-prefix:,fsbundle-prefix:,library-prefix:" \
                      -h packagemanager_build_getopt_handler \
                      -- \
                      "${@}"
     unset packagemanager_build_getopt_handler
 
-    bt_log_variable PACKAGEMANAGER_FSBUNDLE_PREFIX
-    bt_log_variable PACKAGEMANAGER_LIBRARY_PREFIX
-    bt_log_variable PACKAGEMANAGER_FRAMEWORK_PREFIX
+    common_log_variable PACKAGEMANAGER_FSBUNDLE_PREFIX
+    common_log_variable PACKAGEMANAGER_LIBRARY_PREFIX
+    common_log_variable PACKAGEMANAGER_FRAMEWORK_PREFIX
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target"
+    common_log "Build target"
 
-    local -a default_build_options=("${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
+    local -a default_build_options=("${BUILD_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
                                     "-bENABLE_MACFUSE_MODE=0"
                                     "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}")
 
-    local -a library_build_options=("${BT_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
+    local -a library_build_options=("${BUILD_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
                                     "-mOSXFUSE_BUNDLE_PREFIX_LITERAL=${PACKAGEMANAGER_FSBUNDLE_PREFIX}")
 
-    local stage_directory="${BT_TARGET_BUILD_DIRECTORY}"
-    local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
+    local stage_directory="${BUILD_TARGET_BUILD_DIRECTORY}"
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
 
-    /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create build directory"
+    /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
+    common_die_on_error "Failed to create build directory"
 
     packagemanager_create_stage "${stage_directory}"
-    bt_exit_on_error "Failed to create stage"
+    common_die_on_error "Failed to create stage"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create debug directory"
+    common_die_on_error "Failed to create debug directory"
 
     # Build file system bundle
 
-    bt_target_invoke fsbundle build "${default_build_options[@]}"
-    bt_exit_on_error "Failed to build file system bundle"
+    build_target_invoke fsbundle build "${default_build_options[@]}"
+    common_die_on_error "Failed to build file system bundle"
 
-    bt_target_invoke fsbundle install --debug="${debug_directory}" -- "${stage_directory}/Library/Filesystems"
-    bt_exit_on_error "Failed to install file system bundle"
+    build_target_invoke fsbundle install --debug="${debug_directory}" -- "${stage_directory}/Library/Filesystems"
+    common_die_on_error "Failed to install file system bundle"
 
     # Build library
 
-    bt_target_invoke library build "${library_build_options[@]}" --prefix="${PACKAGEMANAGER_LIBRARY_PREFIX}"
-    bt_exit_on_error "Failed to build library"
+    build_target_invoke library build "${library_build_options[@]}" --prefix="${PACKAGEMANAGER_LIBRARY_PREFIX}"
+    common_die_on_error "Failed to build library"
 
-    bt_target_invoke library install --debug="${debug_directory}" --prefix="" -- "${stage_directory}"
-    bt_exit_on_error "Failed to install library"
+    build_target_invoke library install --debug="${debug_directory}" --prefix="" -- "${stage_directory}"
+    common_die_on_error "Failed to install library"
 
     /bin/ln -s "libosxfuse.2.dylib" "${stage_directory}/lib/libosxfuse_i64.2.dylib" && \
     /bin/ln -s "libosxfuse.dylib" "${stage_directory}/lib/libosxfuse_i64.dylib" && \
     /bin/ln -s "libosxfuse.la" "${stage_directory}/lib/libosxfuse_i64.la" && \
     /bin/ln -s "osxfuse.pc" "${stage_directory}/lib/pkgconfig/fuse.pc"
-    bt_exit_on_error "Failed to create legacy library links"
+    common_die_on_error "Failed to create legacy library links"
 
     # Build framework
 
-    bt_target_invoke framework build "${default_build_options[@]}" \
-                                     --library-prefix="${stage_directory}"
-                                     -bINSTALL_PATH="${PACKAGEMANAGER_FRAMEWORK_PREFIX}/Library/Frameworks" \
-    bt_exit_on_error "Failed to build framework"
+    build_target_invoke framework build "${default_build_options[@]}" \
+                                        --library-prefix="${stage_directory}"
+                                        -bINSTALL_PATH="${PACKAGEMANAGER_FRAMEWORK_PREFIX}/Library/Frameworks" \
+    common_die_on_error "Failed to build framework"
 
-    bt_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory}/Library/Frameworks"
-    bt_exit_on_error "Failed to install framework"
+    build_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory}/Library/Frameworks"
+    common_die_on_error "Failed to install framework"
 
     # Locate file system bundle
 
     local fsbundle_path=""
     fsbundle_path="`osxfuse_find "${stage_directory}/Library/Filesystems"/*.fs`"
-    bt_exit_on_error "Failed to locate file system bundle"
+    common_die_on_error "Failed to locate file system bundle"
 
     # Move debug files into file system bundle
 
     /bin/mv "${debug_directory}" "${fsbundle_path}/Contents/"
-    bt_exit_on_error "Failed to move debug files into file system bundle"
+    common_die_on_error "Failed to move debug files into file system bundle"
 }
 
 function packagemanager_install
 {
     local -a arguments=()
-    bt_target_getopt -p install -o arguments -- "${@}"
+    build_target_getopt -p install -o arguments -- "${@}"
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
-        bt_error "Target directory '${target_directory}' does not exist"
+        common_die "Target directory '${target_directory}' does not exist"
     fi
 
-    bt_log "Install target"
+    common_log "Install target"
 
-    bt_target_install "${BT_TARGET_BUILD_DIRECTORY}/" "${target_directory}"
-    bt_exit_on_error "Failed to install target"
+    build_target_install "${BUILD_TARGET_BUILD_DIRECTORY}/" "${target_directory}"
+    common_die_on_error "Failed to install target"
 }

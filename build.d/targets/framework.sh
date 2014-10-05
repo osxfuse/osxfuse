@@ -28,8 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/framework"
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
+declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/framework"
 
 declare     FRAMEWORK_LIBRARY_PREFIX="/usr/local"
 
@@ -46,71 +46,71 @@ function framework_build
         esac
     }
 
-    bt_target_getopt -p build -s "library-prefix:" -h framework_build_getopt_handler -- "${@}"
+    build_target_getopt -p build -s "library-prefix:" -h framework_build_getopt_handler -- "${@}"
     unset framework_build_getopt_handler
 
-    bt_log_variable FRAMEWORK_LIBRARY_PREFIX
+    common_log_variable FRAMEWORK_LIBRARY_PREFIX
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
     local osxfuse_version=""
     osxfuse_version="`osxfuse_get_version`"
-    bt_exit_on_error "Failed to determine osxfuse version number"
+    common_die_on_error "Failed to determine osxfuse version number"
 
-    bt_target_xcodebuild -project OSXFUSE.xcodeproj -target OSXFUSE \
-                         OSXFUSE_LIBRARY_PREFIX="${FRAMEWORK_LIBRARY_PREFIX}" \
-                         OSXFUSE_VERSION="${osxfuse_version}" \
-                         clean build
-    bt_exit_on_error "Failed to build target"
+    build_target_xcodebuild -project OSXFUSE.xcodeproj -target OSXFUSE \
+                            OSXFUSE_LIBRARY_PREFIX="${FRAMEWORK_LIBRARY_PREFIX}" \
+                            OSXFUSE_VERSION="${osxfuse_version}" \
+                            clean build
+    common_die_on_error "Failed to build target"
 
     # Locate framework
 
     local framework_path=""
-    framework_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.framework`"
-    bt_exit_on_error "Failed to locate framework"
+    framework_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.framework`"
+    common_die_on_error "Failed to locate framework"
 
     # Copy default volume icon to framework
 
-    /bin/cp "${BT_SOURCE_DIRECTORY}/support/Volume.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy default volume icon to framework"
+    /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/Volume.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
+    common_die_on_error "Failed to copy default volume icon to framework"
 
     # Sign framework
 
-    bt_target_codesign "${framework_path}"
-    bt_exit_on_error "Failed to sign framework"
+    build_target_codesign "${framework_path}"
+    common_die_on_error "Failed to sign framework"
 }
 
 function framework_install
 {
     local -a arguments=()
-    bt_target_getopt -p install -o arguments -- "${@}"
+    build_target_getopt -p install -o arguments -- "${@}"
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
-        bt_error "Target directory '${target_directory}' does not exist"
+        common_die "Target directory '${target_directory}' does not exist"
     fi
 
-    bt_log "Install target"
+    common_log "Install target"
 
     local framework_source_path=""
-    framework_source_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.framework`"
-    bt_exit_on_error "Failed to locate framework"
+    framework_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.framework`"
+    common_die_on_error "Failed to locate framework"
 
-    bt_target_install "${framework_source_path}" "${target_directory}"
-    bt_exit_on_error "Failed to install target"
+    build_target_install "${framework_source_path}" "${target_directory}"
+    common_die_on_error "Failed to install target"
 
-    if [[ -n "${BT_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+    if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
         local framework_dsym_source_path=""
-        framework_dsym_source_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.framework.dSYM`"
-        bt_exit_on_error "Failed to locate framework debug information"
+        framework_dsym_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.framework.dSYM`"
+        common_die_on_error "Failed to locate framework debug information"
 
-        bt_target_install "${framework_dsym_source_path}" "${BT_TARGET_OPTION_DEBUG_DIRECTORY}"
-        bt_exit_on_error "Failed to Install debug files"
+        build_target_install "${framework_dsym_source_path}" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
+        common_die_on_error "Failed to Install debug files"
     fi
 }

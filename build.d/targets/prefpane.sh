@@ -28,73 +28,73 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/prefpane"
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
+declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/prefpane"
 
 
 function prefpane_build
 {
-    bt_target_getopt -p build -- "${@}"
+    build_target_getopt -p build -- "${@}"
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
     # Build autoinstaller
 
-    bt_target_xcodebuild -project autoinstaller/autoinstaller.xcodeproj -target autoinstall-osxfuse-core \
-                         VALID_ARCHS="ppc i386 x86_64" \
-                         clean build
-    bt_exit_on_error "Failed to build autoinstaller"
+    build_target_xcodebuild -project autoinstaller/autoinstaller.xcodeproj -target autoinstall-osxfuse-core \
+                            VALID_ARCHS="ppc i386 x86_64" \
+                            clean build
+    common_die_on_error "Failed to build autoinstaller"
 
     # Build preference pane
 
     local osxfuse_version=""
     osxfuse_version="`osxfuse_get_version`"
-    bt_exit_on_error "Failed to determine osxfuse version number"
+    common_die_on_error "Failed to determine osxfuse version number"
 
-    bt_target_xcodebuild -project OSXFUSEPref.xcodeproj -target OSXFUSE \
-                         CODE_SIGN_IDENTITY="" \
-                         OSXFUSE_VERSION="${osxfuse_version}" \
-                         clean build
-    bt_exit_on_error "Failed to build preference pane"
+    build_target_xcodebuild -project OSXFUSEPref.xcodeproj -target OSXFUSE \
+                            CODE_SIGN_IDENTITY="" \
+                            OSXFUSE_VERSION="${osxfuse_version}" \
+                            clean build
+    common_die_on_error "Failed to build preference pane"
 
     local autoinstaller_path=""
-    autoinstaller_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}/autoinstall-osxfuse-core"`"
-    bt_exit_on_error "Failed to locate autoinstaller"
+    autoinstaller_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}/autoinstall-osxfuse-core"`"
+    common_die_on_error "Failed to locate autoinstaller"
 
     local prefpane_path=""
-    prefpane_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.prefPane`"
-    bt_exit_on_error "Failed to locate preference pane"
+    prefpane_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.prefPane`"
+    common_die_on_error "Failed to locate preference pane"
 
     /bin/cp "${autoinstaller_path}" "${prefpane_path}/Contents/MacOS/autoinstall-osxfuse-core" 1>&3 2>&4
-    bt_exit_on_error "Failed to copy autoinstaller in preference pane bundle"
+    common_die_on_error "Failed to copy autoinstaller in preference pane bundle"
 
     # Sign preference pane
 
-    bt_target_codesign "${prefpane_path}"
-    bt_exit_on_error "Failed to sign preference pane"
+    build_target_codesign "${prefpane_path}"
+    common_die_on_error "Failed to sign preference pane"
 }
 
 function prefpane_install
 {
     local -a arguments=()
-    bt_target_getopt -p install -o arguments -- "${@}"
+    build_target_getopt -p install -o arguments -- "${@}"
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
-        bt_error "Target directory '${target_directory}' does not exist"
+        common_die "Target directory '${target_directory}' does not exist"
     fi
 
-    bt_log "Install target"
+    common_log "Install target"
 
     local prefpane_source_path=""
-    prefpane_source_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.prefPane`"
-    bt_exit_on_error "Failed to locate preference pane"
+    prefpane_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.prefPane`"
+    common_die_on_error "Failed to locate preference pane"
 
-    bt_target_install "${prefpane_source_path}" "${target_directory}"
-    bt_exit_on_error "Failed to install target"
+    build_target_install "${prefpane_source_path}" "${target_directory}"
+    common_die_on_error "Failed to install target"
 }

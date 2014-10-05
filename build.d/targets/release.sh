@@ -28,71 +28,71 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean")
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean")
 
-declare     BT_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
+declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
+declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
 
 declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"
 
 
 function release_build
 {
-    bt_target_getopt -p meta -- "${@}"
+    build_target_getopt -p meta -- "${@}"
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target"
+    common_log "Build target"
 
     local osxfuse_version=""
     osxfuse_version="`osxfuse_get_version`"
-    bt_exit_on_error "Failed to determine osxfuse version number"
+    common_die_on_error "Failed to determine osxfuse version number"
 
-    local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug"
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug"
 
-    /bin/mkdir -p "${BT_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create build directory"
+    /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
+    common_die_on_error "Failed to create build directory"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create debug directory"
+    common_die_on_error "Failed to create debug directory"
 
     # Build distribution package
 
-    bt_target_invoke distribution build -s 10.5 -d 10.5 -c Release \
-                                        --kext=10.5 --kext=10.6 --kext="10.7->10.6" --kext="10.8->10.6" --kext=10.9 --kext="10.10->10.9" \
-                                        --macfuse \
-                                        --code-sign-identity="${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
-                                        --product-sign-identity="${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
-    bt_exit_on_error "Failed to build distribution package"
+    build_target_invoke distribution build -s 10.5 -d 10.5 -c Release \
+                                           --kext=10.5 --kext=10.6 --kext="10.7->10.6" --kext="10.8->10.6" --kext=10.9 --kext="10.10->10.9" \
+                                           --macfuse \
+                                           --code-sign-identity="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
+                                           --product-sign-identity="${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
+    common_die_on_error "Failed to build distribution package"
 
-    bt_target_invoke distribution install --debug="${debug_directory}" "${BT_TARGET_BUILD_DIRECTORY}"
-    bt_exit_on_error "Failed to install distribution package"
+    build_target_invoke distribution install --debug="${debug_directory}" "${BUILD_TARGET_BUILD_DIRECTORY}"
+    common_die_on_error "Failed to install distribution package"
 
     local distribution_package_path=""
-    distribution_package_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/Distribution.pkg`"
-    bt_exit_on_error "Failed to locate distribution package"
+    distribution_package_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/Distribution.pkg`"
+    common_die_on_error "Failed to locate distribution package"
 
     # Build property list signer
 
-    bt_target_xcodebuild -project prefpane/autoinstaller/autoinstaller.xcodeproj -target plist_signer \
-                         VALID_ARCHS="x86_64" \
-                         clean build
-    bt_exit_on_error "Failed to build property list signer"
+    build_target_xcodebuild -project prefpane/autoinstaller/autoinstaller.xcodeproj -target plist_signer \
+                            VALID_ARCHS="x86_64" \
+                            clean build
+    common_die_on_error "Failed to build property list signer"
 
     # Create disk image
 
-    bt_log -v 3 "Build release disk image"
+    common_log -v 3 "Build release disk image"
 
-    local disk_image_path_rw="${BT_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-rw.dmg"
-    local disk_image_path="${BT_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
+    local disk_image_path_rw="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-rw.dmg"
+    local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
 
     /usr/bin/hdiutil create \
                      -layout NONE -size 16m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
                      -volname "FUSE for OS X" \
                      "${disk_image_path_rw}" 1>&3 2>&4
-    bt_exit_on_error "Failed to create disk image"
+    common_die_on_error "Failed to create disk image"
 
     # Attach disk image
 
@@ -100,22 +100,22 @@ function release_build
 
     function detach_exit_on_error
     {
-        if [[ ${?} -ne 0 ]]
+        if (( ${?} != 0 ))
         then
             if [[ -n "${disk_image_mount_point}" ]]
             then
                 /usr/bin/hdiutil detach "${disk_image_mount_point}" 1>&3 2>&4
             fi
-            bt_error "${@}"
+            common_die "${@}"
         fi
     }
 
     disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${disk_image_path_rw}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
-    bt_exit_on_error "Failed to attach disk image '${disk_image_path_rw}'"
+    common_die_on_error "Failed to attach disk image '${disk_image_path_rw}'"
 
     # Copy license to disk image
 
-    /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
+    /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
     detach_exit_on_error "Failed to copy license to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
@@ -123,7 +123,7 @@ function release_build
 
     # Copy extras to disk image
 
-    /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
+    /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
     detach_exit_on_error "Failed to copy extras to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Extras"/* 1>&3 2>&4
@@ -134,7 +134,7 @@ function release_build
     local application_path=""
     for application_path in "${disk_image_mount_point}/Extras"/*.app
     do
-        bt_target_codesign "${application_path}"
+        build_target_codesign "${application_path}"
         detach_exit_on_error "Failed to sign resource '${application_path}'"
     done
 
@@ -167,7 +167,7 @@ EOF
     # Copy custom background to disk image
 
     /bin/mkdir -p "${disk_image_mount_point}/.background" 1>&3 2>&4 && \
-    /bin/cp -a "${BT_SOURCE_DIRECTORY}/support/DiskImage/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
+    /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
     detach_exit_on_error "Failed to copy background image to disk image"
 
     # Alter view options of disk image
@@ -202,7 +202,7 @@ EOF
     # Detach disk image
 
     /usr/bin/hdiutil detach "${disk_image_mount_point}" 1>&3 2>&4
-    bt_exit_on_error "Failed to detach disk image"
+    common_die_on_error "Failed to detach disk image"
 
     disk_image_mount_point=""
 
@@ -211,21 +211,21 @@ EOF
     /usr/bin/hdiutil convert -imagekey zlib-level=9 -format UDZO "${disk_image_path_rw}" \
                              -o "${disk_image_path}" 1>&3 2>&4 && \
     /bin/rm -f "${disk_image_path_rw}" && \
-    bt_exit_on_error "Failed to finalize disk image"
+    common_die_on_error "Failed to finalize disk image"
 
     # Create autoinstaller rules file
 
-    bt_log -v 3 "Create autoinstaller rules file"
+    common_log -v 3 "Create autoinstaller rules file"
 
     local -i disk_image_size=0
     disk_image_size="`stat -f%z "${disk_image_path}"`"
-    bt_exit_on_error "Failed to determine size of disk image"
+    common_die_on_error "Failed to determine size of disk image"
 
     local disk_image_hash=""
     disk_image_hash="`openssl sha1 -binary "${disk_image_path}" | openssl base64`"
-    bt_exit_on_error "Failed to compute hash of disk image"
+    common_die_on_error "Failed to compute hash of disk image"
 
-    local rules_plist_path="${BT_TARGET_BUILD_DIRECTORY}/Release.plist"
+    local rules_plist_path="${BUILD_TARGET_BUILD_DIRECTORY}/Release.plist"
     local download_url="http://sourceforge.net/projects/osxfuse/files/osxfuse-${osxfuse_version}/${disk_image_path##*/}/download"
 
 /bin/cat > "${rules_plist_path}" <<EOF
@@ -266,24 +266,24 @@ EOF
     # Sign autoinstaller rules file
 
     local plist_signer_path=""
-    plist_signer_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}/plist_signer"`"
-    bt_exit_on_error "Failed to locate property list signer"
+    plist_signer_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}/plist_signer"`"
+    common_die_on_error "Failed to locate property list signer"
 
     "${plist_signer_path}" --sign --key "${RELEASE_RULES_PLIST_PRIVATE_KEY_PATH}" "${rules_plist_path}" 1>&3 2>&4
-    bt_exit_on_error "Failed to sign autoinstaller rules file"
+    common_die_on_error "Failed to sign autoinstaller rules file"
 
     # Archive debug information
 
-    bt_log -v 3 "Archive debug information"
+    common_log -v 3 "Archive debug information"
 
     /usr/bin/tar -cjv \
-                 -f "${BT_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug.tbz" \
+                 -f "${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug.tbz" \
                  -C "${debug_directory}/.." \
                  "${debug_directory##*/}" 1>&3 2>&4
-    bt_exit_on_error "Failed to archive debug information"
+    common_die_on_error "Failed to archive debug information"
 
     # Cean up
 
     /bin/rm -rf "${distribution_package_path}" "${debug_directory}"
-    bt_warn_on_error "Failed to clean up"
+    common_warn_on_error "Failed to clean up"
 }

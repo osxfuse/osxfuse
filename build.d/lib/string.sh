@@ -28,49 +28,60 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
-declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/kext"
-
-declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
-
-
-function kext_build
+function string_trim
 {
-    build_target_getopt -p build -- "${@}"
+    local string="${1}"
 
-    common_log "Clean target"
-    build_target_invoke "${BUILD_TARGET_NAME}" clean
-    common_die_on_error "Failed to clean target"
+    ! shopt -q extglob
+    local -i extglob=${?}
 
-    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
-    build_target_xcodebuild -project osxfuse.xcodeproj -target osxfuse clean build
-    common_die_on_error "Failed to build target"
+    if (( extglob == 0 ))
+    then
+        shopt -s extglob
+    fi
+
+    string="${string##+([[:space:]])}"
+    string="${string%%+([[:space:]])}"
+
+    if (( extglob == 0 ))
+    then
+        shopt -u extglob
+    fi
+
+    printf "%s" "${string}"
 }
 
-function kext_install
+function string_lowercase
 {
-    local -a arguments=()
-    build_target_getopt -p install -o arguments -- "${@}"
+    /usr/bin/tr '[A-Z]' '[a-z]'
+}
 
-    local target_directory="${arguments[0]}"
-    if [[ ! -d "${target_directory}" ]]
+function string_uppercase
+{
+    /usr/bin/tr '[a-z]' '[A-Z]'
+}
+
+function string_escape
+{
+    local count="${2:-1}"
+
+    if [[ "${count}" =~ [0-9]+ ]] && (( count > 0 ))
     then
-        common_die "Target directory '${target_directory}' does not exist"
+        printf "%q" "`string_escape "${1}" $(( ${count} - 1 ))`"
+    else
+        printf "%s" "${1}"
     fi
+}
 
-    common_log "Install target"
-
-    local kext_source_path=""
-    kext_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.kext`"
-    common_die_on_error "Failed to locate kernel extension"
-
-    build_target_install "${kext_source_path}" "${target_directory}"
-    common_die_on_error "Failed to install target"
-
-    if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+function string_compare
+{
+    if [[ "${1}" < "${2}" ]]
     then
-        build_target_install "${BUILD_TARGET_BUILD_DIRECTORY}/Debug/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
-        common_die_on_error "Failed to Install debug files"
+        return 1
     fi
+    if [[ "${1}" > "${2}" ]]
+    then
+        return 2
+    fi 
+    return 0
 }

@@ -28,8 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -ra BT_TARGET_ACTIONS=("build" "clean" "install")
-declare     BT_TARGET_SOURCE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support"
+declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
+declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/support"
 
 declare -a  FSBUNDLE_KEXT_TASKS=()
 declare     FSBUNDLE_TARGET_DIRECTORY_DEBUG=""
@@ -47,36 +47,36 @@ function fsbundle_build
         esac
     }
 
-    bt_target_getopt -p build -s "kext:" -h fsbundle_build_getopt_handler -- "${@}"
+    build_target_getopt -p build -s "kext:" -h fsbundle_build_getopt_handler -- "${@}"
     unset fsbundle_build_getopt_handler
 
-    if [[ `bt_array_size FSBUNDLE_KEXT_TASKS` -eq 0 ]]
+    if [[ `array_size FSBUNDLE_KEXT_TASKS` -eq 0 ]]
     then
-        FSBUNDLE_KEXT_TASKS+=("${BT_TARGET_OPTION_SDK}")
+        FSBUNDLE_KEXT_TASKS+=("${BUILD_TARGET_OPTION_SDK}")
     fi
-    bt_log_variable FSBUNDLE_KEXT_TASKS
+    common_log_variable FSBUNDLE_KEXT_TASKS
 
-    bt_log "Clean target"
-    bt_target_invoke "${BT_TARGET_NAME}" clean
-    bt_exit_on_error "Failed to clean target"
+    common_log "Clean target"
+    build_target_invoke "${BUILD_TARGET_NAME}" clean
+    common_die_on_error "Failed to clean target"
 
-    bt_log "Build target for OS X ${BT_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
-    local debug_directory="${BT_TARGET_BUILD_DIRECTORY}/Debug"
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
 
     # Build file system bundle
 
-    bt_target_xcodebuild -project osxfusefs.xcodeproj -target osxfuse.fs \
-                         clean build
-    bt_exit_on_error "Failed to build target"
+    build_target_xcodebuild -project osxfusefs.xcodeproj -target osxfuse.fs \
+                            clean build
+    common_die_on_error "Failed to build target"
 
     local fsbundle_path=""
-    fsbundle_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.fs`"
-    bt_exit_on_error "Failed to locate file system bundle"
+    fsbundle_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.fs`"
+    common_die_on_error "Failed to locate file system bundle"
 
     # Build kernel extensions
 
-    local kext_build_directory="`bt_target_get_build_directory kext`"
+    local kext_build_directory="`build_target_get_build_directory kext`"
     local fsbundle_kext_directory="${fsbundle_path}/Contents/Extensions"
 
     for task in "${FSBUNDLE_KEXT_TASKS[@]}"
@@ -89,38 +89,38 @@ function fsbundle_build
             local link_target="${task%->*}"
 
             /bin/ln -s "${link_source}" "${fsbundle_kext_directory}/${link_target}"
-            bt_exit_on_error "Failed to create link ${link_target} to ${link_source}"
+            common_die_on_error "Failed to create link ${link_target} to ${link_source}"
 
         else
             # Build kernel extension
 
             local osx_version="${task}"
 
-            bt_target_invoke kext build -s "${osx_version}" \
-                                        "${BT_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
-                                        "${BT_TARGET_OPTION_MACROS[@]/#/-m}" \
-                                        "--code-sign-identity=${BT_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
-                                        "--product-sign-identity=${BT_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
-            bt_exit_on_error "Failed to build OS X ${osx_version} kernel extension"
+            build_target_invoke kext build -s "${osx_version}" \
+                                           "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}" \
+                                           "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}" \
+                                           "--code-sign-identity=${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
+                                           "--product-sign-identity=${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
+            common_die_on_error "Failed to build OS X ${osx_version} kernel extension"
 
             local kext_directory="${fsbundle_kext_directory}/${osx_version}"
             local kext_debug_directory="${debug_directory}/kext-${osx_version}"
 
             /bin/mkdir -p "${kext_directory}" 1>&3 2>&4
-            bt_exit_on_error "Failed to create OS X ${osx_version} kernel extension target directory"
+            common_die_on_error "Failed to create OS X ${osx_version} kernel extension target directory"
 
             /bin/mkdir -p "${kext_debug_directory}" 1>&3 2>&4
-            bt_exit_on_error "Failed to create OS X ${osx_version} debug kernel extension target directory"
+            common_die_on_error "Failed to create OS X ${osx_version} debug kernel extension target directory"
 
-            bt_target_invoke kext install --debug="${kext_debug_directory}" -- "${kext_directory}"
-            bt_exit_on_error "Failed to install OS X ${osx_version} kernel extension"
+            build_target_invoke kext install --debug="${kext_debug_directory}" -- "${kext_directory}"
+            common_die_on_error "Failed to install OS X ${osx_version} kernel extension"
         fi
     done
 
     # Sign file system bundle
 
-    bt_target_codesign "${fsbundle_path}"
-    bt_exit_on_error "Failed to sign file system bundle"
+    build_target_codesign "${fsbundle_path}"
+    common_die_on_error "Failed to sign file system bundle"
 }
 
 function fsbundle_install
@@ -136,27 +136,27 @@ function fsbundle_install
     }
 
     local -a arguments=()
-    bt_target_getopt -p install -s "debug:" -h fsbundle_install_getopt_handler -o arguments -- "${@}"
+    build_target_getopt -p install -s "debug:" -h fsbundle_install_getopt_handler -o arguments -- "${@}"
 
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
-        bt_error "Target directory '${target_directory}' does not exist"
+        common_die "Target directory '${target_directory}' does not exist"
     fi
 
-    bt_log "Install target"
+    common_log "Install target"
 
     local fsbundle_source_path=""
-    fsbundle_source_path="`osxfuse_find "${BT_TARGET_BUILD_DIRECTORY}"/*.fs`"
-    bt_exit_on_error "Failed to locate file system bundle"
+    fsbundle_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.fs`"
+    common_die_on_error "Failed to locate file system bundle"
 
-    bt_target_install "${fsbundle_source_path}" "${target_directory}"
-    bt_exit_on_error "Failed to install target"
+    build_target_install "${fsbundle_source_path}" "${target_directory}"
+    common_die_on_error "Failed to install target"
 
-    if [[ -n "${BT_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
+    if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
-        bt_target_install "${BT_TARGET_BUILD_DIRECTORY}/Debug/" "${BT_TARGET_OPTION_DEBUG_DIRECTORY}"
-        bt_exit_on_error "Failed to Install debug files"
+        build_target_install "${BUILD_TARGET_BUILD_DIRECTORY}/Debug/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
+        common_die_on_error "Failed to Install debug files"
     fi
 }

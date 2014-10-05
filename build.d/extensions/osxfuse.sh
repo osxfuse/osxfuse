@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-declare -r OSXFUSE_PACKAGE_DIRECTORY="${BT_SOURCE_DIRECTORY}/support/Packages"
+declare -r OSXFUSE_PACKAGE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/support/Packages"
 
 
 function osxfuse_find
@@ -48,11 +48,11 @@ function osxfuse_get_define
 
     if [[ "${file}" =~ ^/ ]]
     then
-        bt_assert "[[ -e `bt_string_escape "${file}"` ]]" "File '${file}' does not exist"
+        common_assert "[[ -e `string_escape "${file}"` ]]" "File '${file}' does not exist"
     fi
 
     local value="$(
-/bin/cat <<EOF | /usr/bin/xcrun clang -E -I"${BT_SOURCE_DIRECTORY}/common" - | /usr/bin/tail -1
+/bin/cat <<EOF | /usr/bin/xcrun clang -E -I"${BUILD_SOURCE_DIRECTORY}/common" - | /usr/bin/tail -1
 #include "${file}"
 ${name}
 EOF
@@ -80,8 +80,8 @@ function osxfuse_get_version
 function osxfuse_build_component_package
 {
     local -a options=()
-    bt_getopt options "n:,name:,r:,root:" "${@}"
-    bt_exit_on_error "${options[@]}"
+    common_getopt options "n:,name:,r:,root:" "${@}"
+    common_die_on_error "${options[@]}"
 
     set -- "${options[@]}"
 
@@ -108,38 +108,38 @@ function osxfuse_build_component_package
 
     local package_target_path="${1}"
 
-    bt_assert "[[ -d `bt_string_escape "${root}"` ]]" "Root directory '${root}' does not exist"
+    common_assert "[[ -d `string_escape "${root}"` ]]" "Root directory '${root}' does not exist"
 
     local identifier="com.github.osxfuse.pkg.${name}"
     local version=""
     local resources_directory="${OSXFUSE_PACKAGE_DIRECTORY}/${name}"
 
     version="`osxfuse_get_version`"
-    bt_exit_on_error "Failed to determine osxfuse version number"
+    common_die_on_error "Failed to determine osxfuse version number"
 
     # Create component property list
 
     local component_plist_path="${package_target_path%.*}.plist"
 
-    bt_target_pkgbuild --analyze --root "${root}" "${component_plist_path}"
-    bt_exit_on_error "Failed to create component property list"
+    build_target_pkgbuild --analyze --root "${root}" "${component_plist_path}"
+    common_die_on_error "Failed to create component property list"
 
     function osxfuse_build_package_update_component_plist
     {
         local file="${1}"
         local entry="${2}"
 
-        bt_plist_set "${file}" "${entry}:BundleIsVersionChecked" bool false
+        plist_set "${file}" "${entry}:BundleIsVersionChecked" bool false
     }
 
-    bt_target_pkgbuild_component_plist_foreach "${component_plist_path}" "" osxfuse_build_package_update_component_plist
-    bt_exit_on_error "Failed to update component property list"
+    build_target_pkgbuild_component_plist_foreach "${component_plist_path}" "" osxfuse_build_package_update_component_plist
+    common_die_on_error "Failed to update component property list"
 
     unset osxfuse_build_package_update_component_plist
 
     # Build package
 
-    local -a command=(bt_target_pkgbuild --identifier "${identifier}" \
+    local -a command=(build_target_pkgbuild --identifier "${identifier}" \
                                          --version "${version}" \
                                          --ownership recommended \
                                          --root "${root}" \
@@ -158,8 +158,8 @@ function osxfuse_build_component_package
 function osxfuse_build_distribution_package
 {
     local -a options=()
-    bt_getopt options "p:,package-path:,c:,component-package:,d:,deployment-target:" "${@}"
-    bt_exit_on_error "${options[@]}"
+    common_getopt options "p:,package-path:,c:,component-package:,d:,deployment-target:" "${@}"
+    common_die_on_error "${options[@]}"
 
     set -- "${options[@]}"
 
@@ -192,7 +192,7 @@ function osxfuse_build_distribution_package
 
     local package_target_path="${1}"
 
-    bt_assert "[[ ${#component_packages[@]} -gt 0 ]]" "At least one component package is required"
+    common_assert "[[ ${#component_packages[@]} -gt 0 ]]" "At least one component package is required"
 
     local -a component_packages_identifiers=()
     for path in "${component_packages[@]}"
@@ -200,7 +200,7 @@ function osxfuse_build_distribution_package
         /usr/bin/xar -x -f "${path}" PackageInfo && \
         component_packages_identifiers+=("`/usr/bin/xpath PackageInfo 'string(/pkg-info/@identifier)' 2> /dev/null`") && \
         rm -f PackageInfo
-        bt_exit_on_error "Failed to determine component package identifier of package '${path}'"
+        common_die_on_error "Failed to determine component package identifier of package '${path}'"
     done
 
     local installation_check_condition="false"
@@ -235,7 +235,7 @@ EOF
     do
         local identifier="${component_packages_identifiers[${i}]}"
         local basename="${component_packages[${i}]##*/}"
-        local name="`bt_string_uppercase <<< "${identifier##*.}"`"
+        local name="`string_uppercase <<< "${identifier##*.}"`"
 
 /bin/cat >> Distribution <<EOF
     <choice id="${identifier}"
@@ -325,8 +325,8 @@ EOF
 </installer-gui-script>
 EOF
 
-    bt_target_productbuild --resources "${OSXFUSE_PACKAGE_DIRECTORY}/Distribution/Resources" \
-                           --distribution Distribution \
-                           --package-path "${package_path}" \
-                           "${package_target_path}"
+    build_target_productbuild --resources "${OSXFUSE_PACKAGE_DIRECTORY}/Distribution/Resources" \
+                              --distribution Distribution \
+                              --package-path "${package_path}" \
+                              "${package_target_path}"
 }
