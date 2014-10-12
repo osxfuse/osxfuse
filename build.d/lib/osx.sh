@@ -32,7 +32,7 @@
 
 function osx_get_version
 {
-    sw_vers -productVersion | /usr/bin/cut -d . -f 1,2
+    sw_vers -productVersion | /usr/bin/cut -d . -f 1,2 2> /dev/null
 }
 
 function osx_unload_kext
@@ -43,7 +43,7 @@ function osx_unload_kext
 
     if [[ -n "`/usr/sbin/kextstat -l -b "${identifier}"`" ]]
     then
-        /sbin/kextunload -b "${identifier}"
+        /sbin/kextunload -b "${identifier}" 1>&3 2>&4
     else
         return 0
     fi

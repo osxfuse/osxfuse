@@ -252,73 +252,78 @@ EOF
 
 /bin/cat >> Distribution <<EOF
     <script><![CDATA[
-        function isProductVersion(version)
-        {
+        function isProductVersion(version) {
             return system.version.ProductVersion.slice(0, version.length) == version;
         }
-        function getChoice(package)
-        {
+
+        function getChoice(package) {
             return choices[package];
         }
 
-        function installationCheck()
-        {
+        function installationCheck() {
             if (${installation_check_condition}) return true;
 
             my.result.type = 'Fatal';
             my.result.message = system.localizedString('ERROR_OSXVERSION');
             return false;
         }
-        function choiceConflictCheck(package)
-        {
-            if (package == 'com.github.osxfuse.pkg.MacFUSE')
-            {
-                return system.files.fileExistsAtPath('/Library/Filesystems/fusefs.fs/Contents/Info.plist');
+
+        function choiceConflictCheck(package) {
+            switch (package) {
+                case 'com.github.osxfuse.pkg.MacFUSE':
+                    var receipt = my.target.receiptForIdentifier('com.google.macfuse.core');
+                    return receipt != null && system.compareVersions(receipt.version, "2.3") == -1;
+
+                default: return false;
             }
-            return false;
         }
 
-        function isPackageInstalled()
-        {
+        function isPackageInstalled() {
             return getChoice('com.github.osxfuse.pkg.Core').packageUpgradeAction != 'clean';
         }
 
-        function isChoiceDefaultSelected(package)
-        {
-            switch (package)
-            {
+        function isChoiceDefaultSelected(package) {
+            switch (package) {
                 case 'com.github.osxfuse.pkg.Core': return true;
                 case 'com.github.osxfuse.pkg.PrefPane': return true;
                 default: return false;
             }
         }
-        function isChoiceDefaultEnabled(package)
-        {
-            switch (package)
-            {
+
+        function isChoiceDefaultEnabled(package) {
+            switch (package) {
                 case 'com.github.osxfuse.pkg.Core': return false;
                 default: return true;
             }
         }
-        function isChoiceInstalled(package)
-        {
-            return getChoice(package).packageUpgradeAction != 'clean';
+
+        function isChoiceInstalled(package) {
+            if (getChoice(package).packageUpgradeAction != 'clean') {
+                return true;
+            }
+
+            switch (package) {
+                case 'com.github.osxfuse.pkg.MacFUSE':
+                    var receipt = my.target.receiptForIdentifier('com.google.macfuse.core');
+                    return receipt != null;
+
+                default: return false;
+            }
         }
-        function isChoiceRequired(package)
-        {
+
+        function isChoiceRequired(package) {
             return isChoiceInstalled(package) && !choiceConflictCheck(package);
         }
-        function isChoiceSelected(package)
-        {
-            return (!isPackageInstalled() && isChoiceDefaultSelected(package)) ||
-                   isChoiceRequired(package);
+
+        function isChoiceSelected(package) {
+            return (!isPackageInstalled() && isChoiceDefaultSelected(package)) || isChoiceRequired(package);
         }
-        function isChoiceEnabled(package)
-        {
+
+        function isChoiceEnabled(package) {
             return isChoiceDefaultEnabled(package) && !isChoiceRequired(package);
         }
-        function isChoiceVisible(package)
-        {
+
+        function isChoiceVisible(package) {
             return true;
         }
     ]]></script>
