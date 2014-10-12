@@ -27,8 +27,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# Requires common.sh
+
 
 function osx_get_version
 {
     sw_vers -productVersion | /usr/bin/cut -d . -f 1,2
+}
+
+function osx_unload_kext
+{
+    local identifier="${1}"
+
+    common_assert "[[ -n `string_escape "${identifier}"` ]]"
+
+    if [[ -n "`/usr/sbin/kextstat -l -b "${identifier}"`" ]]
+    then
+        /sbin/kextunload -b "${identifier}"
+    else
+        return 0
+    fi
 }
