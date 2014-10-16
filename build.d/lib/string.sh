@@ -67,7 +67,7 @@ function string_escape
 
     if [[ "${count}" =~ [0-9]+ ]] && (( count > 0 ))
     then
-        printf "%q" "`string_escape "${1}" $(( ${count} - 1 ))`"
+        printf "%q" "`string_escape "${1}" $(( count - 1 ))`"
     else
         printf "%s" "${1}"
     fi
