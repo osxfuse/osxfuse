@@ -367,6 +367,56 @@ function m_set_platform()
     return $retval
 }
 
+function plist_get
+{
+    local file="${1}"
+    local entry="${2}"
+
+    /usr/libexec/PlistBuddy -x -c "Print '${entry}'" "${file}" 2> /dev/null
+}
+
+function plist_set
+{
+    local file="${1}"
+    local entry="${2}"
+    local type="${3}"
+    local value="${4}"
+
+    /usr/libexec/PlistBuddy -c "Delete '${entry}'" "${file}" > /dev/null 2>&1
+    /usr/libexec/PlistBuddy -c "Add '${entry}' '${type}' '${value}'" "${file}" > /dev/null 2>&1
+}
+
+function plist_array_size
+{
+    local file="${1}"
+    local entry="${2}"
+
+    plist_get "${file}" "${entry}" | /usr/bin/xpath 'count(/plist/array/*)' 2> /dev/null
+}
+
+function build_target_pkgbuild_component_plist_foreach
+{
+    if [[ "`plist_array_size "${1}" "${2}"`" -gt 0 ]]
+    then
+        eval "
+            function build_target_pkgbuild_component_plist_foreach_internal
+            {
+                while [[ \${#} -gt 0 ]]
+                do
+                    echo ${3} `printf "%q" "${1}"` ${2}:\${1}
+                    ${3} `printf "%q" "${1}"` ${2}:\${1}
+
+                    if /usr/libexec/PlistBuddy -c \"Print '${2}:\${1}:ChildBundles'\" `printf "%q" "${1}"` > /dev/null 2>&1
+                    then
+                        build_target_pkgbuild_component_plist_foreach `printf "%q" "${1}"` \"${2}:\${1}:ChildBundles\" ${3}
+                    fi
+                    shift
+                done
+            }
+        " && build_target_pkgbuild_component_plist_foreach_internal $(/usr/bin/jot - 0 $(( $(plist_array_size "${1}" "${2}") - 1 )))
+    fi
+}
+
 # m_build_pkg(pkgversion, install_srcroot, install_payload, pkgid, pkgname, output_dir)
 #
 function m_build_pkg()
@@ -380,6 +430,29 @@ function m_build_pkg()
 
     # Make the package
     m_set_suprompt "to run pkgbuild"
+
+    local bp_component_plist="$bp_output_dir/${bp_pkgname%.*}.plist"
+
+    pkgbuild --analyze \
+             --root "$bp_install_payload" \
+             "$bp_component_plist" \
+             >$m_stdout 2>$m_stderr
+    m_exit_on_error "Failed to create component property list"
+
+    function m_build_pkg_update_component_plist
+    {
+        local file="${1}"
+        local entry="${2}"
+
+        plist_set "${file}" "${entry}:BundleIsVersionChecked" bool false
+        plist_set "${file}" "${entry}:BundleOverwriteAction" string upgrade
+    }
+
+    build_target_pkgbuild_component_plist_foreach "$bp_component_plist" "" m_build_pkg_update_component_plist
+    m_exit_on_error "Failed to update component property list"
+
+    unset m_build_pkg_update_component_plist
+
     if [ -d "$bp_install_srcroot/Scripts" ]
     then
         sudo -p "$m_suprompt" \
@@ -389,6 +462,7 @@ function m_build_pkg()
             --scripts "$bp_install_srcroot/Scripts" \
             --install-location / \
             --ownership preserve \
+            --component-plist "$bp_component_plist" \
             "$bp_output_dir/$bp_pkgname" \
             >$m_stdout 2>$m_stderr
     else
@@ -398,6 +472,7 @@ function m_build_pkg()
             --version "$bp_pkgversion" \
             --install-location / \
             --ownership preserve \
+            --component-plist "$bp_component_plist" \
             "$bp_output_dir/$bp_pkgname" \
             >$m_stdout 2>$m_stderr
     fi
