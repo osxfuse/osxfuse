@@ -130,6 +130,7 @@ function osxfuse_build_component_package
         local entry="${2}"
 
         plist_set "${file}" "${entry}:BundleIsVersionChecked" bool false
+        plist_set "${file}" "${entry}:BundleOverwriteAction" string upgrade
     }
 
     build_target_pkgbuild_component_plist_foreach "${component_plist_path}" "" osxfuse_build_package_update_component_plist
@@ -140,10 +141,10 @@ function osxfuse_build_component_package
     # Build package
 
     local -a command=(build_target_pkgbuild --identifier "${identifier}" \
-                                         --version "${version}" \
-                                         --ownership recommended \
-                                         --root "${root}" \
-                                         --component-plist "${component_plist_path}")
+                                            --version "${version}" \
+                                            --ownership recommended \
+                                            --root "${root}" \
+                                            --component-plist "${component_plist_path}")
 
     if [[ -n "${resources_directory}" && -d "${resources_directory}/Scripts" ]]
     then
