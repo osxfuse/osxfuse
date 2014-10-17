@@ -1162,7 +1162,16 @@ cat >> "$md_dist_out" <<__END_DISTRIBUTION
         function isChoiceInstalled(version, package)
         {
             if (!isInstalled(version)) return false;
-            return getChoice(version, package).packageUpgradeAction != 'clean';
+            if (getChoice(version, package).packageUpgradeAction != 'clean')
+            {
+                return true;
+            }
+            switch (package) {
+                case '$M_PKGBASENAME_MACFUSE':
+                    var receipt = my.target.receiptForIdentifier('com.github.osxfuse.pkg.MacFUSE');
+                    return receipt != null;
+                default: return false;
+            }
         }
         function isChoiceRequired(version, package)
         {
