@@ -63,6 +63,9 @@ declare mp_package_maker_version=""
 
 # Other implementation details
 #
+declare M_XCODE31=""
+declare M_XCODE31_VERSION=3.1
+readonly M_XCODE31_COMPILER="4.2"
 declare M_XCODE32=""
 declare M_XCODE32_VERSION=3.2
 readonly M_XCODE32_COMPILER="4.2"
@@ -590,6 +593,12 @@ function m_handler_reload()
         return $retval
     fi
 
+    local kextload_dev="kextutil"
+    if [ ! -x $kextload_dev ]
+    then
+        kextload_dev="kextload"
+    fi
+
     m_log "initiating kernel extension rebuild/reload for $m_platform"
 
     kextstat -l -b "$M_KEXT_ID" | grep "$M_KEXT_ID" >/dev/null 2>/dev/null
@@ -624,7 +633,7 @@ function m_handler_reload()
 
     m_set_suprompt "to load newly built OSXFUSE kext"
     sudo -p "$m_suprompt" \
-        kextutil -s "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" \
+        $kextload_dev -s "$M_CONF_TMPDIR/$M_KEXT_SYMBOLS" \
             -v "$M_CONF_TMPDIR/$M_KEXT_NAME" >$m_stdout 2>$m_stderr
     m_exit_on_error "cannot load newly built OSXFUSE kext."
 
@@ -2394,6 +2403,14 @@ function m_handler()
         m_xcode_version=`DEVELOPER_DIR="$m_xcode_root" xcodebuild -version | grep "Xcode" | cut -f 2 -d " "`
 
         case $m_xcode_version in
+            3.1*)
+                m_version_compare $M_XCODE31_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE31="$m_xcode_root"
+                    M_XCODE31_VERSION=$m_xcode_version
+                fi
+                ;;
             3.2*)
                 m_version_compare $M_XCODE32_VERSION $m_xcode_version
                 if [[ $? != 2 ]]
@@ -2497,6 +2514,15 @@ function m_handler()
     done
 
     # Use most recent version of Xcode for each SDK
+    if [[ -n "$M_XCODE31" ]]
+    then
+        m_xcode_latest="$M_XCODE31"
+
+        M_SDK_105="$M_XCODE31/SDKs/MacOSX10.5.sdk"
+        M_SDK_105_XCODE="$M_XCODE31"
+        M_SDK_105_COMPILER="$M_XCODE31_COMPILER"
+        m_platform_realistic_add "10.5"
+    fi
     if [[ -n "$M_XCODE32" ]]
     then
         m_xcode_latest="$M_XCODE32"
