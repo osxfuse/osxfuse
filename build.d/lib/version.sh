@@ -67,3 +67,21 @@ function version_compare
     done
     return 0
 }
+
+function version_compare_eq
+{
+    version_compare "${1}" "${2}"
+    (( ${?} == 0 ))
+}
+
+function version_compare_le
+{
+    version_compare "${1}" "${2}"
+    (( ${?} != 2 ))
+}
+
+function version_compare_ge
+{
+    version_compare "${1}" "${2}"
+    (( ${?} != 1 ))
+}

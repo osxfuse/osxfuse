@@ -448,7 +448,7 @@ function build_target_codesign
 {
     if [[ -n "${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" ]]
     then
-        /usr/bin/xcrun codesign -s "${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" -f "${@}" 1>&3 2>&4
+        /usr/bin/codesign -s "${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" -f "${@}" 1>&3 2>&4
     else
         return 0
     fi

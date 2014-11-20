@@ -164,11 +164,15 @@ function distribution_build
     /bin/chmod u+s "${loader_path}"
     common_die_on_error "Failed to set SUID bit of kernel extension loader"
 
-    # Add uninstaller to file system bundle
+    # Add embedded uninstaller to file system bundle
 
-    /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/uninstall_osxfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_osxfuse.sh" 1>&3 2>&4 && \
-    /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/uninstall_macfuse.sh" "${fsbundle_path}/Contents/Resources/uninstall_macfuse.sh" 1>&3 2>&4
-    common_die_on_error "Failed to copy uninstaller to file system bundle"
+    local uninstaller_path="${fsbundle_path}/Contents/Resources/uninstall_osxfuse.app"
+
+    /bin/cp -R "${BUILD_SOURCE_DIRECTORY}/support/uninstall_osxfuse.app" "${uninstaller_path}" 1>&3 2>&4
+    common_die_on_error "Failed to copy embedded uninstaller to file system bundle"
+
+    build_target_codesign --deep "${uninstaller_path}"
+    common_die_on_error "Failed to sign embedded uninstaller"
 
     # Sign file system bundle
 
