@@ -594,7 +594,7 @@ function m_handler_reload()
     fi
 
     local kextload_dev="kextutil"
-    if [ ! -x $kextload_dev ]
+    if [ ! -x $(which $kextload_dev) ]
     then
         kextload_dev="kextload"
     fi
