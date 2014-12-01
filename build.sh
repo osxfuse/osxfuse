@@ -596,10 +596,11 @@ function m_handler_reload()
         return $retval
     fi
 
-    local kextload_dev="kextutil"
-    if [ ! -x $kextload_dev ]
+    if which kextutil >/dev/null
     then
-        kextload_dev="kextload"
+        local kextload_dev="kextutil"
+    else
+        local kextload_dev="kextload"
     fi
 
     m_log "initiating kernel extension rebuild/reload for $m_platform"
