@@ -43,6 +43,8 @@ The build script locates automatically all supported installations of Xcode in t
 
 * The "Command Line Tools" package is needed to generate BridgeSupport metadata for `OSXFUSE.framework` because of a bug in `gen_bridge_metadata` (hard coded path to `cpp`).
 
+* Xcode 3.1 is supported to allow native building under Mac OS X 10.5, but the "dist" and "smalldist" targets don't work there due to the lack of the pkgbuild tool.  Other targets work.
+
 The Xcode tools packages can be obtained from https://developer.apple.com/downloads/ (free Apple Developer ID required).
 
 ---
