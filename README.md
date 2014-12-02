@@ -19,6 +19,8 @@ Build Instructions
 
 The build script locates automatically all supported installations of Xcode in the top level of the Mac OS X startup volume and the Applications folder. It builds a distribution package compatible with as many versions of OS X as possible (depending on the versions of Xcode that are installed).
 
+* Xcode 3.1: FUSE for OS X can be built for Mac OS X 10.5.
+
 * Xcode 3.2: FUSE for OS X can be built for Mac OS X 10.5 to 10.8.
 
 * Xcode 4.0, 4.1, 4.2, 4.3: FUSE for OS X can be built for Mac OS X 10.6 to 10.8.
