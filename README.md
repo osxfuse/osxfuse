@@ -45,6 +45,8 @@ The build script locates automatically all supported installations of Xcode in t
 
 * Xcode 3.1 is supported to allow native building under Mac OS X 10.5, but the "dist" and "smalldist" targets don't work there due to the lack of the pkgbuild tool.  Other targets work.
 
+* Mavericks (and maybe Yosemite?) users:  Beware that Apple introduced a new version of /usr/bin/lipo in Jan 2014 which is incompatible with older Xcode versions.  If your build hangs running /usr/bin/lipo (with "top" showing a constant lipo/xcrun bounce), you need to replace it with a working version.  The Sep 2012 version from Mountain Lion is known to work, as is the May 2014 version from MacPorts.
+
 The Xcode tools packages can be obtained from https://developer.apple.com/downloads/ (free Apple Developer ID required).
 
 ---
