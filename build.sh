@@ -409,7 +409,6 @@ function build_target_pkgbuild_component_plist_foreach
             {
                 while [[ \${#} -gt 0 ]]
                 do
-                    echo ${3} `printf "%q" "${1}"` ${2}:\${1}
                     ${3} `printf "%q" "${1}"` ${2}:\${1}
 
                     if /usr/libexec/PlistBuddy -c \"Print '${2}:\${1}:ChildBundles'\" `printf "%q" "${1}"` > /dev/null 2>&1
