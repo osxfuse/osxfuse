@@ -596,7 +596,7 @@ function m_handler_reload()
         return $retval
     fi
 
-    if which kextutil >/dev/null
+    if which -s kextutil
     then
         local kextload_dev="kextutil"
     else
@@ -845,7 +845,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
-    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" VALID_ARCHS="ppc i386 x86_64" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
