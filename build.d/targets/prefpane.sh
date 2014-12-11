@@ -45,7 +45,6 @@ function prefpane_build
     # Build autoinstaller
 
     build_target_xcodebuild -project autoinstaller/autoinstaller.xcodeproj -target autoinstall-osxfuse-core \
-                            VALID_ARCHS="ppc i386 x86_64" \
                             clean build
     common_die_on_error "Failed to build autoinstaller"
 

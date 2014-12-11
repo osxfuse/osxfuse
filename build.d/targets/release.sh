@@ -77,7 +77,7 @@ function release_build
     # Build property list signer
 
     build_target_xcodebuild -project prefpane/autoinstaller/autoinstaller.xcodeproj -target plist_signer \
-                            VALID_ARCHS="x86_64" \
+                            ONLY_ACTIVE_ARCH="YES" \
                             clean build
     common_die_on_error "Failed to build property list signer"
 
