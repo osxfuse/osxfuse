@@ -13,39 +13,50 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #ifndef KERNEL
-#include <unistd.h>
+    #include <unistd.h>
 #endif
 
 /*
- * Shared between the kernel and user spaces. This is 64-bit invariant.
+ * Mount arguments, shared between the kernel and user-space. This structure
+ * is 64-bit invariant.
  */
-struct fuse_mount_args {
-    char     mntpath[MAXPATHLEN]; // path to the mount point
-    char     fsname[MAXPATHLEN];  // file system description string
+
+struct fuse_mount_args
+{
+    char     mntpath[MAXPATHLEN];        // path to the mount point
+    char     fsname[MAXPATHLEN];         // file system description string
     char     fstypename[MFSTYPENAMELEN]; // file system type name
-    char     volname[MAXPATHLEN]; // volume name
-    uint64_t altflags;            // see mount-time flags below
-    uint32_t blocksize;           // fictitious block size of our "storage"
-    uint32_t daemon_timeout;      // timeout in seconds for upcalls to daemon
-    uint32_t fsid;                // optional custom value for part of fsid[0]
-    uint32_t fssubtype;           // file system sub type id (type is "osxfuse")
-    uint32_t iosize;              // maximum size for reading or writing
-    uint32_t random;              // random "secret" from device
-    uint32_t rdev;                // dev_t for the /dev/osxfuseN in question
+    char     volname[MAXPATHLEN];        // volume name
+    uint64_t altflags;                   // see mount-time flags below
+    uint32_t blocksize;                  // fictitious block size of our "storage"
+    uint32_t daemon_timeout;             // timeout in seconds for upcalls to daemon
+    uint32_t fsid;                       // optional custom value for part of fsid[0]
+    uint32_t fssubtype;                  // file system sub type id
+    uint32_t iosize;                     // maximum size for reading or writing
+    uint32_t random;                     // random "secret" from device
+    uint32_t rdev;                       // dev_t for the /dev/osxfuse{n} in question
 };
+
 typedef struct fuse_mount_args fuse_mount_args;
 
-/* file system subtype */
-enum {
+/* File system subtypes */
+
+enum
+{
     FUSE_FSSUBTYPE_UNKNOWN = 0,
     FUSE_FSSUBTYPE_INVALID = -1,
 };
 
-/* Courtesy of the Finder, this is 1 less than what you think it should be. */
-#define FUSE_FSTYPENAME_MAXLEN (MFSTYPENAMELEN - sizeof(OSXFUSE_FSTYPENAME_PREFIX) - 1)
+/*
+ * Maximum file system type name length. Courtesy of the Finder, this is 1
+ * less than what you think it should be.
+ */
+#define FUSE_TYPE_NAME_MAXLEN (MFSTYPENAMELEN - sizeof(OSXFUSE_TYPE_NAME_PREFIX) - 1)
 
-/* mount-time flags */
+/* Mount-time flags */
+
 #define FUSE_MOPT_IGNORE                 0x0000000000000000ULL
 #define FUSE_MOPT_ALLOW_OTHER            0x0000000000000001ULL
 #define FUSE_MOPT_ALLOW_RECURSION        0x0000000000000002ULL
@@ -76,8 +87,6 @@ enum {
 #define FUSE_MOPT_NO_SYNCWRITES          0x0000000020000000ULL
 #define FUSE_MOPT_NO_UBC                 0x0000000040000000ULL
 #define FUSE_MOPT_NO_VNCACHE             0x0000000080000000ULL
-
-/* Next 32 bits */
 #define FUSE_MOPT_USE_INO                0x0000000100000000ULL
 #define FUSE_MOPT_VOLNAME                0x0000000200000000ULL
 #define FUSE_MOPT_AUTO_CACHE             0x0000000800000000ULL
