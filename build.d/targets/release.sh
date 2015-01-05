@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2015 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution  and  use  in  source  and  binary  forms,  with   or   without
@@ -61,7 +61,7 @@ function release_build
     # Build distribution package
 
     build_target_invoke distribution build -s 10.5 -d 10.5 -c Release \
-                                           --kext=10.5 --kext=10.6 --kext="10.7->10.6" --kext="10.8->10.6" --kext=10.9 --kext="10.10->10.9" \
+                                           --kext=10.5 --kext=10.6 --kext=10.7 --kext="10.8->10.7" --kext=10.9 --kext="10.10->10.9" \
                                            --macfuse \
                                            --code-sign-identity="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                            --product-sign-identity="${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"

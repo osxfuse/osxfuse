@@ -125,7 +125,23 @@
  * File system interface
  */
 
-#define FUSE_MAX_UPL_TRANSFER                   256
+#ifdef KERNEL
+    /*
+     * The maximum supported I/O size on Mac OS X 10.6 and earlier is 16 MiB. Mac
+     * OS X 10.7 and later support up to 32 MiB.
+     */
+    #if VERSION_MAJOR < 11
+        #define FUSE_MAX_UPL_SIZE               4096
+    #else
+        #define FUSE_MAX_UPL_SIZE               8192
+    #endif
+#else
+    /*
+     * The maximum supported UPL size of the user-space library is independent
+     * from the FUSE kernel extension's deployment target.
+     */
+    #define FUSE_MAX_UPL_SIZE                   8192
+#endif
 
 /*
  * This is the default block size of the virtual storage devices that are
@@ -145,14 +161,14 @@
  */
 #define FUSE_DEFAULT_IOSIZE                     (16 * PAGE_SIZE)
 
-#define FUSE_MIN_IOSIZE                         512
-#define FUSE_MAX_IOSIZE                         (FUSE_MAX_UPL_TRANSFER * PAGE_SIZE)
+#define FUSE_MIN_IOSIZE                         PAGE_SIZE
+#define FUSE_MAX_IOSIZE                         (FUSE_MAX_UPL_SIZE * PAGE_SIZE)
 
 /* User-Kernel IPC buffer */
 
 #define FUSE_DEFAULT_USERKERNEL_BUFSIZE         FUSE_MAX_IOSIZE
 #define FUSE_MIN_USERKERNEL_BUFSIZE             (128 * 1024)
-#define FUSE_MAX_USERKERNEL_BUFSIZE             (16  * 1024 * 1024)
+#define FUSE_MAX_USERKERNEL_BUFSIZE             FUSE_MAX_IOSIZE
 
 /* Daemon timeout */
 
