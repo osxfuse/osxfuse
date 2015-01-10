@@ -98,7 +98,7 @@ function release_build
 
     local disk_image_mount_point=""
 
-    function detach_exit_on_error
+    function detach_die_on_error
     {
         if (( ${?} != 0 ))
         then
@@ -116,18 +116,18 @@ function release_build
     # Copy license to disk image
 
     /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
-    detach_exit_on_error "Failed to copy license to disk image"
+    detach_die_on_error "Failed to copy license to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
-    detach_exit_on_error "Failed to hide extension of license"
+    detach_die_on_error "Failed to hide extension of license"
 
     # Copy extras to disk image
 
     /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
-    detach_exit_on_error "Failed to copy extras to disk image"
+    detach_die_on_error "Failed to copy extras to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Extras"/* 1>&3 2>&4
-    detach_exit_on_error "Failed to hide extension of extras"
+    detach_die_on_error "Failed to hide extension of extras"
 
     # Sign extras
 
@@ -135,7 +135,7 @@ function release_build
     for application_path in "${disk_image_mount_point}/Extras"/*.app
     do
         build_target_codesign "${application_path}"
-        detach_exit_on_error "Failed to sign resource '${application_path}'"
+        detach_die_on_error "Failed to sign resource '${application_path}'"
     done
 
     # Copy distribution package to disk image
@@ -144,13 +144,13 @@ function release_build
     local disk_image_distribution_package_path="${disk_image_mount_point}/${disk_image_distribution_package_relative_path}"
 
     /bin/cp -a "${distribution_package_path}" "${disk_image_distribution_package_path}" 1>&3 2>&4
-    detach_exit_on_error "Failed to copy distribution package to disk image"
+    detach_die_on_error "Failed to copy distribution package to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_distribution_package_path}" 1>&3 2>&4
-    detach_exit_on_error "Failed to hide extension of distribution package"
+    detach_die_on_error "Failed to hide extension of distribution package"
 
     /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for OS X"
-    detach_exit_on_error "Failed to create distribution package link"
+    detach_die_on_error "Failed to create distribution package link"
 
     # Create autoinstaller engine file
 
@@ -162,13 +162,13 @@ function release_build
 EOF
 
     /bin/chmod +x "${disk_image_engine_install_path}"
-    detach_exit_on_error "Failed to change mode of autoinstaller engine file"
+    detach_die_on_error "Failed to change mode of autoinstaller engine file"
 
     # Copy custom background to disk image
 
     /bin/mkdir -p "${disk_image_mount_point}/.background" 1>&3 2>&4 && \
     /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
-    detach_exit_on_error "Failed to copy background image to disk image"
+    detach_die_on_error "Failed to copy background image to disk image"
 
     # Alter view options of disk image
 
@@ -187,14 +187,13 @@ tell application "Finder"
         set position of item "License" of container window to {125, 165}
         set position of item "FUSE for OS X" of container window to {275, 165}
         set position of item "Extras" of container window to {425, 165}
-        close
-        open
         update without registering applications
+        delay 1
         close
     end tell
 end tell
 EOF
-    detach_exit_on_error "Failed to alter disk image view options"
+    detach_die_on_error "Failed to alter disk image view options"
 
     sync
     sleep 1

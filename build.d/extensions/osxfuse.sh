@@ -52,7 +52,7 @@ function osxfuse_get_define
     fi
 
     local value="$(
-/bin/cat <<EOF | /usr/bin/xcrun clang -E -I"${BUILD_SOURCE_DIRECTORY}/common" - | /usr/bin/tail -1
+/bin/cat <<EOF | /usr/bin/xcrun clang -E -I"${BUILD_SOURCE_DIRECTORY}/common" -mmacosx-version-min=10.0 - | /usr/bin/tail -1
 #include "${file}"
 ${name}
 EOF
