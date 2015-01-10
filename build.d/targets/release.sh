@@ -170,7 +170,7 @@ EOF
     /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
     detach_die_on_error "Failed to copy background image to disk image"
 
-    # Alter view options of disk image
+    # Adjust view options of disk image
 
 osascript 1>&3 2>&4 <<EOF
 tell application "Finder"
@@ -188,15 +188,15 @@ tell application "Finder"
         set position of item "FUSE for OS X" of container window to {275, 165}
         set position of item "Extras" of container window to {425, 165}
         update without registering applications
-        delay 1
+        delay 4
         close
     end tell
 end tell
 EOF
-    detach_die_on_error "Failed to alter disk image view options"
+    detach_die_on_error "Failed to adjust disk image view options"
 
     sync
-    sleep 1
+    sleep 4
 
     # Detach disk image
 
