@@ -176,6 +176,7 @@ osascript 1>&3 2>&4 <<EOF
 tell application "Finder"
     tell disk "FUSE for OS X"
         open
+        delay 1
         set current view of container window to icon view
         set toolbar visible of container window to false
         set the bounds of container window to {0, 0, 550, 325}
@@ -187,8 +188,9 @@ tell application "Finder"
         set position of item "License" of container window to {125, 165}
         set position of item "FUSE for OS X" of container window to {275, 165}
         set position of item "Extras" of container window to {425, 165}
+        delay 1
         update without registering applications
-        delay 4
+        delay 1
         close
     end tell
 end tell
@@ -196,7 +198,7 @@ EOF
     detach_die_on_error "Failed to adjust disk image view options"
 
     sync
-    sleep 4
+    sleep 1
 
     # Detach disk image
 
