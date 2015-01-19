@@ -1353,27 +1353,36 @@ __END_ENGINE_INSTALL
 
     # Customize scratch image
     #
-    echo '
-        tell application "Finder"
-            tell disk "'$md_volume_name'"
-                open
-                set current view of container window to icon view
-                set toolbar visible of container window to false
-                set the bounds of container window to {0, 0, 500, 350}
-                set theViewOptions to the icon view options of container window
-                set arrangement of theViewOptions to not arranged
-                set icon size of theViewOptions to 128
-                set background picture of theViewOptions to file ".background:background.png"
-                set position of item "License.rtf" of container window to {100, 230}
-                set position of item "'$md_pkgname_installer'" of container window to {250, 230}
-                set position of item "OSXFUSE Website.webloc" of container window to {400, 230}
-                close
-                open
-                update without registering applications
-                close
+    if [ -f "$m_srcroot/packaging/diskimage/xDS_Store" ]
+    then
+        # Use saved window settings if available.
+        /bin/cp "$m_srcroot/packaging/diskimage/xDS_Store" "$md_volume_path/.DS_Store"
+    else
+        # NOTE: If any of the window parameters below have changed, remove the
+        # xDS_Store file so that the .DS_Store file (and it) will be recomputed.
+        echo '
+            tell application "Finder"
+                tell disk "'$md_volume_name'"
+                    open
+                    set current view of container window to icon view
+                    set toolbar visible of container window to false
+                    set the bounds of container window to {0, 0, 500, 350}
+                    set theViewOptions to the icon view options of container window
+                    set arrangement of theViewOptions to not arranged
+                    set icon size of theViewOptions to 128
+                    set background picture of theViewOptions to file ".background:background.png"
+                    set position of item "License.rtf" of container window to {100, 230}
+                    set position of item "'$md_pkgname_installer'" of container window to {250, 230}
+                    set position of item "OSXFUSE Website.webloc" of container window to {400, 230}
+                    close
+                    open
+                    update without registering applications
+                    close
+                    delay 5
+                end tell
             end tell
-        end tell
-    ' | osascript
+        ' | osascript
+    fi
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
@@ -1384,6 +1393,8 @@ __END_ENGINE_INSTALL
     chmod -Rf go-w "$md_volume_path"
     sync
     sync
+    # Capture the .DS_Store file for future builds.
+    /bin/cp -pX "$md_volume_path/.DS_Store" "$m_srcroot/packaging/diskimage/xDS_Store"
     # ignore errors
 
     # Detach the volume.
