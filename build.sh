@@ -1390,6 +1390,8 @@ __END_ENGINE_INSTALL
         m_exit_on_error "cannot customize the scratch disk image."
     fi
 
+    m_set_suprompt "to remove the .Trashes directory from the disk image"
+    sudo -p "$m_suprompt" rm -rf "$md_volume_path/.Trashes"
     chmod -Rf go-w "$md_volume_path"
     sync
     sync
