@@ -206,6 +206,7 @@ EOF
     fi
     detach_die_on_error "Failed to adjust disk image view options"
 
+    common_sudo "Enter password to remove the .Trashes directory from the disk image" rm -rf "${disk_image_mount_point}/.Trashes"
     sync
     sleep 1
     # Capture the .DS_Store file for future builds.
