@@ -172,33 +172,44 @@ EOF
 
     # Adjust view options of disk image
 
-osascript 1>&3 2>&4 <<EOF
-tell application "Finder"
-    tell disk "FUSE for OS X"
-        open
-        delay 1
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set the bounds of container window to {0, 0, 550, 325}
-        set theViewOptions to the icon view options of container window
-        set arrangement of theViewOptions to not arranged
-        set icon size of theViewOptions to 96
-        set text size of theViewOptions to 12
-        set background picture of theViewOptions to file ".background:background.tiff"
-        set position of item "License" of container window to {125, 165}
-        set position of item "FUSE for OS X" of container window to {275, 165}
-        set position of item "Extras" of container window to {425, 165}
-        delay 1
-        update without registering applications
-        delay 1
-        close
-    end tell
-end tell
+    if [ -f "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/xDS_Store" ]
+    then
+        # Use saved window settings if available.
+        /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/xDS_Store" "${disk_image_mount_point}/.DS_Store"
+    else
+        # NOTE: If any of the window parameters below have changed, remove the
+        # xDS_Store file so that the .DS_Store file (and it) will be recomputed.
+        osascript 1>&3 2>&4 <<EOF
+        tell application "Finder"
+            tell disk "FUSE for OS X"
+                open
+                delay 1
+                set current view of container window to icon view
+                set toolbar visible of container window to false
+                set the bounds of container window to {0, 0, 550, 325}
+                set theViewOptions to the icon view options of container window
+                set arrangement of theViewOptions to not arranged
+                set icon size of theViewOptions to 96
+                set text size of theViewOptions to 12
+                set background picture of theViewOptions to file ".background:background.tiff"
+                set position of item "License" of container window to {125, 165}
+                set position of item "FUSE for OS X" of container window to {275, 165}
+                set position of item "Extras" of container window to {425, 165}
+                delay 1
+                update without registering applications
+                delay 1
+                close
+                delay 5
+            end tell
+        end tell
 EOF
+    fi
     detach_die_on_error "Failed to adjust disk image view options"
 
     sync
     sleep 1
+    # Capture the .DS_Store file for future builds.
+    /bin/cp -pX "${disk_image_mount_point}/.DS_Store" "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/xDS_Store"
 
     # Detach disk image
 
