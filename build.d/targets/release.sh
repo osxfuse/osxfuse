@@ -139,7 +139,7 @@ function release_build
 
     # Copy license to disk image
 
-    /bin/cp -a "${disk_image_resources_path}/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
+    /bin/cp -pPR "${disk_image_resources_path}/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
     detach_die_on_error "Failed to copy license to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
@@ -147,7 +147,7 @@ function release_build
 
     # Copy extras to disk image
 
-    /bin/cp -a "${disk_image_resources_path}/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
+    /bin/cp -pPR "${disk_image_resources_path}/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
     detach_die_on_error "Failed to copy extras to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Extras"/* 1>&3 2>&4
@@ -167,7 +167,7 @@ function release_build
     local disk_image_distribution_package_relative_path="Extras/FUSE for OS X ${osxfuse_version}.pkg"
     local disk_image_distribution_package_path="${disk_image_mount_point}/${disk_image_distribution_package_relative_path}"
 
-    /bin/cp -a "${distribution_package_path}" "${disk_image_distribution_package_path}" 1>&3 2>&4
+    /bin/cp -pPR "${distribution_package_path}" "${disk_image_distribution_package_path}" 1>&3 2>&4
     detach_die_on_error "Failed to copy distribution package to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_distribution_package_path}" 1>&3 2>&4
@@ -191,7 +191,7 @@ EOF
     # Copy custom background to disk image
 
     /bin/mkdir -p "${disk_image_mount_point}/.background" 1>&3 2>&4 && \
-    /bin/cp -a "${disk_image_resources_path}/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
+    /bin/cp -pPR "${disk_image_resources_path}/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
     detach_die_on_error "Failed to copy background image to disk image"
 
     # Customize view options of disk image
