@@ -554,7 +554,7 @@ function build_target_install
         common_assert "[[ ! -e `string_escape "${target}"` ]]" "Target is already installed"
     fi
 
-    local -a command=(/bin/cp -a "${source}" "${target}")
+    local -a command=(/bin/cp -pPR "${source}" "${target}")
     if (( root == 0 ))
     then
         "${command[@]}" 1>&3 2>&4
