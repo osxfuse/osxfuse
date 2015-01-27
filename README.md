@@ -23,7 +23,7 @@ The build script automatically locates all supported installations of Xcode in t
 
 **Note:**
 
-* On Mac OS X 10.6 Xcode versions 4.0, 4.1, and 4.2 are not supported due to a bug in the Xcode's linker. Use Xcode 3.2.6 to build FUSE for OS X. See ["Fun with weak dynamic linking"](http://glandium.org/blog/?p=2764) for more details.
+* On Mac OS X 10.6 Xcode versions 4.0, 4.1, and 4.2 are not supported due to a bug in Xcode's linker. Use Xcode 3.2.6 to build FUSE for OS X. See ["Fun with weak dynamic linking"](http://glandium.org/blog/?p=2764) for more details.
 
 * Xcode 4.3 and newer versions do not include autotools and libtool, that are needed to build `libosxfuse`. Install MacPorts and run the following command in Terminal to install the required tools:
 
