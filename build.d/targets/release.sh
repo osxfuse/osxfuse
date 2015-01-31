@@ -34,11 +34,29 @@ declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
 declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
 
 declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"
+declare -i  RELEASE_CREATE_DSSTORE=0
 
 
 function release_build
 {
-    build_target_getopt -p meta -- "${@}"
+    function release_build_getopt_handler
+    {
+        case "${1}" in
+            --auto-create-dsstore)
+                RELEASE_CREATE_DSSTORE=0
+                return 1
+                ;;
+            --create-dsstore)
+                RELEASE_CREATE_DSSTORE=1
+                return 1
+                ;;
+        esac
+    }
+
+    build_target_getopt -p meta -s "auto-create-dsstore,create-dsstore" -h release_build_getopt_handler -- "${@}"
+    unset release_build_getopt_handler
+
+    common_log_variable RELEASE_CREATE_DSSTORE
 
     common_log "Clean target"
     build_target_invoke "${BUILD_TARGET_NAME}" clean
@@ -85,13 +103,15 @@ function release_build
 
     common_log -v 3 "Build release disk image"
 
-    local disk_image_path_rw="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-rw.dmg"
+    local disk_image_resources_path="${BUILD_SOURCE_DIRECTORY}/support/DiskImage"
+
+    local disk_image_path_stage="${BUILD_TARGET_BUILD_DIRECTORY}/stage.dmg"
     local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
 
     /usr/bin/hdiutil create \
                      -layout NONE -size 16m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
                      -volname "FUSE for OS X" \
-                     "${disk_image_path_rw}" 1>&3 2>&4
+                     "${disk_image_path_stage}" 1>&3 2>&4
     common_die_on_error "Failed to create disk image"
 
     # Attach disk image
@@ -110,12 +130,12 @@ function release_build
         fi
     }
 
-    disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${disk_image_path_rw}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
-    common_die_on_error "Failed to attach disk image '${disk_image_path_rw}'"
+    disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${disk_image_path_stage}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
+    common_die_on_error "Failed to attach disk image '${disk_image_path_stage}'"
 
     # Copy license to disk image
 
-    /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
+    /bin/cp -a "${disk_image_resources_path}/License.rtf" "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
     detach_die_on_error "Failed to copy license to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
@@ -123,7 +143,7 @@ function release_build
 
     # Copy extras to disk image
 
-    /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
+    /bin/cp -a "${disk_image_resources_path}/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
     detach_die_on_error "Failed to copy extras to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Extras"/* 1>&3 2>&4
@@ -167,27 +187,51 @@ EOF
     # Copy custom background to disk image
 
     /bin/mkdir -p "${disk_image_mount_point}/.background" 1>&3 2>&4 && \
-    /bin/cp -a "${BUILD_SOURCE_DIRECTORY}/support/DiskImage/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
+    /bin/cp -a "${disk_image_resources_path}/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
     detach_die_on_error "Failed to copy background image to disk image"
 
-    # Adjust view options of disk image
+    # Customize view options of disk image
+
+    local disk_image_view_options='
+            set current view of container window to icon view
+            set toolbar visible of container window to false
+            set the bounds of container window to {0, 0, 550, 325}
+
+            set theViewOptions to the icon view options of container window
+            set arrangement of theViewOptions to not arranged
+            set icon size of theViewOptions to 96
+            set text size of theViewOptions to 12
+            set background picture of theViewOptions to file ".background:background.tiff"
+
+            set position of item "License" of container window to {125, 165}
+            set position of item "FUSE for OS X" of container window to {275, 165}
+            set position of item "Extras" of container window to {425, 165}'
+
+    local disk_image_view_options_digest=""
+    disk_image_view_options_digest="`/usr/bin/openssl dgst -sha256 <<< "${disk_image_view_options}"`"
+    detach_die_on_error "Failed to compute digest of view options"
+
+    if (( RELEASE_CREATE_DSSTORE == 0 ))
+    then
+        local disk_image_dsstore_tag=""
+        disk_image_dsstore_tag="$(/usr/bin/sed -n '1p' "${disk_image_resources_path}/DS_Store" 2> /dev/null)"
+
+        if [[ "${disk_image_view_options_digest}" != "${disk_image_dsstore_tag}" ]]
+        then
+            RELEASE_CREATE_DSSTORE=1
+        fi
+    fi
+
+    if (( RELEASE_CREATE_DSSTORE  != 0 ))
+    then
+        common_log -v 3 "Customize disk image view options"
 
 osascript 1>&3 2>&4 <<EOF
 tell application "Finder"
     tell disk "FUSE for OS X"
         open
         delay 1
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set the bounds of container window to {0, 0, 550, 325}
-        set theViewOptions to the icon view options of container window
-        set arrangement of theViewOptions to not arranged
-        set icon size of theViewOptions to 96
-        set text size of theViewOptions to 12
-        set background picture of theViewOptions to file ".background:background.tiff"
-        set position of item "License" of container window to {125, 165}
-        set position of item "FUSE for OS X" of container window to {275, 165}
-        set position of item "Extras" of container window to {425, 165}
+        ${disk_image_view_options}
         delay 1
         update without registering applications
         delay 1
@@ -195,10 +239,20 @@ tell application "Finder"
     end tell
 end tell
 EOF
-    detach_die_on_error "Failed to adjust disk image view options"
+        detach_die_on_error "Failed to customize disk image view options"
 
-    sync
-    sleep 1
+        sync
+        sleep 1
+
+        printf "%s\n" "${disk_image_view_options_digest}" > "${disk_image_resources_path}/DS_Store" 2>&4
+        detach_die_on_error "Failed to update cache tag of disk image .DS_Store file"
+
+        /bin/cat "${disk_image_mount_point}/.DS_Store" >> "${disk_image_resources_path}/DS_Store" 2>&4
+        detach_die_on_error "Failed to update cached disk image .DS_Store file"
+    else
+        /usr/bin/sed -n '1,1!p' "${disk_image_resources_path}/DS_Store" > "${disk_image_mount_point}/.DS_Store" 2>&4
+        detach_die_on_error "Failed to copy cached .DS_Store file to disk image"
+    fi
 
     # Detach disk image
 
@@ -209,9 +263,9 @@ EOF
 
     # Convert to read-only, compressed disk image
 
-    /usr/bin/hdiutil convert -imagekey zlib-level=9 -format UDZO "${disk_image_path_rw}" \
+    /usr/bin/hdiutil convert -imagekey zlib-level=9 -format UDZO "${disk_image_path_stage}" \
                              -o "${disk_image_path}" 1>&3 2>&4 && \
-    /bin/rm -f "${disk_image_path_rw}" && \
+    /bin/rm -f "${disk_image_path_stage}" && \
     common_die_on_error "Failed to finalize disk image"
 
     # Create autoinstaller rules file
@@ -222,8 +276,8 @@ EOF
     disk_image_size="`stat -f%z "${disk_image_path}"`"
     common_die_on_error "Failed to determine size of disk image"
 
-    local disk_image_hash=""
-    disk_image_hash="`openssl sha1 -binary "${disk_image_path}" | openssl base64`"
+    local disk_image_digest=""
+    disk_image_digest="`/usr/bin/openssl dgst -sha1 -binary "${disk_image_path}" | /usr/bin/openssl enc -base64`"
     common_die_on_error "Failed to compute hash of disk image"
 
     local rules_plist_path="${BUILD_TARGET_BUILD_DIRECTORY}/Release.plist"
@@ -251,7 +305,7 @@ EOF
             <key>Codebase</key>
             <string>${download_url}</string>
             <key>Hash</key>
-            <string>${disk_image_hash}</string>
+            <string>${disk_image_digest}</string>
             <key>Size</key>
             <string>${disk_image_size}</string>
         </dict>
