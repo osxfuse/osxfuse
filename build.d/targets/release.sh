@@ -108,10 +108,8 @@ function release_build
     local disk_image_path_stage="${BUILD_TARGET_BUILD_DIRECTORY}/stage.dmg"
     local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
 
-    /usr/bin/hdiutil create \
-                     -layout NONE -size 16m -fs HFS+ -fsargs "-c c=64,a=16,e=16" \
-                     -volname "FUSE for OS X" \
-                     "${disk_image_path_stage}" 1>&3 2>&4
+    /usr/bin/hdiutil create -size 16m -fs HFS+ -volname "FUSE for OS X" -fsargs "-c c=64,a=16,e=16" -layout NONE \
+                            "${disk_image_path_stage}" 1>&3 2>&4
     common_die_on_error "Failed to create disk image"
 
     # Attach disk image
@@ -132,6 +130,12 @@ function release_build
 
     disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${disk_image_path_stage}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
     common_die_on_error "Failed to attach disk image '${disk_image_path_stage}'"
+
+    # Remove .Trashes directory from disk image
+
+    /bin/chmod 755 "${disk_image_mount_point}/.Trashes" 1>&3 2>&4 && \
+    /bin/rm -rf "${disk_image_mount_point}/.Trashes" 1>&3 2>&4
+    common_die_on_error "Failed to remove .Trashes directory from disk image"
 
     # Copy license to disk image
 
@@ -265,7 +269,7 @@ EOF
 
     /usr/bin/hdiutil convert -imagekey zlib-level=9 -format UDZO "${disk_image_path_stage}" \
                              -o "${disk_image_path}" 1>&3 2>&4 && \
-    /bin/rm -f "${disk_image_path_stage}" && \
+    /bin/rm -f "${disk_image_path_stage}"
     common_die_on_error "Failed to finalize disk image"
 
     # Create autoinstaller rules file
