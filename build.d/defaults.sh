@@ -42,7 +42,7 @@ declare -ra DEFAULT_SDK_10_5_ARCHITECURES=("ppc" "ppc64" "i386" "x86_64")
 declare -r  DEFAULT_SDK_10_5_COMPILER="4.2"
 
 declare -ra DEFAULT_SDK_10_6_ARCHITECURES=("i386" "x86_64")
-declare -r  DEFAULT_SDK_10_6_COMPILER="4.2"
+declare -r  DEFAULT_SDK_10_6_COMPILER="com.apple.compilers.llvmgcc42"
 
 declare -ra DEFAULT_SDK_10_7_ARCHITECURES=("i386" "x86_64")
 declare -r  DEFAULT_SDK_10_7_COMPILER="com.apple.compilers.llvmgcc42"
