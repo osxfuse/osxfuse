@@ -125,23 +125,7 @@
  * File system interface
  */
 
-#ifdef KERNEL
-    /*
-     * The maximum supported I/O size on Mac OS X 10.6 and earlier is 16 MiB. Mac
-     * OS X 10.7 and later support up to 32 MiB.
-     */
-    #if VERSION_MAJOR < 11
-        #define FUSE_MAX_UPL_SIZE               4096
-    #else
-        #define FUSE_MAX_UPL_SIZE               8192
-    #endif
-#else
-    /*
-     * The maximum supported UPL size of the user-space library is independent
-     * from the FUSE kernel extension's deployment target.
-     */
-    #define FUSE_MAX_UPL_SIZE                   8192
-#endif
+#define FUSE_MAX_UPL_SIZE                       8192
 
 /*
  * This is the default block size of the virtual storage devices that are
