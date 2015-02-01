@@ -110,10 +110,10 @@ function common_log
             1|2)
                 color="1;30"
                 ;;
-            4) 
+            4)
                 color="0;37"
                 ;;
-            [0-9]+) 
+            [0-9]+)
                 color="0:30"
                 ;;
         esac
@@ -209,7 +209,7 @@ function common_die_on_error
     fi
 }
 
-function common_warn_on_error 
+function common_warn_on_error
 {
     if (( ${?} != 0 ))
     then
@@ -233,7 +233,7 @@ function common_signal_trap
 
     common_log -v 4 "Received signal: ${signal}"
     case "${signal}" in
-        SIGINT)  
+        SIGINT)
             common_warn "Aborted by user"
             exit 130
             ;;
@@ -490,7 +490,7 @@ function common_variable_get
 function common_variable_set
 {
     common_assert "common_variable_is_legal_name `string_escape "${1}"`"
-    
+
     eval "${1}=`string_escape "${2}"`"
 }
 

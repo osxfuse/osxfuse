@@ -93,7 +93,7 @@ function array_get_elements
     function array_get_elements_serialize
     {
         local offset=$(( ${#} / 2 + 1 ))
-        
+
         if [[ ${#} -ge ${offset} ]]
         then
             printf '[%q]=%q' "${1}" "${!offset}"
@@ -180,7 +180,7 @@ function array_sort
 
             pivot=\"\${1}\"
             shift
-            
+
             while [[ \${#} -gt 0 ]]
             do
                 ${2} \"\${1}\" \"\${pivot}\"

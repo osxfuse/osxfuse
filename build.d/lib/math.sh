@@ -45,7 +45,7 @@ function math_compare
     if (( ${1} > ${2} ))
     then
         return 2
-    fi 
+    fi
     return 0
 }
 

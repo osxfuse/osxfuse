@@ -49,7 +49,7 @@ function xcode_find
             array_create "XCODE_SDK_${1/./_}_XCODE"
             array_append XCODE_SDK_INSTALLED "${1}"
         fi
-        
+
         array_append "XCODE_SDK_${1/./_}_XCODE" "${xcode_version}"
     }
 
