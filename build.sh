@@ -1247,6 +1247,10 @@ __END_DISTRIBUTION
 
     local md_volume_path="/Volumes/$md_volume_name"
 
+    /bin/chmod 755 "${md_volume_path}/.Trashes" >$m_stdout 2>$m_stderr && \
+    /bin/rm -rf "${md_volume_path}/.Trashes" >$m_stdout 2>$m_stderr
+    m_exit_on_error "cannot remove .Trashes directory from scratch disk image"
+
     # Copy over the license file
     #
     /bin/cp "$m_srcroot/packaging/diskimage/License.rtf" "$md_volume_path"
