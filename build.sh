@@ -1353,37 +1353,84 @@ __END_ENGINE_INSTALL
 
     # Customize scratch image
     #
-    echo '
-        tell application "Finder"
-            tell disk "'$md_volume_name'"
-                open
-                set current view of container window to icon view
-                set toolbar visible of container window to false
-                set the bounds of container window to {0, 0, 500, 350}
-                set theViewOptions to the icon view options of container window
-                set arrangement of theViewOptions to not arranged
-                set icon size of theViewOptions to 128
-                set background picture of theViewOptions to file ".background:background.png"
-                set position of item "License.rtf" of container window to {100, 230}
-                set position of item "'$md_pkgname_installer'" of container window to {250, 230}
-                set position of item "OSXFUSE Website.webloc" of container window to {400, 230}
-                close
-                open
-                update without registering applications
-                close
-            end tell
-        end tell
-    ' | osascript
+    local disk_image_view_options='
+            set current view of container window to icon view
+            set toolbar visible of container window to false
+            set the bounds of container window to {0, 0, 500, 350}
+
+            set theViewOptions to the icon view options of container window
+            set arrangement of theViewOptions to not arranged
+            set icon size of theViewOptions to 128
+            set background picture of theViewOptions to file ".background:background.png"
+
+            set position of item "License.rtf" of container window to {100, 230}
+            set position of item "'$md_pkgname_installer'" of container window to {250, 230}
+            set position of item "OSXFUSE Website.webloc" of container window to {400, 230}'
+
+    local disk_image_view_options_digest=""
+    disk_image_view_options_digest="`/usr/bin/openssl dgst -sha256 <<< "${disk_image_view_options}"`"
     if [ $? -ne 0 ]
     then
         hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
         false
-        m_exit_on_error "cannot customize the scratch disk image."
+        m_exit_on_error "Failed to compute digest of view options"
+    fi
+
+    local disk_image_dsstore_tag=""
+    disk_image_dsstore_tag="$(/usr/bin/sed -n '1p' "$m_srcroot/packaging/diskimage/DS_Store" 2> /dev/null)"
+
+    if [[ "${disk_image_view_options_digest}" == "${disk_image_dsstore_tag}" ]]
+    then
+        /usr/bin/sed -n '1,1!p' "$m_srcroot/packaging/diskimage/DS_Store" > "$md_volume_path/.DS_Store" 2>$m_stderr
+        if [ $? -ne 0 ]
+        then
+            hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+            false
+            m_exit_on_error "cannot copy cached .DS_Store file to disk image."
+        fi
+    else
+osascript >$m_stdout 2>$m_stderr <<EOF
+tell application "Finder"
+    tell disk "$md_volume_name"
+        open
+        delay 1
+        ${disk_image_view_options}
+        delay 1
+        update without registering applications
+        delay 1
+        close
+    end tell
+end tell
+EOF
+        if [ $? -ne 0 ]
+        then
+            hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+            false
+            m_exit_on_error "cannot customize the scratch disk image."
+        fi
+
+        sync
+        sleep 1
+
+        printf "%s\n" "${disk_image_view_options_digest}" > "$m_srcroot/packaging/diskimage/DS_Store" 2>$m_stderr
+        if [ $? -ne 0 ]
+        then
+            hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+            false
+            m_exit_on_error "cannot update cache tag of disk image .DS_Store file."
+        fi
+
+        /bin/cat "$md_volume_path/.DS_Store" >> "$m_srcroot/packaging/diskimage/DS_Store" 2>$m_stderr
+        if [ $? -ne 0 ]
+        then
+            hdiutil detach "$md_volume_path" >$m_stdout 2>$m_stderr
+            false
+            m_exit_on_error "cannot update cached disk image .DS_Store file."
+        fi
     fi
 
     chmod -Rf go-w "$md_volume_path"
-    sync
-    sync
+
     # ignore errors
 
     # Detach the volume.
