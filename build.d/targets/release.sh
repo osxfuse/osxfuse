@@ -285,7 +285,7 @@ EOF
     common_die_on_error "Failed to compute hash of disk image"
 
     local rules_plist_path="${BUILD_TARGET_BUILD_DIRECTORY}/Release.plist"
-    local download_url="http://sourceforge.net/projects/osxfuse/files/osxfuse-${osxfuse_version}/${disk_image_path##*/}/download"
+    local download_url="https://github.com/osxfuse/osxfuse/releases/download/osxfuse-${osxfuse_version}/${disk_image_path##*/}"
 
 /bin/cat > "${rules_plist_path}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
