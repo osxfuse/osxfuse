@@ -105,6 +105,12 @@ readonly M_XCODE61_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare M_XCODE62=""
 declare M_XCODE62_VERSION=6.2
 readonly M_XCODE62_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare M_XCODE63=""
+declare M_XCODE63_VERSION=6.3
+readonly M_XCODE63_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare M_XCODE64=""
+declare M_XCODE64_VERSION=6.4
+readonly M_XCODE64_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -2569,6 +2575,22 @@ function m_handler()
                     M_XCODE62_VERSION=$m_xcode_version
                 fi
                 ;;
+            6.3*)
+                m_version_compare $M_XCODE63_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE63="$m_xcode_root"
+                    M_XCODE63_VERSION=$m_xcode_version
+                fi
+                ;;
+            6.4*)
+                m_version_compare $M_XCODE64_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE64="$m_xcode_root"
+                    M_XCODE64_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2784,6 +2806,36 @@ function m_handler()
         M_SDK_1010="$M_XCODE62/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
         M_SDK_1010_XCODE="$M_XCODE62"
         M_SDK_1010_COMPILER="$M_XCODE62_COMPILER"
+        m_platform_realistic_add "10.10"
+    fi
+    if [[ -n "$M_XCODE63" ]]
+    then
+        m_xcode_latest="$M_XCODE63"
+
+        M_SDK_109="$M_XCODE63/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+        M_SDK_109_XCODE="$M_XCODE63"
+        M_SDK_109_COMPILER="$M_XCODE63_COMPILER"
+        m_platform_realistic_add "10.9"
+        m_platform_add "10.10"
+
+        M_SDK_1010="$M_XCODE63/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
+        M_SDK_1010_XCODE="$M_XCODE63"
+        M_SDK_1010_COMPILER="$M_XCODE63_COMPILER"
+        m_platform_realistic_add "10.10"
+    fi
+    if [[ -n "$M_XCODE64" ]]
+    then
+        m_xcode_latest="$M_XCODE64"
+
+        M_SDK_109="$M_XCODE64/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+        M_SDK_109_XCODE="$M_XCODE64"
+        M_SDK_109_COMPILER="$M_XCODE64_COMPILER"
+        m_platform_realistic_add "10.9"
+        m_platform_add "10.10"
+
+        M_SDK_1010="$M_XCODE64/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
+        M_SDK_1010_XCODE="$M_XCODE64"
+        M_SDK_1010_COMPILER="$M_XCODE64_COMPILER"
         m_platform_realistic_add "10.10"
     fi
 
