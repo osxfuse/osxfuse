@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2015 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution  and  use  in  source  and  binary  forms,  with   or   without
@@ -550,7 +550,7 @@ function build_target_install
     local target="${target_directory}"
     if [[ ! "${source}" =~ /$ ]]
     then
-        target="${target}/${source##*/}"
+        target="${target}/`basename "${source}"`"
         common_assert "[[ ! -e `string_escape "${target}"` ]]" "Target is already installed"
     fi
 
@@ -575,7 +575,7 @@ function build_target_invoke
     local target_name="${1}"
     local action="${2}"
 
-    local target_path="${BUILD_ROOT}/targets/${target_name}.sh"
+    local target_path="${BUILD_D_DIRECTORY}/targets/${target_name}.sh"
 
     common_assert "common_function_is_legal_name `string_escape "${target_name}"`"
     common_assert "[[ -f `string_escape "${target_path}"` ]]" "Target '${target_name}' does not exist"
@@ -696,10 +696,10 @@ function build_clean
 
 function build_help
 {
-    local script="${BASH_SOURCE[0]##*/}"
+    local script="`basename "${BASH_SOURCE[0]}"`"
 
 /bin/cat <<EOF
-Copyright (c) 2011-2014 Benjamin Fleischer
+Copyright (c) 2011-2015 Benjamin Fleischer
 All rights reserved.
 
 Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) {target name}]
@@ -717,10 +717,12 @@ EOF
 
 function build_main
 {
+    local build_d_directory="`dirname "${BASH_SOURCE[0]}"`/build.d"
+
     # Source libraries
 
     local library_path=""
-    for library_path in "${BASH_SOURCE[0]%/*}/build.d/lib"/*.sh
+    for library_path in "${build_d_directory}/lib"/*.sh
     do
         if [[ -f "${library_path}" ]]
         then
@@ -731,11 +733,11 @@ function build_main
     common_log_initialize
     common_signal_trap_initialize
 
-    declare -r BUILD_ROOT="$(common_path_absolute "${BASH_SOURCE[0]%/*}/build.d")"
+    declare -r BUILD_D_DIRECTORY="`common_path_absolute "${build_d_directory}"`"
 
     # Source defaults
 
-    local defaults_path="${BUILD_ROOT}/defaults.sh"
+    local defaults_path="${BUILD_D_DIRECTORY}/defaults.sh"
 
     common_log -v 3 "Source defaults"
     stack_push COMMON_LOG_PREFIX "Defaults"
@@ -885,11 +887,11 @@ function build_main
     # Source extensions
 
     local extension_path=""
-    for extension_path in "${BUILD_ROOT}/extensions"/*.sh
+    for extension_path in "${BUILD_D_DIRECTORY}/extensions"/*.sh
     do
         if [[ -f "${library_path}" ]]
         then
-            local extension_basename="${extension_path##*/}"
+            local extension_basename="`basename "${extension_path}"`"
             local extension_name="${extension_basename%.*}"
 
             common_log -v 3 "Source extension ${extension_name}"

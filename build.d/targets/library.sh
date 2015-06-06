@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2015 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution  and  use  in  source  and  binary  forms,  with   or   without
@@ -79,7 +79,7 @@ function library_build
     local executable_path=""
     while IFS=$'\0' read -r -d $'\0' executable_path
     do
-        local executable_name="${executable_path##*/}"
+        local executable_name="`basename "${executable_path}"`"
 
         # Link library debug information
 

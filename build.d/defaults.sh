@@ -30,7 +30,7 @@
 
 # Build tool defaults
 
-declare -r  DEFAULT_SOURCE_DIRECTORY="`common_path_absolute "${0%/*}"`"
+declare -r  DEFAULT_SOURCE_DIRECTORY="$(common_path_absolute "$(dirname "${0}")")"
 declare -r  DEFAULT_BUILD_DIRECTORY="/tmp/osxfuse"
 
 declare -ri DEFAULT_LOG_VERBOSE=2

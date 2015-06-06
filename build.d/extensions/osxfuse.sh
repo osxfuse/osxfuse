@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2015 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution  and  use  in  source  and  binary  forms,  with   or   without
@@ -235,7 +235,7 @@ EOF
     for (( ; i < ${#component_packages[@]} ; i++ ))
     do
         local identifier="${component_packages_identifiers[${i}]}"
-        local basename="${component_packages[${i}]##*/}"
+        local basename="`basename "${component_packages[${i}]}"`"
         local name="`string_uppercase <<< "${identifier##*.}"`"
 
 /bin/cat >> Distribution <<EOF
