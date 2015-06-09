@@ -154,6 +154,12 @@ declare M_SDK_1010=""
 declare M_SDK_1010_XCODE=""
 declare M_SDK_1010_COMPILER=""
 
+# SDK 10.11
+readonly M_SDK_1011_ARCHS="i386 x86_64"
+declare M_SDK_1011=""
+declare M_SDK_1011_XCODE=""
+declare M_SDK_1011_COMPILER=""
+
 readonly M_FSBUNDLE_NAME="osxfusefs.fs"
 readonly M_INSTALL_RESOURCES_DIR="Install_resources"
 readonly M_KEXT_ID="com.github.osxfuse.filesystems.osxfusefs"
@@ -363,6 +369,13 @@ function m_set_platform()
         m_usdk_dir="$M_SDK_1010"
         m_compiler="$M_SDK_1010_COMPILER"
         m_archs="$M_SDK_1010_ARCHS"
+    ;;
+    10.11*)
+        m_osname="El Capitan"
+        m_xcode_dir="$M_SDK_1011_XCODE"
+        m_usdk_dir="$M_SDK_1011"
+        m_compiler="$M_SDK_1011_COMPILER"
+        m_archs="$M_SDK_1011_ARCHS"
     ;;
     *)
         m_osname="Unknown"
@@ -1484,6 +1497,26 @@ cat > "$md_rules_plist" <<__END_RULES_PLIST
   <key>Rules</key>
   <array>
 __END_RULES_PLIST
+
+    if [[ "$M_PLATFORMS" =~ "10.11" ]]
+    then
+cat >> "$md_rules_plist" <<__END_RULES_PLIST
+    <dict>
+      <key>ProductID</key>
+      <string>$M_OSXFUSE_PRODUCT_ID</string>
+      <key>Predicate</key>
+      <string>SystemVersion.ProductVersion beginswith "10.11" AND Ticket.version != "$m_release_full"</string>
+      <key>Version</key>
+      <string>$m_release_full</string>
+      <key>Codebase</key>
+      <string>$md_download_url</string>
+      <key>Hash</key>
+      <string>$md_dmg_hash</string>
+      <key>Size</key>
+      <string>$md_dmg_size</string>
+    </dict>
+__END_RULES_PLIST
+    fi
 
     if [[ "$M_PLATFORMS" =~ "10.10" ]]
     then
@@ -2750,6 +2783,7 @@ function m_handler()
             m_platform_realistic_add "10.9"
 
             m_platform_add "10.10"
+            m_platform_add "10.11"
         fi
     fi
     if [[ -n "$M_XCODE51" ]]
@@ -2767,6 +2801,7 @@ function m_handler()
         m_platform_realistic_add "10.9"
 
         m_platform_add "10.10"
+        m_platform_add "10.11"
     fi
     if [[ -n "$M_XCODE60" ]]
     then
@@ -2776,7 +2811,9 @@ function m_handler()
         M_SDK_109_XCODE="$M_XCODE60"
         M_SDK_109_COMPILER="$M_XCODE60_COMPILER"
         m_platform_realistic_add "10.9"
+
         m_platform_add "10.10"
+        m_platform_add "10.11"
     fi
     if [[ -n "$M_XCODE61" ]]
     then
@@ -2792,6 +2829,8 @@ function m_handler()
         M_SDK_1010_XCODE="$M_XCODE61"
         M_SDK_1010_COMPILER="$M_XCODE61_COMPILER"
         m_platform_realistic_add "10.10"
+
+        m_platform_add "10.11"
     fi
     if [[ -n "$M_XCODE62" ]]
     then
@@ -2807,6 +2846,8 @@ function m_handler()
         M_SDK_1010_XCODE="$M_XCODE62"
         M_SDK_1010_COMPILER="$M_XCODE62_COMPILER"
         m_platform_realistic_add "10.10"
+
+        m_platform_add "10.11"
     fi
     if [[ -n "$M_XCODE63" ]]
     then
@@ -2822,6 +2863,8 @@ function m_handler()
         M_SDK_1010_XCODE="$M_XCODE63"
         M_SDK_1010_COMPILER="$M_XCODE63_COMPILER"
         m_platform_realistic_add "10.10"
+
+        m_platform_add "10.11"
     fi
     if [[ -n "$M_XCODE64" ]]
     then
@@ -2837,6 +2880,8 @@ function m_handler()
         M_SDK_1010_XCODE="$M_XCODE64"
         M_SDK_1010_COMPILER="$M_XCODE64_COMPILER"
         m_platform_realistic_add "10.10"
+
+        m_platform_add "10.11"
     fi
 
     m_read_input "$@"
