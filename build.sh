@@ -111,6 +111,9 @@ readonly M_XCODE63_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare M_XCODE64=""
 declare M_XCODE64_VERSION=6.4
 readonly M_XCODE64_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare M_XCODE70=""
+declare M_XCODE70_VERSION=7.0
+readonly M_XCODE70_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -815,6 +818,12 @@ function m_handler_dist()
     elif [ -n "$M_SDK_109" ]
     then
         m_platform="10.9"
+    elif [ -n "$M_SDK_1010" ]
+    then
+        m_platform="10.10"
+    elif [ -n "$M_SDK_1011" ]
+    then
+        m_platform="10.11"
     else
         false
         m_exit_on_error "no supported SDK found"
@@ -863,7 +872,7 @@ function m_handler_dist()
 
     pushd "$m_srcroot/prefpane/autoinstaller" >/dev/null 2>/dev/null
     m_exit_on_error "cannot access the autoinstaller source."
-    xcodebuild -configuration "$m_configuration" -target "Build All" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
+    xcodebuild -configuration "$m_configuration" -target "plist_signer" -target "autoinstall-osxfuse-core" GCC_VERSION="$m_compiler" ARCHS="$m_archs" SDKROOT="$m_usdk_dir" MACOSX_DEPLOYMENT_TARGET="$m_platform" >$m_stdout 2>$m_stderr
     m_exit_on_error "xcodebuild cannot build configuration $m_configuration for subtarget autoinstaller."
     popd >/dev/null 2>/dev/null
 
@@ -2624,6 +2633,14 @@ function m_handler()
                     M_XCODE64_VERSION=$m_xcode_version
                 fi
                 ;;
+            7.0*)
+                m_version_compare $M_XCODE70_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE70="$m_xcode_root"
+                    M_XCODE70_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2882,6 +2899,21 @@ function m_handler()
         m_platform_realistic_add "10.10"
 
         m_platform_add "10.11"
+    fi
+    if [[ -n "$M_XCODE70" ]]
+    then
+        m_xcode_latest="$M_XCODE70"
+
+        M_SDK_1010="$M_XCODE70/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
+        M_SDK_1010_XCODE="$M_XCODE70"
+        M_SDK_1010_COMPILER="$M_XCODE70_COMPILER"
+        m_platform_realistic_add "10.10"
+        m_platform_add "10.11"
+
+        M_SDK_1011="$M_XCODE70/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk"
+        M_SDK_1011_XCODE="$M_XCODE70"
+        M_SDK_1011_COMPILER="$M_XCODE70_COMPILER"
+        m_platform_realistic_add "10.11"
     fi
 
     m_read_input "$@"
