@@ -27,7 +27,7 @@ The build script automatically locates all supported installations of Xcode in t
 
 * Xcode 4.3 and newer versions do not include autotools and libtool, that are needed to build `libosxfuse`. Install MacPorts and run the following command in Terminal to install the required tools:
 
-        sudo port install autoconf automake libtool
+        sudo port install autoconf automake libtool gettext
 
 * The "Command Line Tools" package is needed to generate BridgeSupport metadata for `OSXFUSE.framework` because of a bug in `gen_bridge_metadata` (hard coded path to `cpp`).
 
