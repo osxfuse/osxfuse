@@ -367,7 +367,7 @@ function build_target_xcodebuild
 
 function build_target_configure
 {
-    local sdk_path="`xcodebuild -version -sdk macosx${BUILD_TARGET_OPTION_SDK} Path`"
+    local sdk_path="`xcodebuild -version -sdk macosx${BUILD_TARGET_OPTION_SDK} Path 2>&4`"
     if [[ "${sdk_path}" =~ [[:space:]] ]]
     then
         common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK path '${sdk_path}' contains whitespace"

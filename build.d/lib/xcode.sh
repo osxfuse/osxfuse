@@ -72,7 +72,7 @@ function xcode_find
             return
         fi
 
-        xcode_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version 2> /dev/null | grep "Xcode" | /usr/bin/cut -f 2 -d " "`"
+        xcode_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version 2>&4 | grep "Xcode" | /usr/bin/cut -f 2 -d " "`"
         if ! version_is_version "${xcode_version}"
         then
             common_warn "Failed to parse version of Xcode at path '${xcode_path}'"
@@ -88,9 +88,9 @@ function xcode_find
         common_variable_set "XCODE_${xcode_version//./_}_PATH" "${xcode_path}"
         array_create "XCODE_${xcode_version//./_}_SDKS"
 
-        for sdk_name in `DEVELOPER_DIR="${xcode_path}" xcodebuild -showsdks | /usr/bin/sed -E -n -e 's/.*-sdk (macosx.*)/\1/p'`
+        for sdk_name in `DEVELOPER_DIR="${xcode_path}" xcodebuild -showsdks 2>&4 | /usr/bin/sed -E -n -e 's/.*-sdk (macosx.*)/\1/p'`
         do
-            sdk_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk ${sdk_name} SDKVersion`"
+            sdk_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk ${sdk_name} SDKVersion 2>&4`"
             if ! version_is_version "${sdk_version}"
             then
                 continue
