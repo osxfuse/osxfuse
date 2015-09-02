@@ -38,8 +38,8 @@
 
         /*
          * In Mac OS X 10.5 the file system implementation is responsible for posting
-         * kqueue events. Starting with Mac OS X 10.6 VFS took over that job.
-        */
+         * kqueue events. Starting with Mac OS X 10.6 the VFS layer takes over the job.
+         */
         #if VERSION_MAJOR < 10
             #define M_OSXFUSE_ENABLE_KQUEUE             1
         #endif
