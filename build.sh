@@ -114,6 +114,9 @@ readonly M_XCODE64_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare M_XCODE70=""
 declare M_XCODE70_VERSION=7.0
 readonly M_XCODE70_COMPILER="com.apple.compilers.llvm.clang.1_0"
+declare M_XCODE71=""
+declare M_XCODE71_VERSION=7.1
+readonly M_XCODE71_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
 declare M_ACTUAL_PLATFORM=""
 declare M_PLATFORMS=""
@@ -2641,6 +2644,14 @@ function m_handler()
                     M_XCODE70_VERSION=$m_xcode_version
                 fi
                 ;;
+            7.1*)
+                m_version_compare $M_XCODE71_VERSION $m_xcode_version
+                if [[ $? != 2 ]]
+                then
+                    M_XCODE71="$m_xcode_root"
+                    M_XCODE71_VERSION=$m_xcode_version
+                fi
+                ;;
             *)
                 m_log "skip unsupported Xcode version in '$m_xcode_root'."
                 ;;
@@ -2904,15 +2915,18 @@ function m_handler()
     then
         m_xcode_latest="$M_XCODE70"
 
-        M_SDK_1010="$M_XCODE70/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
-        M_SDK_1010_XCODE="$M_XCODE70"
-        M_SDK_1010_COMPILER="$M_XCODE70_COMPILER"
-        m_platform_realistic_add "10.10"
-        m_platform_add "10.11"
-
         M_SDK_1011="$M_XCODE70/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk"
         M_SDK_1011_XCODE="$M_XCODE70"
         M_SDK_1011_COMPILER="$M_XCODE70_COMPILER"
+        m_platform_realistic_add "10.11"
+    fi
+    if [[ -n "$M_XCODE71" ]]
+    then
+        m_xcode_latest="$M_XCODE71"
+
+        M_SDK_1011="$M_XCODE71/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk"
+        M_SDK_1011_XCODE="$M_XCODE71"
+        M_SDK_1011_COMPILER="$M_XCODE71_COMPILER"
         m_platform_realistic_add "10.11"
     fi
 
