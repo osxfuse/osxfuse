@@ -190,8 +190,8 @@ EOF
 
     # Copy custom background to disk image
 
-    /bin/mkdir -p "${disk_image_mount_point}/.background" 1>&3 2>&4 && \
-    /bin/cp -pPR "${disk_image_resources_path}/background.tiff" "${disk_image_mount_point}/.background/background.tiff" 1>&3 2>&4
+    /bin/mkdir -p "${disk_image_mount_point}/.Background" 1>&3 2>&4 && \
+    /bin/cp -pPR "${disk_image_resources_path}/Background.tiff" "${disk_image_mount_point}/.Background/Background.tiff" 1>&3 2>&4
     detach_die_on_error "Failed to copy background image to disk image"
 
     # Customize view options of disk image
@@ -199,13 +199,13 @@ EOF
     local disk_image_view_options='
             set current view of container window to icon view
             set toolbar visible of container window to false
-            set the bounds of container window to {0, 0, 550, 325}
+            set the bounds of container window to {0, 0, 550, 347}
 
             set theViewOptions to the icon view options of container window
             set arrangement of theViewOptions to not arranged
             set icon size of theViewOptions to 96
             set text size of theViewOptions to 12
-            set background picture of theViewOptions to file ".background:background.tiff"
+            set background picture of theViewOptions to file ".Background:Background.tiff"
 
             set position of item "License" of container window to {125, 165}
             set position of item "FUSE for OS X" of container window to {275, 165}
