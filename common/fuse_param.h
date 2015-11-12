@@ -25,7 +25,6 @@
     /* Kernel-space compile-time tunables */
 
     #define M_OSXFUSE_ENABLE_FIFOFS                     0
-    #define M_OSXFUSE_ENABLE_INTERRUPT                  1
     #define M_OSXFUSE_ENABLE_SPECFS                     0
     #define M_OSXFUSE_ENABLE_TSLOCKING                  1
     #define M_OSXFUSE_ENABLE_UNSUPPORTED                1
@@ -65,7 +64,7 @@
 /*
  * Availability
  */
- 
+
 // Minimum supported Darwin version
 #define OSXFUSE_MIN_DARWIN_VERSION      9 /* Mac OS X 10.5 */
 
@@ -108,7 +107,7 @@
 /*
  * Device interface
  */
- 
+
 /*
  * This is the prefix of the name of a FUSE device node in devfs. The suffix is
  * the device number. "/dev/osxfuse0" is the first FUSE device by default.
