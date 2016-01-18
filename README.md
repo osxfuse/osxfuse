@@ -39,7 +39,16 @@ The build script locates automatically all supported installations of Xcode in t
 
 **Note:**
 
-* Xcode 4.3 and newer versions do not include autotools and libtool, that are needed to build `libosxfuse`. Install MacPorts and run the following command in Terminal to install the required tools:
+* Xcode 4.3 and newer versions do not include autotools and libtool, that are needed to build `libosxfuse`. Install MacPorts or Homebrew and run the following commands in Terminal to install the required tools:
+
+ MacPorts:
+
+        sudo port install autoconf automake libtool gettext
+
+ Homebrew:
+
+        brew install autoconf automake libtool gettext
+        brew link --force gettext
 
         sudo port install autoconf automake libtool
 
