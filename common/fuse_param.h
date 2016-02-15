@@ -100,10 +100,6 @@
 #define OSXFUSE_SYSCTL_TUNABLES_ADMIN   "vfs.generic." OSXFUSE_NAME ".tunables.admin_group"
 #define OSXFUSE_SYSCTL_VERSION_NUMBER   "vfs.generic." OSXFUSE_NAME ".version.number"
 
-#if OSXFUSE_ENABLE_MACFUSE_MODE
-    #define OSXFUSE_SYSCTL_MACFUSE_MODE "vfs.generic." OSXFUSE_NAME ".control.macfuse_mode"
-#endif
-
 /*
  * Device interface
  */
