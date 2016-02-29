@@ -660,7 +660,7 @@ function build_target_invoke
 
         common_assert "array_is_array BUILD_TARGET_ACTIONS"
         common_assert "array_contains BUILD_TARGET_ACTIONS `string_escape "${BUILD_TARGET_ACTION}"`" \
-                  "Unsupported target action: '${BUILD_TARGET_ACTION}'"
+                      "Unsupported target action: '${BUILD_TARGET_ACTION}'"
 
         declare DEVELOPER_DIR="`xcode_get_path "${BUILD_TARGET_OPTION_XCODE}"`"
         export DEVELOPER_DIR
@@ -746,12 +746,12 @@ function build_main
     common_die_on_error "Failed to source defaults '${defaults_path}'"
 
     common_variable_require DEFAULT_SOURCE_DIRECTORY \
-                        DEFAULT_BUILD_DIRECTORY \
-                        DEFAULT_LOG_VERBOSE \
-                        DEFAULT_SDK_SUPPORTED \
-                        DEFAULT_SDK \
-                        DEFAULT_BUILD_CONFIGURATION \
-                        DEFAULT_PREFIX
+                            DEFAULT_BUILD_DIRECTORY \
+                            DEFAULT_LOG_VERBOSE \
+                            DEFAULT_SDK_SUPPORTED \
+                            DEFAULT_SDK \
+                            DEFAULT_BUILD_CONFIGURATION \
+                            DEFAULT_PREFIX
 
     stack_pop COMMON_LOG_PREFIX
 
@@ -821,8 +821,8 @@ function build_main
     common_log_set_verbose "${verbose}"
 
     common_log_variable ${!DEFAULT_@} \
-                    BUILD_SOURCE_DIRECTORY \
-                    BUILD_BUILD_DIRECTORY
+                        BUILD_SOURCE_DIRECTORY \
+                        BUILD_BUILD_DIRECTORY
 
     # Find Xcode installations
 
