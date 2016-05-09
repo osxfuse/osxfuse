@@ -133,7 +133,7 @@
  */
 #define FUSE_DEFAULT_BLOCKSIZE                  4096
 
-#define FUSE_MIN_BLOCKSIZE                      512
+#define FUSE_MIN_BLOCKSIZE                      128
 #define FUSE_MAX_BLOCKSIZE                      MAXBSIZE
 
 /*
