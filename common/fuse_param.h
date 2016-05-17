@@ -118,7 +118,7 @@
  * This is the number of /dev/osxfuse{n} nodes we will create. {n} goes from
  * 0 to (OSXFUSE_NDEVICES - 1).
  */
-#define OSXFUSE_NDEVICES                        24
+#define OSXFUSE_NDEVICES                        64
 
 /*
  * File system interface
