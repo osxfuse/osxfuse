@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2011-2015 Benjamin Fleischer
+ * Copyright (c) 2011-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -28,7 +28,7 @@
 
 /* Version */
 
-#define OSXFUSE_VERSION_LITERAL             3.2.0
+#define OSXFUSE_VERSION_LITERAL             3.3.0
 #define OSXFUSE_TIMESTAMP                   __DATE__ ", " __TIME__
 
 #define OSXFUSE_VERSION                     FUSE_PP_STRINGIFY(OSXFUSE_VERSION_LITERAL)
