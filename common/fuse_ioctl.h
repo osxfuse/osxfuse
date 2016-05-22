@@ -18,9 +18,6 @@
 // Mark the daemon as dead
 #define FUSEDEVIOCSETDAEMONDEAD        _IOW('F', 3,  u_int32_t)
 
-// Tell the kernel which operations the daemon implements
-#define FUSEDEVIOCSETIMPLEMENTEDBITS   _IOW('F', 4,  u_int64_t)
-
 // Get device's random "secret"
 #define FUSEDEVIOCGETRANDOM            _IOR('F', 5, u_int32_t)
 

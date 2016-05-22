@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2011-2015 Benjamin Fleischer
+ * Copyright (c) 2011-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -114,7 +114,7 @@
  * This is the number of /dev/osxfuse{n} nodes we will create. {n} goes from
  * 0 to (OSXFUSE_NDEVICES - 1).
  */
-#define OSXFUSE_NDEVICES                        24
+#define OSXFUSE_NDEVICES                        64
 
 /*
  * File system interface
@@ -129,8 +129,8 @@
  */
 #define FUSE_DEFAULT_BLOCKSIZE                  4096
 
-#define FUSE_MIN_BLOCKSIZE                      512
-#define FUSE_MAX_BLOCKSIZE                      MAXPHYS
+#define FUSE_MIN_BLOCKSIZE                      128
+#define FUSE_MAX_BLOCKSIZE                      MAXBSIZE
 
 /*
  * This is the default I/O size used while accessing the virtual storage
