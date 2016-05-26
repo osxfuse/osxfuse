@@ -34,14 +34,6 @@
     #if M_OSXFUSE_ENABLE_UNSUPPORTED
         #define M_OSXFUSE_ENABLE_EXCHANGE               1
         #define M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK    1
-
-        /*
-         * In Mac OS X 10.5 the file system implementation is responsible for posting
-         * kqueue events. Starting with Mac OS X 10.6 the VFS layer takes over the job.
-         */
-        #if VERSION_MAJOR < 10
-            #define M_OSXFUSE_ENABLE_KQUEUE             1
-        #endif
     #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
     #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
@@ -66,7 +58,7 @@
  */
 
 // Minimum supported Darwin version
-#define OSXFUSE_MIN_DARWIN_VERSION      9 /* Mac OS X 10.5 */
+#define OSXFUSE_MIN_DARWIN_VERSION      13 /* OS X 10.9 */
 
 /* Compatible API version */
 

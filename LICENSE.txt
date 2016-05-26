@@ -150,10 +150,8 @@ Please read further for specific details.
     THEORY  OF  CONTRACT,  TORT  (INCLUDING  NEGLIGENCE),  STRICT  LIABILITY  OR
     OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-* Parts of the mount_osxfuse and the load_osxfuse command-line programs 
-  (implemented in support/mount_osxfuse/ and support/load_osxfuse/,
-  respectively) are covered under the Apple Public Source License (APSL). You
-  can read the APSL at:
+* Parts of the mount_osxfuse command-line program are covered under the Apple
+  Public Source License (APSL). You can read the APSL at:
 
     http://www.opensource.apple.com/license/apsl/
 

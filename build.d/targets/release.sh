@@ -78,8 +78,8 @@ function release_build
 
     # Build distribution package
 
-    build_target_invoke distribution build -s 10.5 -d 10.5 -c Release \
-                                           --kext=10.5 --kext=10.6 --kext="10.7->10.6" --kext="10.8->10.6" --kext=10.9 --kext="10.10->10.9" --kext="10.11->10.9" \
+    build_target_invoke distribution build -s 10.9 -d 10.9 -c Release \
+                                           --kext=10.9 --kext="10.10->10.9" --kext="10.11->10.9" \
                                            --code-sign-identity="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                            --product-sign-identity="${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
     common_die_on_error "Failed to build distribution package"
@@ -295,7 +295,7 @@ EOF
     <array>
 EOF
 
-    for osx_version in 10.5 10.6 10.7 10.8 10.9 10.10 10.11
+    for osx_version in 10.9 10.10 10.11
     do
 /bin/cat >> "${rules_plist_path}" <<EOF
         <dict>
