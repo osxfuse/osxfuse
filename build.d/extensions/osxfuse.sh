@@ -213,7 +213,7 @@ function osxfuse_build_distribution_package
 /bin/cat > Distribution <<EOF
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <installer-gui-script minSpecVersion="1">
-    <title>FUSE for OS X</title>
+    <title>FUSE for macOS</title>
     <welcome file="Welcome.rtf"/>
     <license file="License.rtf"/>
     <options customize="always" rootVolumeOnly="true" require-scripts="false"/>

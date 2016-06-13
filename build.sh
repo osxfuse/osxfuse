@@ -39,11 +39,11 @@ function build_target_sanity_check
 {
     if ! xcode_sdk_is_supported "${BUILD_TARGET_OPTION_SDK}"
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK not supported"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK not supported"
     fi
     if ! xcode_sdk_is_installed "${BUILD_TARGET_OPTION_SDK}"
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK not found"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK not found"
     fi
 
     if ! array_contains "XCODE_INSTALLED" "${BUILD_TARGET_OPTION_XCODE}"
@@ -52,14 +52,14 @@ function build_target_sanity_check
     fi
     if ! xcode_contains_sdk "${BUILD_TARGET_OPTION_XCODE}" "${BUILD_TARGET_OPTION_SDK}"
     then
-        common_die "Xcode ${BUILD_TARGET_OPTION_XCODE} does not include OS X ${BUILD_TARGET_OPTION_SDK} SDK"
+        common_die "Xcode ${BUILD_TARGET_OPTION_XCODE} does not include macOS ${BUILD_TARGET_OPTION_SDK} SDK"
     fi
 
     function build_target_sanity_check_build_achitecture
     {
         if ! array_contains "DEFAULT_SDK_${BUILD_TARGET_OPTION_SDK/./_}_ARCHITECURES" "${1}"
         then
-            common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK does not support architecture ${1}"
+            common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK does not support architecture ${1}"
         fi
     }
     array_foreach BUILD_TARGET_OPTION_ARCHITECTURES build_target_sanity_check_build_achitecture
@@ -72,12 +72,12 @@ function build_target_sanity_check
     version_compare "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}" 10.0
     if (( ${?} == 1 ))
     then
-        common_die "Deployment target must be at least OS X 10.0"
+        common_die "Deployment target must be at least macOS 10.0"
     fi
     version_compare "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}" "${BUILD_TARGET_OPTION_SDK}"
     if (( ${?} == 2 ))
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK does not support OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET} as deployment target"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK does not support macOS ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET} as deployment target"
     fi
 
     if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" && ! -d "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
@@ -370,7 +370,7 @@ function build_target_configure
     local sdk_path="`xcodebuild -version -sdk macosx${BUILD_TARGET_OPTION_SDK} Path 2>&4`"
     if [[ "${sdk_path}" =~ [[:space:]] ]]
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK path '${sdk_path}' contains whitespace"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK path '${sdk_path}' contains whitespace"
     fi
 
     local compiler=""
@@ -711,7 +711,7 @@ Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) {target name}]
 Options:   [-v {verbose level}|--verbose={verbose level}]
 
 Installed Xcode versions: `array_join XCODE_INSTALLED ", "`
-Installed OS X SDKs:      `array_join XCODE_SDK_INSTALLED ", "`
+Installed macOS SDKs:     `array_join XCODE_SDK_INSTALLED ", "`
 EOF
 }
 
@@ -834,7 +834,7 @@ function build_main
     fi
     if [[ ${#XCODE_SDK_INSTALLED} -eq 0 ]]
     then
-        common_die "No supported OS X SDK installed"
+        common_die "No supported macOS SDK installed"
     fi
 
     # Check settings
@@ -848,9 +848,9 @@ function build_main
     then
         if common_variable_is_readonly DEFAULT_SDK
         then
-            common_die "Default OS X SDK not available"
+            common_die "Default macOS SDK not available"
         else
-            local osx_version="`osx_get_version`"
+            local macos_version="`macos_get_version`"
 
             function build_main_default_sdk
             {
@@ -858,7 +858,7 @@ function build_main
                 then
                     DEFAULT_SDK="${1}"
                 else
-                    version_compare "${1}" "${osx_version}"
+                    version_compare "${1}" "${macos_version}"
                     if (( ${?} == 2 ))
                     then
                         return 1
@@ -874,7 +874,7 @@ function build_main
             unset build_main_default_sdk
 
             common_assert "[[ -n `string_escape "${DEFAULT_SDK}"` ]]"
-            common_warn "Falling back to OS X ${DEFAULT_SDK} SDK as default SDK"
+            common_warn "Falling back to macOS ${DEFAULT_SDK} SDK as default SDK"
         fi
     fi
 

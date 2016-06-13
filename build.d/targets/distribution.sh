@@ -98,7 +98,7 @@ function distribution_build
     build_target_invoke "${BUILD_TARGET_NAME}" clean
     common_die_on_error "Failed to clean target"
 
-    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for macOS ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
     local -a default_build_options=("-s${BUILD_TARGET_OPTION_SDK}"
                                     "-x${BUILD_TARGET_OPTION_XCODE}"
@@ -268,14 +268,14 @@ function distribution_build
 
     local distribution_package_path="${BUILD_TARGET_BUILD_DIRECTORY}/Distribution.pkg"
 
-    local -a osx_versions_supported=()
+    local -a macos_versions_supported=()
     for task in "${DISTRIBUTION_KEXT_TASKS[@]}"
     do
-        local osx_version="`expr "${task}" : '^\([[:digit:]]\{1,\}\(\.[[:digit:]]\{1,\}\)*\)'`"
-        version_compare "${osx_version}" "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+        local macos_version="`expr "${task}" : '^\([[:digit:]]\{1,\}\(\.[[:digit:]]\{1,\}\)*\)'`"
+        version_compare "${macos_version}" "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
         if (( ${?} != 1 ))
         then
-            osx_versions_supported+=("${osx_version}")
+            macos_versions_supported+=("${macos_version}")
         fi
     done
 
@@ -284,7 +284,7 @@ function distribution_build
 
     osxfuse_build_distribution_package -p "${packages_directory}" \
                                        "${component_packages[@]/#/-c}" \
-                                       "${osx_versions_supported[@]/#/-d}" \
+                                       "${macos_versions_supported[@]/#/-d}" \
                                        "${distribution_package_path}"
     common_die_on_error "Failed to build distribution package"
 

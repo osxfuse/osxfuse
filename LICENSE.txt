@@ -1,4 +1,4 @@
-FUSE for OS X is a software developed by the OSXFUSE project and is covered
+FUSE for macOS is a software developed by the osxfuse project and is covered
 under the following BSD-style license:
 
   Copyright (c) 2011-2016 Benjamin Fleischer
@@ -13,7 +13,7 @@ under the following BSD-style license:
   2. Redistributions in binary form must reproduce the above  copyright  notice,
      this list of conditions and the following disclaimer in  the  documentation
      and/or other materials provided with the distribution.
-  3. Neither the name of OSXFUSE nor the names of its contributors may  be  used
+  3. Neither the name of osxfuse nor the names of its contributors may  be  used
      to endorse or promote products derived from this software without  specific
      prior written permission.
 
@@ -32,7 +32,7 @@ under the following BSD-style license:
 Note that the patches to the FUSE user space library and to the SSHFS user space
 program are also released under the BSD license.
 
-FUSE for OS X is a fork of MacFUSE. MacFUSE has been developed by Google Inc..
+FUSE for macOS is a fork of MacFUSE. MacFUSE has been developed by Google Inc..
 Additional information and the original source of MacFUSE are available on
 http://code.google.com/p/macfuse/. MacFUSE is covered under the following
 BSD-style license:
@@ -157,7 +157,7 @@ Please read further for specific details.
 
     http://www.opensource.apple.com/license/apsl/
 
-* Parts of the FUSE for OS X kernel extension contain code derived from Tuxera
+* Parts of the FUSE for macOS kernel extension contain code derived from Tuxera
   Inc.'s "rebel" branch. The original source of the "rebel" branch is available
   on https://github.com/tuxera. These modifications are covered under the
   following BSD-style license:
@@ -189,7 +189,7 @@ Please read further for specific details.
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  OF  THE
     POSSIBILITY OF SUCH DAMAGE.
 
-* Parts of FUSE for OS X contain code derived from Fuse4X. The original source
+* Parts of FUSE for macOS contain code derived from Fuse4X. The original source
   of Fuse4X is available on https://github.com/fuse4x. Fuse4X is covered under
   the following BSD-style license:
 

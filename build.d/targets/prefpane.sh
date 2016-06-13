@@ -40,7 +40,7 @@ function prefpane_build
     build_target_invoke "${BUILD_TARGET_NAME}" clean
     common_die_on_error "Failed to clean target"
 
-    common_log "Build target for OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+    common_log "Build target for macOS ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
 
     # Build autoinstaller
 

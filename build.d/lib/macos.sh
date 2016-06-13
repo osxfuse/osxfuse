@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2016 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,12 +30,12 @@
 # Requires common.sh
 
 
-function osx_get_version
+function macos_get_version
 {
     sw_vers -productVersion | /usr/bin/cut -d . -f 1,2 2> /dev/null
 }
 
-function osx_unload_kext
+function macos_unload_kext
 {
     local identifier="${1}"
 

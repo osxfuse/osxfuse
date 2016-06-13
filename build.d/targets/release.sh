@@ -108,7 +108,7 @@ function release_build
     local disk_image_path_stage="${BUILD_TARGET_BUILD_DIRECTORY}/stage.dmg"
     local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
 
-    /usr/bin/hdiutil create -size 16m -fs HFS+ -volname "FUSE for OS X" -fsargs "-c c=64,a=16,e=16" -layout NONE \
+    /usr/bin/hdiutil create -size 16m -fs HFS+ -volname "FUSE for macOS" -fsargs "-c c=64,a=16,e=16" -layout NONE \
                             "${disk_image_path_stage}" 1>&3 2>&4
     common_die_on_error "Failed to create disk image"
 
@@ -164,7 +164,7 @@ function release_build
 
     # Copy distribution package to disk image
 
-    local disk_image_distribution_package_relative_path="Extras/FUSE for OS X ${osxfuse_version}.pkg"
+    local disk_image_distribution_package_relative_path="Extras/FUSE for macOS ${osxfuse_version}.pkg"
     local disk_image_distribution_package_path="${disk_image_mount_point}/${disk_image_distribution_package_relative_path}"
 
     /bin/cp -pPR "${distribution_package_path}" "${disk_image_distribution_package_path}" 1>&3 2>&4
@@ -173,7 +173,7 @@ function release_build
     /usr/bin/xcrun SetFile -a E "${disk_image_distribution_package_path}" 1>&3 2>&4
     detach_die_on_error "Failed to hide extension of distribution package"
 
-    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for OS X"
+    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for macOS"
     detach_die_on_error "Failed to create distribution package link"
 
     # Create autoinstaller engine file
@@ -208,7 +208,7 @@ EOF
             set background picture of theViewOptions to file ".Background:Background.tiff"
 
             set position of item "License" of container window to {125, 165}
-            set position of item "FUSE for OS X" of container window to {275, 165}
+            set position of item "FUSE for macOS" of container window to {275, 165}
             set position of item "Extras" of container window to {425, 165}'
 
     local disk_image_view_options_digest=""
@@ -232,7 +232,7 @@ EOF
 
 osascript 1>&3 2>&4 <<EOF
 tell application "Finder"
-    tell disk "FUSE for OS X"
+    tell disk "FUSE for macOS"
         open
         delay 1
         ${disk_image_view_options}
@@ -296,14 +296,14 @@ EOF
     <array>
 EOF
 
-    for osx_version in 10.5 10.6 10.7 10.8 10.9 10.10 10.11 10.12
+    for macos_version in 10.5 10.6 10.7 10.8 10.9 10.10 10.11 10.12
     do
 /bin/cat >> "${rules_plist_path}" <<EOF
         <dict>
             <key>ProductID</key>
             <string>com.github.osxfuse.OSXFUSE</string>
             <key>Predicate</key>
-            <string>SystemVersion.ProductVersion beginswith "${osx_version}" AND Ticket.version != "${osxfuse_version}"</string>
+            <string>SystemVersion.ProductVersion beginswith "${macos_version}" AND Ticket.version != "${osxfuse_version}"</string>
             <key>Version</key>
             <string>${osxfuse_version}</string>
             <key>Codebase</key>
