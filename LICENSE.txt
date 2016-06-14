@@ -29,9 +29,6 @@ under the following BSD-style license:
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
   POSSIBILITY OF SUCH DAMAGE.
 
-Note that the patches to the FUSE user space library and to the SSHFS user space
-program are also released under the BSD license.
-
 FUSE for macOS is a fork of MacFUSE. MacFUSE has been developed by Google Inc..
 Additional information and the original source of MacFUSE are available on
 http://code.google.com/p/macfuse/. MacFUSE is covered under the following
@@ -68,34 +65,24 @@ BSD-style license:
   CHECKING FOR UPDATES DURING INSTALLATION.  THE INSTALLED VERSION MAY BE  NEWER
   THAN THE VERSION EMBEDDED IN THIS PACKAGE.
 
-Note that Google's patches to the FUSE library (libfuse/*.patch in the MacFUSE 
-source repository) and to the SSHFS user space program 
-(filesystems/sshfs/*.patch in the MacFUSE source repository) are also released 
-under the BSD license.
-
-Portions of this package were derived from code developed by other authors. 
+Portions of this package were derived from code developed by other authors.
 Please read further for specific details.
 
-* kext/fuse_kernel.h is an unmodified copy of the interface header from the
-  Linux FUSE distribution (http://fuse.sourceforge.net). fuse_kernel.h can be 
-  redistributed either under the GPL or under the BSD license. It is being 
-  redistributed here under the BSD license.
-
-* Unless otherwise noted, parts of MacFUSE (multiple files in kext/) contain 
-  code derived from the FreeBSD version of FUSE (http://fuse4bsd.creo.hu), 
-  which is covered by the following BSD-style license:
+* Unless otherwise noted, parts of the FUSE for macOS kernel extension contain
+  code derived from the FreeBSD version of FUSE, which is covered under the
+  following BSD-style license:
 
     Copyright (C) 2005 Csaba Henk. All rights reserved.
 
     Redistribution  and  use  in  source  and  binary  forms,  with  or  without
     modification, are permitted provided that the following conditions are met:
-    
+
     1. Redistributions of source code must retain the  above  copyright  notice,
        this list of conditions and the following disclaimer.
     2. Redistributions  in  binary  form  must  reproduce  the  above  copyright
        notice, this list of conditions  and  the  following  disclaimer  in  the
        documentation and/or other materials provided with the distribution.
-   
+
     THIS  SOFTWARE  IS PROVIDED BY AUTHOR  AND  CONTRIBUTORS  "AS  IS"  AND  ANY
     EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  TO,  THE  IMPLIED
     WARRANTIES OF MERCHANTABILITY AND  FITNESS  FOR  A  PARTICULAR  PURPOSE  ARE
@@ -106,56 +93,6 @@ Please read further for specific details.
     ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,  OR  TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT  OF  THE  USE  OF
     THIS  SOFTWARE,  EVEN  IF  ADVISED  OF  THE  POSSIBILITY  OF  SUCH   DAMAGE.
-
-* kext/fuse_nodehash.c is a slightly modified version of HashNode.c from an 
-  Apple Developer Technical Support (DTS) sample code example. The original 
-  source, which is available on 
-  http://developer.apple.com/library/mac/#samplecode/MFSLives/, has the 
-  following disclaimer:
-
-    Disclaimer: IMPORTANT: This Apple software  is  supplied  to  you  by  Apple
-    Computer, Inc.  Apple") in consideration of your agreement to the  following
-    terms, and your use, installation, modification or  redistribution  of  this
-    Apple software constitutes acceptance of these terms.  If you do  not  agree
-    with these terms, please do not use, install, modify  or  redistribute  this
-    Apple software.
-
-    In consideration of your agreement to abide  by  the  following  terms,  and
-    subject to these terms, Apple grants you a personal, non-exclusive  license,
-    under Apple's  copyrights  in  this  original  Apple  software  (the  "Apple
-    Software"), to use, reproduce, modify and redistribute the  Apple  Software,
-    with or without modifications, in source and/or binary forms; provided  that
-    if  you  redistribute  the  Apple  Software  in  its  entirety  and  without
-    modifications, you must retain  this  notice  and  the  following  text  and
-    disclaimers in all such redistributions of the Apple Software.  Neither  the
-    name, trademarks, service marks or logos of Apple Computer, Inc. may be used
-    to endorse or promote products  derived  from  the  Apple  Software  without
-    specific prior written permission from Apple. Except as expressly  stated in
-    this notice, no other rights or licenses, express or implied, are granted by
-    Apple herein, including but not limited to any patent  rights  that  may  be
-    infringed by your derivative works or by other  works  in  which  the  Apple
-    Software may be incorporated.
-
-    The Apple Software is provided by Apple on an "AS IS" basis. APPLE MAKES  NO
-    WARRANTIES, EXPRESS OR IMPLIED, INCLUDING  WITHOUT  LIMITATION  THE  IMPLIED
-    WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-    PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND OPERATION ALONE  OR  IN
-    COMBINATION WITH YOUR PRODUCTS.
-
-    IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT,  INCIDENTAL  OR
-    CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT  LIMITED  TO,  PROCUREMENT  OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,  OR  PROFITS;  OR  BUSINESS
-    INTERRUPTION) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION,  MODIFICATION
-    AND/OR DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER  UNDER
-    THEORY  OF  CONTRACT,  TORT  (INCLUDING  NEGLIGENCE),  STRICT  LIABILITY  OR
-    OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-* Parts of the mount_osxfuse and the load_osxfuse command-line programs 
-  (implemented in support/mount_osxfuse/ and support/load_osxfuse/,
-  respectively) are covered under the Apple Public Source License (APSL). You
-  can read the APSL at:
-
-    http://www.opensource.apple.com/license/apsl/
 
 * Parts of the FUSE for macOS kernel extension contain code derived from Tuxera
   Inc.'s "rebel" branch. The original source of the "rebel" branch is available
@@ -217,7 +154,61 @@ Please read further for specific details.
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  OF  THE
     POSSIBILITY OF SUCH DAMAGE.
 
-This binary package contains the following open-source software that is 
+* Parts of the mount_osxfuse and the load_osxfuse command-line programs are
+  covered under the Apple Public Source License (APSL). You can read the APSL
+  at:
+
+    http://www.opensource.apple.com/license/apsl/
+
+* fuse_kernel.h is an unmodified copy of the interface header from the Linux
+  FUSE distribution (https://github.com/libfuse/libfuse). fuse_kernel.h can be
+  redistributed either under the GPL or under the BSD license. It is being
+  redistributed here under the BSD license.
+
+* fuse_nodehash.c is a slightly modified version of HashNode.c from an
+  Apple Developer Technical Support (DTS) sample code example. The original
+  source, which is available on
+  http://developer.apple.com/library/mac/#samplecode/MFSLives/, has the
+  following disclaimer:
+
+    Disclaimer: IMPORTANT: This Apple software  is  supplied  to  you  by  Apple
+    Computer, Inc.  Apple") in consideration of your agreement to the  following
+    terms, and your use, installation, modification or  redistribution  of  this
+    Apple software constitutes acceptance of these terms.  If you do  not  agree
+    with these terms, please do not use, install, modify  or  redistribute  this
+    Apple software.
+
+    In consideration of your agreement to abide  by  the  following  terms,  and
+    subject to these terms, Apple grants you a personal, non-exclusive  license,
+    under Apple's  copyrights  in  this  original  Apple  software  (the  "Apple
+    Software"), to use, reproduce, modify and redistribute the  Apple  Software,
+    with or without modifications, in source and/or binary forms; provided  that
+    if  you  redistribute  the  Apple  Software  in  its  entirety  and  without
+    modifications, you must retain  this  notice  and  the  following  text  and
+    disclaimers in all such redistributions of the Apple Software.  Neither  the
+    name, trademarks, service marks or logos of Apple Computer, Inc. may be used
+    to endorse or promote products  derived  from  the  Apple  Software  without
+    specific prior written permission from Apple. Except as expressly  stated in
+    this notice, no other rights or licenses, express or implied, are granted by
+    Apple herein, including but not limited to any patent  rights  that  may  be
+    infringed by your derivative works or by other  works  in  which  the  Apple
+    Software may be incorporated.
+
+    The Apple Software is provided by Apple on an "AS IS" basis. APPLE MAKES  NO
+    WARRANTIES, EXPRESS OR IMPLIED, INCLUDING  WITHOUT  LIMITATION  THE  IMPLIED
+    WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+    PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND OPERATION ALONE  OR  IN
+    COMBINATION WITH YOUR PRODUCTS.
+
+    IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT,  INCIDENTAL  OR
+    CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT  LIMITED  TO,  PROCUREMENT  OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,  OR  PROFITS;  OR  BUSINESS
+    INTERRUPTION) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION,  MODIFICATION
+    AND/OR DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER  UNDER
+    THEORY  OF  CONTRACT,  TORT  (INCLUDING  NEGLIGENCE),  STRICT  LIABILITY  OR
+    OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+This binary package contains the following open-source software that is
 available under the GNU Lesser General Public License.
 
-* FUSE user space library (http://fuse.sourceforge.net/)
+* FUSE user space library (https://github.com/libfuse/libfuse)
