@@ -136,7 +136,7 @@ function build_target_getopt
         local preset_specs=""
         case "${preset}" in
             build)
-                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,m:,macro:,code-sign-identity:,product-sign-identity:"
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,m:,macro:,code-sign-identity:,provisioning-profile:,product-sign-identity:"
                 ;;
             clean)
                 preset_specs="root,no-root"
@@ -219,6 +219,10 @@ function build_target_getopt
                     ;;
                 --code-sign-identity)
                     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="${2}"
+                    shift 2
+                    ;;
+                --provisioning-profile)
+                    BUILD_TARGET_OPTION_PROVISIONING_PROFILE_SPECIFIER="${2}"
                     shift 2
                     ;;
                 --product-sign-identity)
@@ -355,6 +359,7 @@ function build_target_xcodebuild
                       GCC_VERSION="${compiler}"
                       MACOSX_DEPLOYMENT_TARGET="${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
                       CODE_SIGN_IDENTITY="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
+                      PROVISIONING_PROFILE_SPECIFIER="${BUILD_TARGET_OPTION_PROVISIONING_PROFILE_SPECIFIER}"
                       "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]}")
     if [[ ${#BUILD_TARGET_OPTION_MACROS} -gt 0 ]]
     then
@@ -639,6 +644,7 @@ function build_target_invoke
         declare -a  BUILD_TARGET_OPTION_BUILD_SETTINGS=()
         declare -a  BUILD_TARGET_OPTION_MACROS=()
         declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY=""
+        declare     BUILD_TARGET_OPTION_PROVISIONING_PROFILE_SPECIFIER=""
         declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY=""
         declare     BUILD_TARGET_OPTION_PREFIX="${DEFAULT_PREFIX}"
         declare -i  BUILD_TARGET_OPTION_ROOT=0

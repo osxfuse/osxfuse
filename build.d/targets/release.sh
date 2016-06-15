@@ -30,8 +30,8 @@
 
 declare -ra BUILD_TARGET_ACTIONS=("build" "clean")
 
-declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
+declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application: Benjamin Fleischer"
+declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer: Benjamin Fleischer"
 
 declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"
 declare -i  RELEASE_CREATE_DSSTORE=0
