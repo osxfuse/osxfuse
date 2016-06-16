@@ -1,37 +1,37 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2015 Benjamin Fleischer
+# Copyright (c) 2011-2016 Benjamin Fleischer
 # All rights reserved.
 #
-# Redistribution  and  use  in  source  and  binary  forms,  with   or   without
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
 # 1. Redistributions of source code must retain the above copyright notice, this
 #    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above  copyright  notice,
-#    this list of conditions and the following disclaimer in  the  documentation
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
 #    and/or other materials provided with the distribution.
-# 3. Neither the name of osxfuse nor the names of its contributors may  be  used
-#    to endorse or promote products derived from this software without  specific
+# 3. Neither the name of osxfuse nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific
 #    prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND  CONTRIBUTORS  "AS  IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT  NOT  LIMITED  TO,  THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS  FOR  A  PARTICULAR  PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE  COPYRIGHT  OWNER  OR  CONTRIBUTORS  BE
-# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,   SPECIAL,   EXEMPLARY,   OR
-# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT  LIMITED  TO,   PROCUREMENT   OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF  USE,  DATA,  OR  PROFITS;  OR  BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN
-# CONTRACT, STRICT  LIABILITY,  OR  TORT  (INCLUDING  NEGLIGENCE  OR  OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
 
 declare -ra BUILD_TARGET_ACTIONS=("build" "clean")
 
-declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application"
-declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer"
+declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="Developer ID Application: Benjamin Fleischer"
+declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY="Developer ID Installer: Benjamin Fleischer"
 
 declare -r  RELEASE_RULES_PLIST_PRIVATE_KEY_PATH="${HOME}/.osxfuse_private_key"
 declare -i  RELEASE_CREATE_DSSTORE=0
@@ -79,7 +79,7 @@ function release_build
     # Build distribution package
 
     build_target_invoke distribution build -s 10.9 -d 10.9 -c Release \
-                                           --kext=10.9 --kext="10.10->10.9" --kext="10.11->10.9" \
+                                           --kext=10.9 --kext="10.10->10.9" --kext="10.11->10.9" --kext="10.12->10.9" \
                                            --code-sign-identity="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                            --product-sign-identity="${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
     common_die_on_error "Failed to build distribution package"
@@ -107,7 +107,7 @@ function release_build
     local disk_image_path_stage="${BUILD_TARGET_BUILD_DIRECTORY}/stage.dmg"
     local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
 
-    /usr/bin/hdiutil create -size 16m -fs HFS+ -volname "FUSE for OS X" -fsargs "-c c=64,a=16,e=16" -layout NONE \
+    /usr/bin/hdiutil create -size 16m -fs HFS+ -volname "FUSE for macOS" -fsargs "-c c=64,a=16,e=16" -layout NONE \
                             "${disk_image_path_stage}" 1>&3 2>&4
     common_die_on_error "Failed to create disk image"
 
@@ -163,7 +163,7 @@ function release_build
 
     # Copy distribution package to disk image
 
-    local disk_image_distribution_package_relative_path="Extras/FUSE for OS X ${osxfuse_version}.pkg"
+    local disk_image_distribution_package_relative_path="Extras/FUSE for macOS ${osxfuse_version}.pkg"
     local disk_image_distribution_package_path="${disk_image_mount_point}/${disk_image_distribution_package_relative_path}"
 
     /bin/cp -pPR "${distribution_package_path}" "${disk_image_distribution_package_path}" 1>&3 2>&4
@@ -172,7 +172,7 @@ function release_build
     /usr/bin/xcrun SetFile -a E "${disk_image_distribution_package_path}" 1>&3 2>&4
     detach_die_on_error "Failed to hide extension of distribution package"
 
-    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for OS X"
+    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for macOS"
     detach_die_on_error "Failed to create distribution package link"
 
     # Create autoinstaller engine file
@@ -207,7 +207,7 @@ EOF
             set background picture of theViewOptions to file ".Background:Background.tiff"
 
             set position of item "License" of container window to {125, 165}
-            set position of item "FUSE for OS X" of container window to {275, 165}
+            set position of item "FUSE for macOS" of container window to {275, 165}
             set position of item "Extras" of container window to {425, 165}'
 
     local disk_image_view_options_digest=""
@@ -231,7 +231,7 @@ EOF
 
 osascript 1>&3 2>&4 <<EOF
 tell application "Finder"
-    tell disk "FUSE for OS X"
+    tell disk "FUSE for macOS"
         open
         delay 1
         ${disk_image_view_options}
@@ -295,14 +295,14 @@ EOF
     <array>
 EOF
 
-    for osx_version in 10.9 10.10 10.11
+    for osx_version in 10.9 10.10 10.11 10.12
     do
 /bin/cat >> "${rules_plist_path}" <<EOF
         <dict>
             <key>ProductID</key>
             <string>com.github.osxfuse.OSXFUSE</string>
             <key>Predicate</key>
-            <string>SystemVersion.ProductVersion beginswith "${osx_version}" AND Ticket.version != "${osxfuse_version}"</string>
+            <string>SystemVersion.ProductVersion beginswith "${macos_version}" AND Ticket.version != "${osxfuse_version}"</string>
             <key>Version</key>
             <string>${osxfuse_version}</string>
             <key>Codebase</key>

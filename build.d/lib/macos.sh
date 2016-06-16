@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2016 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,49 +28,23 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # Requires common.sh
-# Requires string.sh
 
 
-function math_is_integer
+function macos_get_version
 {
-    [[ "${1}" =~ ^-?[0-9]+$ ]]
+    sw_vers -productVersion | /usr/bin/cut -d . -f 1,2 2> /dev/null
 }
 
-function math_compare
+function macos_unload_kext
 {
-    if (( ${1} < ${2} ))
-    then
-        return 1
-    fi
-    if (( ${1} > ${2} ))
-    then
-        return 2
-    fi
-    return 0
-}
+    local identifier="${1}"
 
-function math_max
-{
-    common_assert "math_is_integer `string_escape "${1}"`"
-    common_assert "math_is_integer `string_escape "${2}"`"
+    common_assert "[[ -n `string_escape "${identifier}"` ]]"
 
-    if (( ${1} > ${2} ))
+    if [[ -n "`/usr/sbin/kextstat -l -b "${identifier}"`" ]]
     then
-        printf "%s" "${1}"
+        /sbin/kextunload -b "${identifier}" 1>&3 2>&4
     else
-        printf "%s" "${2}"
-    fi
-}
-
-function math_min
-{
-    common_assert "math_is_integer `string_escape "${1}"`"
-    common_assert "math_is_integer `string_escape "${2}"`"
-
-    if (( ${1} < ${2} ))
-    then
-        printf "%s" "${1}"
-    else
-        printf "%s" "${2}"
+        return 0
     fi
 }

@@ -3,28 +3,28 @@
 # Copyright (c) 2011-2016 Benjamin Fleischer
 # All rights reserved.
 #
-# Redistribution  and  use  in  source  and  binary  forms,  with   or   without
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
 # 1. Redistributions of source code must retain the above copyright notice, this
 #    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above  copyright  notice,
-#    this list of conditions and the following disclaimer in  the  documentation
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
 #    and/or other materials provided with the distribution.
-# 3. Neither the name of osxfuse nor the names of its contributors may  be  used
-#    to endorse or promote products derived from this software without  specific
+# 3. Neither the name of osxfuse nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific
 #    prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND  CONTRIBUTORS  "AS  IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT  NOT  LIMITED  TO,  THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS  FOR  A  PARTICULAR  PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE  COPYRIGHT  OWNER  OR  CONTRIBUTORS  BE
-# LIABLE  FOR  ANY  DIRECT,  INDIRECT,  INCIDENTAL,   SPECIAL,   EXEMPLARY,   OR
-# CONSEQUENTIAL  DAMAGES  (INCLUDING,  BUT  NOT  LIMITED  TO,   PROCUREMENT   OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF  USE,  DATA,  OR  PROFITS;  OR  BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN
-# CONTRACT, STRICT  LIABILITY,  OR  TORT  (INCLUDING  NEGLIGENCE  OR  OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
 
@@ -39,11 +39,11 @@ function build_target_sanity_check
 {
     if ! xcode_sdk_is_supported "${BUILD_TARGET_OPTION_SDK}"
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK not supported"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK not supported"
     fi
     if ! xcode_sdk_is_installed "${BUILD_TARGET_OPTION_SDK}"
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK not found"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK not found"
     fi
 
     if ! array_contains "XCODE_INSTALLED" "${BUILD_TARGET_OPTION_XCODE}"
@@ -52,14 +52,14 @@ function build_target_sanity_check
     fi
     if ! xcode_contains_sdk "${BUILD_TARGET_OPTION_XCODE}" "${BUILD_TARGET_OPTION_SDK}"
     then
-        common_die "Xcode ${BUILD_TARGET_OPTION_XCODE} does not include OS X ${BUILD_TARGET_OPTION_SDK} SDK"
+        common_die "Xcode ${BUILD_TARGET_OPTION_XCODE} does not include macOS ${BUILD_TARGET_OPTION_SDK} SDK"
     fi
 
     function build_target_sanity_check_build_achitecture
     {
         if ! array_contains "DEFAULT_SDK_${BUILD_TARGET_OPTION_SDK/./_}_ARCHITECURES" "${1}"
         then
-            common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK does not support architecture ${1}"
+            common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK does not support architecture ${1}"
         fi
     }
     array_foreach BUILD_TARGET_OPTION_ARCHITECTURES build_target_sanity_check_build_achitecture
@@ -72,12 +72,12 @@ function build_target_sanity_check
     version_compare "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}" 10.0
     if (( ${?} == 1 ))
     then
-        common_die "Deployment target must be at least OS X 10.0"
+        common_die "Deployment target must be at least macOS 10.0"
     fi
     version_compare "${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}" "${BUILD_TARGET_OPTION_SDK}"
     if (( ${?} == 2 ))
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK does not support OS X ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET} as deployment target"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK does not support macOS ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET} as deployment target"
     fi
 
     if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" && ! -d "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
@@ -136,7 +136,7 @@ function build_target_getopt
         local preset_specs=""
         case "${preset}" in
             build)
-                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,m:,macro:,code-sign-identity:,product-sign-identity:"
+                preset_specs="s:,sdk:,x:,xcode:,a:,architecure:,d:,deployment-target:,c:,configuration:,b:,build-setting:,m:,macro:,code-sign-identity:,provisioning-profile:,product-sign-identity:"
                 ;;
             clean)
                 preset_specs="root,no-root"
@@ -219,6 +219,10 @@ function build_target_getopt
                     ;;
                 --code-sign-identity)
                     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY="${2}"
+                    shift 2
+                    ;;
+                --provisioning-profile)
+                    BUILD_TARGET_OPTION_PROVISIONING_PROFILE_SPECIFIER="${2}"
                     shift 2
                     ;;
                 --product-sign-identity)
@@ -355,6 +359,7 @@ function build_target_xcodebuild
                       GCC_VERSION="${compiler}"
                       MACOSX_DEPLOYMENT_TARGET="${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
                       CODE_SIGN_IDENTITY="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
+                      PROVISIONING_PROFILE_SPECIFIER="${BUILD_TARGET_OPTION_PROVISIONING_PROFILE_SPECIFIER}"
                       "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]}")
     if [[ ${#BUILD_TARGET_OPTION_MACROS} -gt 0 ]]
     then
@@ -370,7 +375,7 @@ function build_target_configure
     local sdk_path="`xcodebuild -version -sdk macosx${BUILD_TARGET_OPTION_SDK} Path 2>&4`"
     if [[ "${sdk_path}" =~ [[:space:]] ]]
     then
-        common_die "OS X ${BUILD_TARGET_OPTION_SDK} SDK path '${sdk_path}' contains whitespace"
+        common_die "macOS ${BUILD_TARGET_OPTION_SDK} SDK path '${sdk_path}' contains whitespace"
     fi
 
     local compiler=""
@@ -639,6 +644,7 @@ function build_target_invoke
         declare -a  BUILD_TARGET_OPTION_BUILD_SETTINGS=()
         declare -a  BUILD_TARGET_OPTION_MACROS=()
         declare     BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY=""
+        declare     BUILD_TARGET_OPTION_PROVISIONING_PROFILE_SPECIFIER=""
         declare     BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY=""
         declare     BUILD_TARGET_OPTION_PREFIX="${DEFAULT_PREFIX}"
         declare -i  BUILD_TARGET_OPTION_ROOT=0
@@ -711,7 +717,7 @@ Usage:     ${script} [options ...] (-h|--help)  [(-t|--target) {target name}]
 Options:   [-v {verbose level}|--verbose={verbose level}]
 
 Installed Xcode versions: `array_join XCODE_INSTALLED ", "`
-Installed OS X SDKs:      `array_join XCODE_SDK_INSTALLED ", "`
+Installed macOS SDKs:     `array_join XCODE_SDK_INSTALLED ", "`
 EOF
 }
 
@@ -834,7 +840,7 @@ function build_main
     fi
     if [[ ${#XCODE_SDK_INSTALLED} -eq 0 ]]
     then
-        common_die "No supported OS X SDK installed"
+        common_die "No supported macOS SDK installed"
     fi
 
     # Check settings
@@ -848,9 +854,9 @@ function build_main
     then
         if common_variable_is_readonly DEFAULT_SDK
         then
-            common_die "Default OS X SDK not available"
+            common_die "Default macOS SDK not available"
         else
-            local osx_version="`osx_get_version`"
+            local macos_version="`macos_get_version`"
 
             function build_main_default_sdk
             {
@@ -858,7 +864,7 @@ function build_main
                 then
                     DEFAULT_SDK="${1}"
                 else
-                    version_compare "${1}" "${osx_version}"
+                    version_compare "${1}" "${macos_version}"
                     if (( ${?} == 2 ))
                     then
                         return 1
@@ -874,7 +880,7 @@ function build_main
             unset build_main_default_sdk
 
             common_assert "[[ -n `string_escape "${DEFAULT_SDK}"` ]]"
-            common_warn "Falling back to OS X ${DEFAULT_SDK} SDK as default SDK"
+            common_warn "Falling back to macOS ${DEFAULT_SDK} SDK as default SDK"
         fi
     fi
 
