@@ -93,6 +93,8 @@ enum
 #define FUSE_MOPT_NATIVE_XATTR           0x0000001000000000ULL
 #define FUSE_MOPT_SPARSE                 0x0000002000000000ULL
 #define FUSE_MOPT_SLOW_STATFS            0x0000004000000000ULL
+#define FUSE_MOPT_EXCL_CREATE            0x0000008000000000ULL
+
 
 #define FUSE_MAKEDEV(x, y)              ((dev_t)(((x) << 24) | (y)))
 #define FUSE_MINOR_MASK                 0x00FFFFFFUL
