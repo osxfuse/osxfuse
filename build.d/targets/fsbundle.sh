@@ -138,7 +138,6 @@ function fsbundle_install
     local -a arguments=()
     build_target_getopt -p install -s "debug:" -h fsbundle_install_getopt_handler -o arguments -- "${@}"
 
-
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]
     then
