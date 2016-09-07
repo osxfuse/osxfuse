@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2016 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -137,7 +137,6 @@ function fsbundle_install
 
     local -a arguments=()
     build_target_getopt -p install -s "debug:" -h fsbundle_install_getopt_handler -o arguments -- "${@}"
-
 
     local target_directory="${arguments[0]}"
     if [[ ! -d "${target_directory}" ]]

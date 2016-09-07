@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2016 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -132,14 +132,23 @@ function distribution_build
     fsbundle_path="`osxfuse_find "${stage_directory_core}/Library/Filesystems"/*.fs`"
     common_die_on_error "Failed to locate file system bundle"
 
-    # Set kernel extension loader SUID bit
+    # Set loader SUID bit
 
     local loader_path=""
     loader_path="`osxfuse_find "${fsbundle_path}/Contents/Resources"/load_*`"
-    common_die_on_error "Failed to locate kernel extension loader"
+    common_die_on_error "Failed to locate loader"
 
     /bin/chmod u+s "${loader_path}"
-    common_die_on_error "Failed to set SUID bit of kernel extension loader"
+    common_die_on_error "Failed to set SUID bit of loader"
+
+    # Set mounter SUID bit
+
+    local mounter_path=""
+    mounter_path="`osxfuse_find "${fsbundle_path}/Contents/Resources"/mount_*`"
+    common_die_on_error "Failed to locate mounter"
+
+    /bin/chmod u+s "${mounter_path}"
+    common_die_on_error "Failed to set SUID bit of mounter"
 
     # Add embedded uninstaller to file system bundle
 
