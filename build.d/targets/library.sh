@@ -69,7 +69,6 @@ function library_build
     common_die_on_error "Failed to make configuration"
 
     CFLAGS="-D_DARWIN_USE_64_BIT_INODE ${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-D} -I${BUILD_SOURCE_DIRECTORY}/common" \
-    LDFLAGS="-Wl,-framework,CoreFoundation" \
     build_target_configure --disable-dependency-tracking --disable-static --disable-example
     common_die_on_error "Failed to configure target"
 
