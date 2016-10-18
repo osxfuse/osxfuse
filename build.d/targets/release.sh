@@ -202,7 +202,7 @@ EOF
     local disk_image_view_options='
             set current view of container window to icon view
             set toolbar visible of container window to false
-            set the bounds of container window to {0, 0, 550, 347}
+            set the bounds of container window to {0, 0, 550, 372}
 
             set theViewOptions to the icon view options of container window
             set arrangement of theViewOptions to not arranged
@@ -210,9 +210,9 @@ EOF
             set text size of theViewOptions to 12
             set background picture of theViewOptions to file ".Background:Background.tiff"
 
-            set position of item "License.rtf" of container window to {125, 165}
-            set position of item "FUSE for macOS.pkg" of container window to {275, 165}
-            set position of item "Extras" of container window to {425, 165}'
+            set position of item "License.rtf" of container window to {125, 170}
+            set position of item "FUSE for macOS.pkg" of container window to {275, 170}
+            set position of item "Extras" of container window to {425, 170}'
 
     local disk_image_view_options_digest=""
     disk_image_view_options_digest="`/usr/bin/openssl dgst -sha256 <<< "${disk_image_view_options}"`"
