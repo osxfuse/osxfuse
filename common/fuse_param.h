@@ -47,10 +47,6 @@
         #define M_OSXFUSE_ENABLE_LOCK_LOGGING           0
     #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
-#else /* !KERNEL */
-    /* User-space compile-time tunables */
-
-    #define M_OSXFUSE_ENABLE_KEXT_VERSION_CHECK         0
 #endif /* KERNEL */
 
 /*

@@ -172,8 +172,11 @@ function release_build
     /usr/bin/xcrun SetFile -a E "${disk_image_distribution_package_path}" 1>&3 2>&4
     detach_die_on_error "Failed to hide extension of distribution package"
 
-    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for macOS"
-    detach_die_on_error "Failed to create distribution package link"
+    /bin/ln -s "${disk_image_distribution_package_relative_path}" "${disk_image_mount_point}/FUSE for macOS.pkg"
+    detach_die_on_error "Failed to create distribution package symlink"
+
+    /usr/bin/xcrun SetFile -P -a E "${disk_image_mount_point}/FUSE for macOS.pkg" 1>&3 2>&4
+    detach_die_on_error "Failed to hide extension of distribution package symlink"
 
     # Create autoinstaller engine file
 
@@ -198,7 +201,7 @@ EOF
     local disk_image_view_options='
             set current view of container window to icon view
             set toolbar visible of container window to false
-            set the bounds of container window to {0, 0, 550, 347}
+            set the bounds of container window to {0, 0, 550, 372}
 
             set theViewOptions to the icon view options of container window
             set arrangement of theViewOptions to not arranged
@@ -206,9 +209,9 @@ EOF
             set text size of theViewOptions to 12
             set background picture of theViewOptions to file ".Background:Background.tiff"
 
-            set position of item "License" of container window to {125, 165}
-            set position of item "FUSE for macOS" of container window to {275, 165}
-            set position of item "Extras" of container window to {425, 165}'
+            set position of item "License.rtf" of container window to {125, 170}
+            set position of item "FUSE for macOS.pkg" of container window to {275, 170}
+            set position of item "Extras" of container window to {425, 170}'
 
     local disk_image_view_options_digest=""
     disk_image_view_options_digest="`/usr/bin/openssl dgst -sha256 <<< "${disk_image_view_options}"`"

@@ -95,7 +95,6 @@ enum
 #define FUSE_MOPT_SLOW_STATFS            0x0000004000000000ULL
 #define FUSE_MOPT_EXCL_CREATE            0x0000008000000000ULL
 
-
 #define FUSE_MAKEDEV(x, y)              ((dev_t)(((x) << 24) | (y)))
 #define FUSE_MINOR_MASK                 0x00FFFFFFUL
 #define FUSE_CUSTOM_FSID_DEVICE_MAJOR   255
