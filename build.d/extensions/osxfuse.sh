@@ -217,18 +217,6 @@ function osxfuse_build_distribution_package
     <welcome file="Welcome.rtf"/>
     <license file="License.rtf"/>
     <options customize="always" rootVolumeOnly="true" require-scripts="false"/>
-    <choices-outline>
-EOF
-
-    for identifier in "${component_packages_identifiers[@]}"
-    do
-/bin/cat >> Distribution <<EOF
-        <line choice="${identifier}"/>
-EOF
-    done
-
-/bin/cat >> Distribution <<EOF
-    </choices-outline>
 EOF
 
     local i=0
@@ -252,6 +240,19 @@ EOF
     done
 
 /bin/cat >> Distribution <<EOF
+    <choices-outline>
+EOF
+
+    for identifier in "${component_packages_identifiers[@]}"
+    do
+/bin/cat >> Distribution <<EOF
+        <line choice="${identifier}"/>
+EOF
+    done
+
+/bin/cat >> Distribution <<EOF
+    </choices-outline>
+    <installation-check script='installationCheck()'/>
     <script><![CDATA[
         function isProductVersion(version) {
             return system.version.ProductVersion.slice(0, version.length) == version;
