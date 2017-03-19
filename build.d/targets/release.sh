@@ -69,12 +69,16 @@ function release_build
     common_die_on_error "Failed to determine osxfuse version number"
 
     local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug"
+    local disk_image_extras_work_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Extras"
 
     /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
     common_die_on_error "Failed to create build directory"
 
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
     common_die_on_error "Failed to create debug directory"
+
+    /bin/mkdir -p "${disk_image_extras_work_directory}" 1>&3 2>&4
+    common_die_on_error "Failed to create extras work directory"
 
     # Build distribution package
 
@@ -132,9 +136,12 @@ function release_build
 
     # Remove .Trashes directory from disk image
 
-    /bin/chmod 755 "${disk_image_mount_point}/.Trashes" 1>&3 2>&4 && \
-    /bin/rm -rf "${disk_image_mount_point}/.Trashes" 1>&3 2>&4
-    common_die_on_error "Failed to remove .Trashes directory from disk image"
+    if [[ -e "${disk_image_mount_point}/.Trashes" ]]
+    then
+        /bin/chmod 755 "${disk_image_mount_point}/.Trashes" 1>&3 2>&4 && \
+        /bin/rm -rf "${disk_image_mount_point}/.Trashes" 1>&3 2>&4
+        common_die_on_error "Failed to remove .Trashes directory from disk image"
+    fi
 
     # Copy license to disk image
 
@@ -144,22 +151,28 @@ function release_build
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/License.rtf" 1>&3 2>&4
     detach_die_on_error "Failed to hide extension of license"
 
+    # Sign extras
+
+    /usr/bin/rsync -a "${disk_image_resources_path}/Extras/" "${disk_image_extras_work_directory}" 1>&3 2>&4
+    detach_die_on_error "Failed to copy extras to work directory"
+
+    local application_path=""
+    for application_path in "${disk_image_extras_work_directory}"/*.app
+    do
+        build_target_codesign "${application_path}"
+        detach_die_on_error "Failed to sign application '${application_path}'"
+    done
+
     # Copy extras to disk image
 
-    /bin/cp -pPR "${disk_image_resources_path}/Extras" "${disk_image_mount_point}/Extras" 1>&3 2>&4
+    /bin/mkdir -p "${disk_image_mount_point}/Extras"
+    detach_die_on_error "Failed to create extras directory on disk image"
+
+    /usr/bin/rsync -a "${disk_image_extras_work_directory}/" "${disk_image_mount_point}/Extras" 1>&3 2>&4
     detach_die_on_error "Failed to copy extras to disk image"
 
     /usr/bin/xcrun SetFile -a E "${disk_image_mount_point}/Extras"/* 1>&3 2>&4
     detach_die_on_error "Failed to hide extension of extras"
-
-    # Sign extras
-
-    local application_path=""
-    for application_path in "${disk_image_mount_point}/Extras"/*.app
-    do
-        build_target_codesign "${application_path}"
-        detach_die_on_error "Failed to sign resource '${application_path}'"
-    done
 
     # Copy distribution package to disk image
 
@@ -345,6 +358,8 @@ EOF
 
     # Cean up
 
-    /bin/rm -rf "${distribution_package_path}" "${debug_directory}"
+    /bin/rm -rf "${distribution_package_path}" \
+                "${debug_directory}" \
+                "${disk_image_extras_work_directory}"
     common_warn_on_error "Failed to clean up"
 }
