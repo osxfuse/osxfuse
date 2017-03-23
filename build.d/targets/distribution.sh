@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2016 Benjamin Fleischer
+# Copyright (c) 2011-2017 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -90,6 +90,11 @@ function distribution_build
 
     build_target_getopt -p build -s "kext:,macfuse,no-macfuse" -h distribution_build_getopt_handler -- "${@}"
     unset distribution_build_getopt_handler
+
+    if [[ ${#DISTRIBUTION_KEXT_TASKS[@]} -eq 0 ]]
+    then
+        DISTRIBUTION_KEXT_TASKS+=("${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}")
+    fi
 
     common_log_variable DISTRIBUTION_KEXT_TASKS
     common_log_variable DISTRIBUTION_MACFUSE
