@@ -272,10 +272,6 @@ EOF
 
         function choiceConflictCheck(package) {
             switch (package) {
-                case 'com.github.osxfuse.pkg.MacFUSE':
-                    var receipt = my.target.receiptForIdentifier('com.google.macfuse.core');
-                    return receipt != null && system.compareVersions(receipt.version, "2.3") == -1;
-
                 default: return false;
             }
         }
@@ -305,10 +301,6 @@ EOF
             }
 
             switch (package) {
-                case 'com.github.osxfuse.pkg.MacFUSE':
-                    var receipt = my.target.receiptForIdentifier('com.google.macfuse.core');
-                    return receipt != null;
-
                 default: return false;
             }
         }

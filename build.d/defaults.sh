@@ -38,18 +38,6 @@ declare -ri DEFAULT_LOG_VERBOSE=2
 
 # Xcode defaults
 
-declare -ra DEFAULT_SDK_10_5_ARCHITECURES=("ppc" "ppc64" "i386" "x86_64")
-declare -r  DEFAULT_SDK_10_5_COMPILER="4.2"
-
-declare -ra DEFAULT_SDK_10_6_ARCHITECURES=("i386" "x86_64")
-declare -r  DEFAULT_SDK_10_6_COMPILER="com.apple.compilers.llvmgcc42"
-
-declare -ra DEFAULT_SDK_10_7_ARCHITECURES=("i386" "x86_64")
-declare -r  DEFAULT_SDK_10_7_COMPILER="com.apple.compilers.llvmgcc42"
-
-declare -ra DEFAULT_SDK_10_8_ARCHITECURES=("i386" "x86_64")
-declare -r  DEFAULT_SDK_10_8_COMPILER="com.apple.compilers.llvm.clang.1_0"
-
 declare -ra DEFAULT_SDK_10_9_ARCHITECURES=("i386" "x86_64")
 declare -r  DEFAULT_SDK_10_9_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
@@ -62,7 +50,7 @@ declare -r  DEFAULT_SDK_10_11_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare -ra DEFAULT_SDK_10_12_ARCHITECURES=("i386" "x86_64")
 declare -r  DEFAULT_SDK_10_12_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
-declare -ra DEFAULT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10" "10.11" "10.12")
+declare -ra DEFAULT_SDK_SUPPORTED=("10.9" "10.10" "10.11" "10.12")
 
 declare     DEFAULT_SDK="`macos_get_version`"
 declare -r  DEFAULT_BUILD_CONFIGURATION="Release"

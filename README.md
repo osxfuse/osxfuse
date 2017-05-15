@@ -6,7 +6,7 @@ FUSE for macOS allows you to extend macOS via third party file systems.
 About FUSE for macOS
 --------------------
 
-The FUSE for macOS software package provides multiple APIs for developing file systems for Mac OS X 10.5 to macOS 10.12 (Intel and PowerPC architecture). It is a backward compatible successor to [MacFUSE](http://code.google.com/p/macfuse/), which has been the basis of many products, but is no longer being maintained.
+The FUSE for macOS software package provides multiple APIs for developing file systems for OS X 10.9 to macOS 10.12. It is a successor to [MacFUSE](http://code.google.com/p/macfuse/), which has been the basis of many products, but is no longer being maintained.
 
 You can use the provided APIs to develop numerous types of file systems, whose content can come from a local disk, from across the network, from memory, or any other source. One of these APIs is a superset of the [FUSE API](http://fuse.sourceforge.net/), that originated on Linux.
 
@@ -17,13 +17,11 @@ For more information visit the website of the [FUSE for macOS Project](http://os
 Build Instructions
 ------------------
 
-The build script automatically locates all supported installations of Xcode in the top level of the macOS startup volume and the Applications folder. It builds a distribution package compatible with the currently running version of macOS.
+The build script automatically locates all supported installations of Xcode in your Applications folder. It builds a distribution package compatible with the currently running version of macOS.
 
 ---
 
 **Note:**
-
-* On Mac OS X 10.6 Xcode versions 4.0, 4.1, and 4.2 are not supported due to a bug in Xcode's linker. Use Xcode 3.2.6 to build FUSE for macOS. See ["Fun with weak dynamic linking"](http://glandium.org/blog/?p=2764) for more details.
 
 * Xcode 4.3 and newer versions do not include autotools and libtool, that are needed to build `libosxfuse`. Install MacPorts or Homebrew and run the following commands in Terminal to install the required tools:
 

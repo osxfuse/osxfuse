@@ -31,7 +31,6 @@
 declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
 
 declare -a  DISTRIBUTION_KEXT_TASKS=()
-declare -i  DISTRIBUTION_MACFUSE=0
 
 
 function distribution_create_stage_core
@@ -56,18 +55,6 @@ function distribution_create_stage_prefpane
                   "${stage_directory}/Library/PreferencePanes" 1>&3 2>&4
 }
 
-function distribution_create_stage_macfuse
-{
-    local stage_directory="${1}"
-    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
-
-    /bin/mkdir -p "${stage_directory}" \
-                  "${stage_directory}/Library/Frameworks" \
-                  "${stage_directory}/usr/local/include" \
-                  "${stage_directory}/usr/local/lib" \
-                  "${stage_directory}/usr/local/lib/pkgconfig" 1>&3 2>&4
-}
-
 function distribution_build
 {
     function distribution_build_getopt_handler
@@ -77,18 +64,10 @@ function distribution_build
                 DISTRIBUTION_KEXT_TASKS+=("${2}")
                 return 2
                 ;;
-            --macfuse)
-                DISTRIBUTION_MACFUSE=1
-                return 1
-                ;;
-            --no-macfuse)
-                DISTRIBUTION_MACFUSE=0
-                return 1
-                ;;
         esac
     }
 
-    build_target_getopt -p build -s "kext:,macfuse,no-macfuse" -h distribution_build_getopt_handler -- "${@}"
+    build_target_getopt -p build -s "kext:" -h distribution_build_getopt_handler -- "${@}"
     unset distribution_build_getopt_handler
 
     if [[ ${#DISTRIBUTION_KEXT_TASKS[@]} -eq 0 ]]
@@ -97,7 +76,6 @@ function distribution_build
     fi
 
     common_log_variable DISTRIBUTION_KEXT_TASKS
-    common_log_variable DISTRIBUTION_MACFUSE
 
     common_log "Clean target"
     build_target_invoke "${BUILD_TARGET_NAME}" clean
@@ -110,7 +88,6 @@ function distribution_build
                                     "${BUILD_TARGET_OPTION_ARCHITECTURES[@]/#/-a}"
                                     "-d${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
                                     "-c${BUILD_TARGET_OPTION_BUILD_CONFIGURATION}"
-                                    "-bENABLE_MACFUSE_MODE=${DISTRIBUTION_MACFUSE}"
                                     "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}"
                                     "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}"
                                     "--code-sign-identity=${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
@@ -238,43 +215,6 @@ function distribution_build
     osxfuse_build_component_package -n PrefPane -r "${stage_directory_prefpane}" "${packages_directory}/PrefPane.pkg"
     common_die_on_error "Failed to build preference pane package"
     component_packages+=("${packages_directory}/PrefPane.pkg")
-
-    # MacFUSE
-
-    if (( DISTRIBUTION_MACFUSE  != 0 ))
-    then
-        local stage_directory_macfuse="${BUILD_TARGET_BUILD_DIRECTORY}/MacFUSE"
-
-        distribution_create_stage_macfuse "${stage_directory_macfuse}"
-        common_die_on_error "Failed to create MacFUSE stage"
-
-        # Build library
-
-        build_target_invoke macfuse_library build "${library_build_options[@]}"
-        common_die_on_error "Failed to build MacFUSE library"
-
-        build_target_invoke macfuse_library install --debug="${debug_directory}" -- "${stage_directory_macfuse}"
-        common_die_on_error "Failed to install MacFUSE library"
-
-        /bin/ln -s "libfuse.dylib" "${stage_directory_macfuse}/usr/local/lib/libfuse.0.dylib" && \
-        common_die_on_error "Failed to create MacFUSE legacy library links"
-
-        # Build framework
-
-        build_target_invoke macfuse_framework build "${default_build_options[@]}" --library-prefix="${stage_directory_macfuse}/usr/local"
-        common_die_on_error "Failed to build MacFUSE framework"
-
-        build_target_invoke macfuse_framework install --debug="${debug_directory}" -- "${stage_directory_macfuse}/Library/Frameworks"
-        common_die_on_error "Failed to install MacFUSE framework"
-
-        # Build MacFUSE component package
-
-        common_log -v 3 "Build MacFUSE component package"
-
-        osxfuse_build_component_package -n MacFUSE -r "${stage_directory_macfuse}" "${packages_directory}/MacFUSE.pkg"
-        common_die_on_error "Failed to build MacFUSE package"
-        component_packages+=("${packages_directory}/MacFUSE.pkg")
-    fi
 
     # Build distribution package
 
