@@ -288,6 +288,9 @@ EOF
     /bin/rm -f "${disk_image_path_stage}"
     common_die_on_error "Failed to finalize disk image"
 
+    /opt/local/bin/gpg2 --output "${disk_image_path}.sig" --detach-sig "${disk_image_path}" 1>&3 2>&4
+    common_die_on_error "Failed to sign disk image using GnuPG"
+
     # Create autoinstaller rules file
 
     common_log -v 3 "Create autoinstaller rules file"
@@ -347,15 +350,20 @@ EOF
     "${plist_signer_path}" --sign --key "${RELEASE_RULES_PLIST_PRIVATE_KEY_PATH}" "${rules_plist_path}" 1>&3 2>&4
     common_die_on_error "Failed to sign autoinstaller rules file"
 
-    # Archive debug information
+    # Archive debug symbols
 
-    common_log -v 3 "Archive debug information"
+    common_log -v 3 "Archive debug symbols"
+
+    local debug_archive_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug.tbz"
 
     /usr/bin/tar -cjv \
-                 -f "${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug.tbz" \
+                 -f "${debug_archive_path}" \
                  -C "${debug_directory}/.." \
                  "`basename "${debug_directory}"`" 1>&3 2>&4
-    common_die_on_error "Failed to archive debug information"
+    common_die_on_error "Failed to archive debug symbols"
+
+    /opt/local/bin/gpg2 --output "${debug_archive_path}.sig" --detach-sig "${debug_archive_path}" 1>&3 2>&4
+    common_die_on_error "Failed to sign debug symbols archive"
 
     # Cean up
 
