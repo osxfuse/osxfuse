@@ -6,7 +6,7 @@ FUSE for macOS allows you to extend macOS via third party file systems.
 About FUSE for macOS
 --------------------
 
-The FUSE for macOS software package provides multiple APIs for developing file systems for OS X 10.9 to macOS 10.12. It is a successor to [MacFUSE](http://code.google.com/p/macfuse/), which has been the basis of many products, but is no longer being maintained.
+The FUSE for macOS software package provides multiple APIs for developing file systems for OS X 10.9 to macOS 10.13. It is a successor to [MacFUSE](http://code.google.com/p/macfuse/), which has been the basis of many products, but is no longer being maintained.
 
 You can use the provided APIs to develop numerous types of file systems, whose content can come from a local disk, from across the network, from memory, or any other source. One of these APIs is a superset of the [FUSE API](http://fuse.sourceforge.net/), that originated on Linux.
 

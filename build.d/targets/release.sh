@@ -68,7 +68,9 @@ function release_build
     osxfuse_version="`osxfuse_get_version`"
     common_die_on_error "Failed to determine osxfuse version number"
 
-    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug"
+    local release_name="osxfuse-${osxfuse_version}"
+
+    local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/${release_name}-debug"
     local disk_image_extras_work_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Extras"
 
     /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
@@ -83,7 +85,7 @@ function release_build
     # Build distribution package
 
     build_target_invoke distribution build -s 10.9 -d 10.9 -c Release \
-                                           --kext=10.9 --kext="10.10->10.9" --kext="10.11->10.9" --kext="10.12->10.9" \
+                                           --kext=10.9 --kext="10.10->10.9" --kext="10.11->10.9" --kext="10.12->10.9" --kext="10.13->10.9" \
                                            --code-sign-identity="${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}" \
                                            --product-sign-identity="${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}"
     common_die_on_error "Failed to build distribution package"
@@ -108,11 +110,13 @@ function release_build
 
     local disk_image_resources_path="${BUILD_SOURCE_DIRECTORY}/support/DiskImage"
 
-    local disk_image_path_stage="${BUILD_TARGET_BUILD_DIRECTORY}/stage.dmg"
-    local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}.dmg"
+    local disk_image_name="${release_name}.dmg"
+    local disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/${disk_image_name}"
+
+    local stage_disk_image_path="${BUILD_TARGET_BUILD_DIRECTORY}/${release_name}-stage.dmg"
 
     /usr/bin/hdiutil create -size 16m -fs HFS+ -volname "FUSE for macOS" -fsargs "-c c=64,a=16,e=16" -layout NONE \
-                            "${disk_image_path_stage}" 1>&3 2>&4
+                            "${stage_disk_image_path}" 1>&3 2>&4
     common_die_on_error "Failed to create disk image"
 
     # Attach disk image
@@ -131,8 +135,8 @@ function release_build
         fi
     }
 
-    disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${disk_image_path_stage}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
-    common_die_on_error "Failed to attach disk image '${disk_image_path_stage}'"
+    disk_image_mount_point="`/usr/bin/hdiutil attach -private -nobrowse "${stage_disk_image_path}" 2>&4 | /usr/bin/cut -d $'\t' -f 3`"
+    common_die_on_error "Failed to attach disk image '${stage_disk_image_path}'"
 
     # Remove .Trashes directory from disk image
 
@@ -282,10 +286,39 @@ EOF
 
     # Convert to read-only, compressed disk image
 
-    /usr/bin/hdiutil convert -imagekey zlib-level=9 -format UDZO "${disk_image_path_stage}" \
+    /usr/bin/hdiutil convert -imagekey zlib-level=9 -format UDZO "${stage_disk_image_path}" \
                              -o "${disk_image_path}" 1>&3 2>&4 && \
-    /bin/rm -f "${disk_image_path_stage}"
+    /bin/rm -f "${stage_disk_image_path}"
     common_die_on_error "Failed to finalize disk image"
+
+    # Archive debug symbols
+
+    common_log -v 3 "Archive debug symbols"
+
+    local debug_archive_name="${release_name}-debug.tbz"
+
+    /usr/bin/tar -cjv \
+                 -f "${BUILD_TARGET_BUILD_DIRECTORY}/${debug_archive_name}" \
+                 -C "${debug_directory}/.." \
+                 "`basename "${debug_directory}"`" 1>&3 2>&4
+    common_die_on_error "Failed to archive debug symbols"
+
+    # Sign release
+
+    common_log -v 3 "Sign release"
+
+    local sha256_file_name="${release_name}.sha256"
+
+    pushd "${BUILD_TARGET_BUILD_DIRECTORY}" > /dev/null 2>&1
+    common_die_on_error "Build directory '${BUILD_TARGET_BUILD_DIRECTORY}' does not exist"
+
+    /usr/bin/shasum -a 256 "${disk_image_name}" "${debug_archive_name}" > "${sha256_file_name}"
+    common_die_on_error "Failed to generate hash values for release"
+
+    /opt/local/bin/gpg2 --output "${sha256_file_name}.sig" --detach-sig "${sha256_file_name}" 1>&3 2>&4
+    common_die_on_error "Failed to sign file '${sha256_file_name}'"
+
+    popd > /dev/null 2>&1
 
     # Create autoinstaller rules file
 
@@ -300,7 +333,7 @@ EOF
     common_die_on_error "Failed to compute hash of disk image"
 
     local rules_plist_path="${BUILD_TARGET_BUILD_DIRECTORY}/Release.plist"
-    local download_url="https://github.com/osxfuse/osxfuse/releases/download/osxfuse-${osxfuse_version}/`basename "${disk_image_path}"`"
+    local download_url="https://github.com/osxfuse/osxfuse/releases/download/${release_name}/`basename "${disk_image_path}"`"
 
 /bin/cat > "${rules_plist_path}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -311,7 +344,7 @@ EOF
     <array>
 EOF
 
-    for osx_version in 10.9 10.10 10.11 10.12
+    for macos_version in 10.9 10.10 10.11 10.12 10.13
     do
 /bin/cat >> "${rules_plist_path}" <<EOF
         <dict>
@@ -345,16 +378,6 @@ EOF
 
     "${plist_signer_path}" --sign --key "${RELEASE_RULES_PLIST_PRIVATE_KEY_PATH}" "${rules_plist_path}" 1>&3 2>&4
     common_die_on_error "Failed to sign autoinstaller rules file"
-
-    # Archive debug information
-
-    common_log -v 3 "Archive debug information"
-
-    /usr/bin/tar -cjv \
-                 -f "${BUILD_TARGET_BUILD_DIRECTORY}/osxfuse-${osxfuse_version}-debug.tbz" \
-                 -C "${debug_directory}/.." \
-                 "`basename "${debug_directory}"`" 1>&3 2>&4
-    common_die_on_error "Failed to archive debug information"
 
     # Cean up
 
