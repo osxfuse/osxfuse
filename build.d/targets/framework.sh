@@ -73,11 +73,6 @@ function framework_build
     framework_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.framework`"
     common_die_on_error "Failed to locate framework"
 
-    # Copy default volume icon to framework
-
-    /bin/cp "${BUILD_SOURCE_DIRECTORY}/support/Volume.icns" "${framework_path}/Resources/DefaultVolumeIcon.icns" 1>&3 2>&4
-    common_die_on_error "Failed to copy default volume icon to framework"
-
     # Sign framework
 
     build_target_codesign "${framework_path}"
