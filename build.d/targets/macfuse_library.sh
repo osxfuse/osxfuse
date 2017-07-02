@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2015 Benjamin Fleischer
+# Copyright (c) 2011-2017 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -126,6 +126,6 @@ function macfuse_library_install
     if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
         build_target_install "${debug_directory}/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
-        common_die_on_error "Failed to Install debug files"
+        common_die_on_error "Failed to install debug files"
     fi
 }

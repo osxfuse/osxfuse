@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2017 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,6 @@ function framework_install
         common_die_on_error "Failed to locate framework debug information"
 
         build_target_install "${framework_dsym_source_path}" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
-        common_die_on_error "Failed to Install debug files"
+        common_die_on_error "Failed to install debug files"
     fi
 }

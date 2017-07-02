@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2015 Benjamin Fleischer
+# Copyright (c) 2011-2017 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -119,7 +119,7 @@ function osxfuse_build_component_package
 
     # Create component property list
 
-    local component_plist_path="${package_target_path%.*}.plist"
+    local component_plist_path="${name}.plist"
 
     build_target_pkgbuild --analyze --root "${root}" "${component_plist_path}"
     common_die_on_error "Failed to create component property list"
@@ -159,11 +159,12 @@ function osxfuse_build_component_package
 function osxfuse_build_distribution_package
 {
     local -a options=()
-    common_getopt options "p:,package-path:,c:,component-package:,d:,deployment-target:" "${@}"
+    common_getopt options "package-path:,c:,component-package:,plugin-path:,d:,deployment-target:" "${@}"
     common_die_on_error "${options[@]}"
 
     set -- "${options[@]}"
 
+    local    plugin_path=""
     local    package_path=""
     local -a component_packages=()
     local -a deployment_targets=()
@@ -181,6 +182,10 @@ function osxfuse_build_distribution_package
                 ;;
             -c|--component-package)
                 component_packages+=("${2}")
+                shift 2
+                ;;
+            --plugin-path)
+                plugin_path="${2}"
                 shift 2
                 ;;
             -d|--deployment-target)
@@ -332,8 +337,9 @@ EOF
 </installer-gui-script>
 EOF
 
-    build_target_productbuild --resources "${OSXFUSE_PACKAGE_DIRECTORY}/Distribution/Resources" \
-                              --distribution Distribution \
+    build_target_productbuild --distribution Distribution \
                               --package-path "${package_path}" \
+                              --resources "${OSXFUSE_PACKAGE_DIRECTORY}/Distribution/Resources" \
+                              --plugins "${plugin_path}" \
                               "${package_target_path}"
 }

@@ -29,41 +29,23 @@
 
 
 declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
-declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/macfuse_framework"
-
-declare     MACFUSE_FRAMEWORK_LIBRARY_PREFIX="/usr/local"
+declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/support/Packages/Distribution/Plugins"
 
 
-function macfuse_framework_build
+function installer_plugins_build
 {
-    function macfuse_framework_build_getopt_handler
-    {
-        case "${1}" in
-            --library-prefix)
-                MACFUSE_FRAMEWORK_LIBRARY_PREFIX="${2}"
-                return 2
-                ;;
-        esac
-    }
-
-    build_target_getopt -p build -s "library-prefix:" -h macfuse_framework_build_getopt_handler -- "${@}"
-    unset macfuse_framework_build_getopt_handler
-
-    common_log_variable MACFUSE_FRAMEWORK_LIBRARY_PREFIX
+    build_target_getopt -p build -- "${@}"
 
     common_log "Clean target"
     build_target_invoke "${BUILD_TARGET_NAME}" clean
     common_die_on_error "Failed to clean target"
 
     common_log "Build target for macOS ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
-
-    build_target_xcodebuild -project MacFUSE.xcodeproj -target MacFUSE \
-                            MACFUSE_LIBRARY_PREFIX="${MACFUSE_FRAMEWORK_LIBRARY_PREFIX}" \
-                            clean build
+    build_target_xcodebuild -project PostInstall.xcodeproj -target PostInstall clean build
     common_die_on_error "Failed to build target"
 }
 
-function macfuse_framework_install
+function installer_plugins_install
 {
     local -a arguments=()
     build_target_getopt -p install -o arguments -- "${@}"
@@ -76,20 +58,19 @@ function macfuse_framework_install
 
     common_log "Install target"
 
-    local framework_source_path=""
-    framework_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.framework`"
-    common_die_on_error "Failed to locate framework"
+    local postinstall_source_path="${BUILD_TARGET_BUILD_DIRECTORY}/PostInstall.bundle"
 
-    build_target_install "${framework_source_path}" "${target_directory}"
+    build_target_install "${postinstall_source_path}" "${target_directory}"
+    common_die_on_error "Failed to install target"
+
+    build_target_install "${BUILD_TARGET_SOURCE_DIRECTORY}/InstallerSections.plist" "${target_directory}"
     common_die_on_error "Failed to install target"
 
     if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
-        local framework_dsym_source_path=""
-        framework_dsym_source_path="`osxfuse_find "${BUILD_TARGET_BUILD_DIRECTORY}"/*.framework.dSYM`"
-        common_die_on_error "Failed to locate framework debug information"
+        local postinstall_dsym_source_path="${BUILD_TARGET_BUILD_DIRECTORY}/PostInstall.bundle.dSYM"
 
-        build_target_install "${framework_dsym_source_path}" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
+        build_target_install "${postinstall_dsym_source_path}" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
         common_die_on_error "Failed to install debug files"
     fi
 }
