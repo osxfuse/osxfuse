@@ -32,7 +32,6 @@ declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
 declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/support"
 
 declare -a  DISTRIBUTION_KEXT_TASKS=()
-declare     DISTRIBUTION_INSTALLER_PLUGINS_SDK=""
 
 
 function distribution_create_stage_core
@@ -66,14 +65,10 @@ function distribution_build
                 DISTRIBUTION_KEXT_TASKS+=("${2}")
                 return 2
                 ;;
-            --installer-plugins-sdk)
-                DISTRIBUTION_INSTALLER_PLUGINS_SDK="${2}"
-                return 2
-                ;;
         esac
     }
 
-    build_target_getopt -p build -s "kext:,installer-plugins-sdk:" -h distribution_build_getopt_handler -- "${@}"
+    build_target_getopt -p build -s "kext:" -h distribution_build_getopt_handler -- "${@}"
     unset distribution_build_getopt_handler
 
     if [[ ${#DISTRIBUTION_KEXT_TASKS[@]} -eq 0 ]]
@@ -81,32 +76,7 @@ function distribution_build
         DISTRIBUTION_KEXT_TASKS+=("${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}")
     fi
 
-    if [[ -z "${DISTRIBUTION_INSTALLER_PLUGINS_SDK}" ]]
-    then
-        version_compare "${BUILD_TARGET_OPTION_SDK}" "10.6"
-        if (( ${?} != 1 ))
-        then
-            DISTRIBUTION_INSTALLER_PLUGINS_SDK="${BUILD_TARGET_OPTION_SDK}"
-        else
-            for sdk in "${DEFAULT_SDK_SUPPORTED[@]}"
-            do
-                version_compare "${sdk}" "10.6"
-                if (( ${?} != 1 ))
-                then
-                    DISTRIBUTION_INSTALLER_PLUGINS_SDK="${sdk}"
-                    break
-                fi
-            done
-
-            if [[ -z "${DISTRIBUTION_INSTALLER_PLUGINS_SDK}" ]]
-            then
-                common_die "No supported macOS SDK for building installer plugins installed"
-            fi
-        fi
-    fi
-
     common_log_variable DISTRIBUTION_KEXT_TASKS
-    common_log_variable DISTRIBUTION_INSTALLER_PLUGINS_SDK
 
     common_log "Clean target"
     build_target_invoke "${BUILD_TARGET_NAME}" clean
@@ -131,12 +101,6 @@ function distribution_build
                                     "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}"
                                     "--code-sign-identity=${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
                                     "--product-sign-identity=${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
-
-    local -a installer_plugins_build_options=("-s${DISTRIBUTION_INSTALLER_PLUGINS_SDK}"
-                                              "-d${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
-                                              "-c${BUILD_TARGET_OPTION_BUILD_CONFIGURATION}"
-                                              "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}"
-                                              "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}")
 
     local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
 
@@ -277,7 +241,7 @@ function distribution_build
 
     # Build installer plugins
 
-    build_target_invoke installer_plugins build "${installer_plugins_build_options[@]}"
+    build_target_invoke installer_plugins build "${default_build_options[@]}"
     common_die_on_error "Failed to build installer plugins"
 
     build_target_invoke installer_plugins install --debug="${debug_directory}" -- "${plugins_directory}"
