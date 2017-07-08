@@ -347,7 +347,7 @@ function distribution_build
     common_die_on_error "Failed to build installer plugins"
 
     build_target_invoke installer_plugins install --debug="${debug_directory}" -- "${plugins_directory}"
-    common_die_on_error "Failed to install preference pane"
+    common_die_on_error "Failed to install installer plugins"
 
     # Build distribution package
 
