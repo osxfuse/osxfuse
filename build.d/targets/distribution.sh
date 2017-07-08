@@ -29,30 +29,32 @@
 
 
 declare -ra BUILD_TARGET_ACTIONS=("build" "clean" "install")
+declare     BUILD_TARGET_SOURCE_DIRECTORY="${BUILD_SOURCE_DIRECTORY}/support"
 
 declare -a  DISTRIBUTION_KEXT_TASKS=()
+declare     DISTRIBUTION_INSTALLER_PLUGINS_SDK=""
 
 
 function distribution_create_stage_core
 {
-    local stage_directory="${1}"
-    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
+    local root_directory="${1}"
+    common_assert "[[ -n `string_escape "${root_directory}"` ]]"
 
-    /bin/mkdir -p "${stage_directory}" \
-                  "${stage_directory}/Library/Filesystems" \
-                  "${stage_directory}/Library/Frameworks" \
-                  "${stage_directory}/usr/local/include" \
-                  "${stage_directory}/usr/local/lib" \
-                  "${stage_directory}/usr/local/lib/pkgconfig" 1>&3 2>&4
+    /bin/mkdir -p "${root_directory}" \
+                  "${root_directory}/Library/Filesystems" \
+                  "${root_directory}/Library/Frameworks" \
+                  "${root_directory}/usr/local/include" \
+                  "${root_directory}/usr/local/lib" \
+                  "${root_directory}/usr/local/lib/pkgconfig" 1>&3 2>&4
 }
 
 function distribution_create_stage_prefpane
 {
-    local stage_directory="${1}"
-    common_assert "[[ -n `string_escape "${stage_directory}"` ]]"
+    local root_directory="${1}"
+    common_assert "[[ -n `string_escape "${root_directory}"` ]]"
 
-    /bin/mkdir -p "${stage_directory}" \
-                  "${stage_directory}/Library/PreferencePanes" 1>&3 2>&4
+    /bin/mkdir -p "${root_directory}" \
+                  "${root_directory}/Library/PreferencePanes" 1>&3 2>&4
 }
 
 function distribution_build
@@ -64,10 +66,14 @@ function distribution_build
                 DISTRIBUTION_KEXT_TASKS+=("${2}")
                 return 2
                 ;;
+            --installer-plugins-sdk)
+                DISTRIBUTION_INSTALLER_PLUGINS_SDK="${2}"
+                return 2
+                ;;
         esac
     }
 
-    build_target_getopt -p build -s "kext:" -h distribution_build_getopt_handler -- "${@}"
+    build_target_getopt -p build -s "kext:,installer-plugins-sdk:" -h distribution_build_getopt_handler -- "${@}"
     unset distribution_build_getopt_handler
 
     if [[ ${#DISTRIBUTION_KEXT_TASKS[@]} -eq 0 ]]
@@ -75,7 +81,32 @@ function distribution_build
         DISTRIBUTION_KEXT_TASKS+=("${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}")
     fi
 
+    if [[ -z "${DISTRIBUTION_INSTALLER_PLUGINS_SDK}" ]]
+    then
+        version_compare "${BUILD_TARGET_OPTION_SDK}" "10.6"
+        if (( ${?} != 1 ))
+        then
+            DISTRIBUTION_INSTALLER_PLUGINS_SDK="${BUILD_TARGET_OPTION_SDK}"
+        else
+            for sdk in "${DEFAULT_SDK_SUPPORTED[@]}"
+            do
+                version_compare "${sdk}" "10.6"
+                if (( ${?} != 1 ))
+                then
+                    DISTRIBUTION_INSTALLER_PLUGINS_SDK="${sdk}"
+                    break
+                fi
+            done
+
+            if [[ -z "${DISTRIBUTION_INSTALLER_PLUGINS_SDK}" ]]
+            then
+                common_die "No supported macOS SDK for building installer plugins installed"
+            fi
+        fi
+    fi
+
     common_log_variable DISTRIBUTION_KEXT_TASKS
+    common_log_variable DISTRIBUTION_INSTALLER_PLUGINS_SDK
 
     common_log "Clean target"
     build_target_invoke "${BUILD_TARGET_NAME}" clean
@@ -101,22 +132,38 @@ function distribution_build
                                     "--code-sign-identity=${BUILD_TARGET_OPTION_CODE_SIGN_IDENTITY}"
                                     "--product-sign-identity=${BUILD_TARGET_OPTION_PRODUCT_SIGN_IDENTITY}")
 
-    local stage_directory_core="${BUILD_TARGET_BUILD_DIRECTORY}/Core"
-    local stage_directory_prefpane="${BUILD_TARGET_BUILD_DIRECTORY}/PrefPane"
+    local -a installer_plugins_build_options=("-s${DISTRIBUTION_INSTALLER_PLUGINS_SDK}"
+                                              "-d${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
+                                              "-c${BUILD_TARGET_OPTION_BUILD_CONFIGURATION}"
+                                              "${BUILD_TARGET_OPTION_BUILD_SETTINGS[@]/#/-b}"
+                                              "${BUILD_TARGET_OPTION_MACROS[@]/#/-m}")
+
     local debug_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Debug"
-    local packages_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Packages"
+
+    local core_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Core"
+    local prefpane_directory="${BUILD_TARGET_BUILD_DIRECTORY}/PrefPane"
+
+    local distribution_directory="${BUILD_TARGET_BUILD_DIRECTORY}/Distribution"
+    local plugins_directory="${distribution_directory}/Plugins"
+    local packages_directory="${distribution_directory}/Packages"
 
     /bin/mkdir -p "${BUILD_TARGET_BUILD_DIRECTORY}" 1>&3 2>&4
     common_die_on_error "Failed to create build directory"
 
-    distribution_create_stage_core "${stage_directory_core}"
-    common_die_on_error "Failed to create core stage"
-
-    distribution_create_stage_prefpane "${stage_directory_prefpane}"
-    common_die_on_error "Failed to create preference pane stage"
-
     /bin/mkdir -p "${debug_directory}" 1>&3 2>&4
     common_die_on_error "Failed to create debug directory"
+
+    distribution_create_stage_core "${core_directory}"
+    common_die_on_error "Failed to create core staging directory"
+
+    distribution_create_stage_prefpane "${prefpane_directory}"
+    common_die_on_error "Failed to create preference pane staging directory"
+
+    /bin/mkdir -p "${distribution_directory}" 1>&3 2>&4
+    common_die_on_error "Failed to create distribution directory"
+
+    /bin/mkdir -p "${plugins_directory}" 1>&3 2>&4
+    common_die_on_error "Failed to create plugins directory"
 
     /bin/mkdir -p "${packages_directory}" 1>&3 2>&4
     common_die_on_error "Failed to create packages directory"
@@ -128,13 +175,13 @@ function distribution_build
     build_target_invoke fsbundle build "${default_build_options[@]}" "${DISTRIBUTION_KEXT_TASKS[@]/#/--kext=}"
     common_die_on_error "Failed to build file system bundle"
 
-    build_target_invoke fsbundle install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Filesystems"
+    build_target_invoke fsbundle install --debug="${debug_directory}" -- "${core_directory}/Library/Filesystems"
     common_die_on_error "Failed to install file system bundle"
 
     # Locate file system bundle
 
     local fsbundle_path=""
-    fsbundle_path="`osxfuse_find "${stage_directory_core}/Library/Filesystems"/*.fs`"
+    fsbundle_path="`osxfuse_find "${core_directory}/Library/Filesystems"/*.fs`"
     common_die_on_error "Failed to locate file system bundle"
 
     # Set loader SUID bit
@@ -175,29 +222,35 @@ function distribution_build
     build_target_invoke library build "${library_build_options[@]}"
     common_die_on_error "Failed to build library"
 
-    build_target_invoke library install --debug="${debug_directory}" -- "${stage_directory_core}"
+    build_target_invoke library install --debug="${debug_directory}" -- "${core_directory}"
     common_die_on_error "Failed to install library"
 
-    /bin/ln -s "libosxfuse.2.dylib" "${stage_directory_core}/usr/local/lib/libosxfuse_i64.2.dylib" && \
-    /bin/ln -s "libosxfuse.dylib" "${stage_directory_core}/usr/local/lib/libosxfuse_i64.dylib" && \
-    /bin/ln -s "libosxfuse.la" "${stage_directory_core}/usr/local/lib/libosxfuse_i64.la" && \
-    /bin/ln -s "osxfuse.pc" "${stage_directory_core}/usr/local/lib/pkgconfig/fuse.pc"
+    /bin/ln -s "libosxfuse.2.dylib" "${core_directory}/usr/local/lib/libosxfuse_i64.2.dylib" && \
+    /bin/ln -s "libosxfuse.dylib" "${core_directory}/usr/local/lib/libosxfuse_i64.dylib" && \
+    /bin/ln -s "libosxfuse.la" "${core_directory}/usr/local/lib/libosxfuse_i64.la" && \
+    /bin/ln -s "osxfuse.pc" "${core_directory}/usr/local/lib/pkgconfig/fuse.pc"
     common_die_on_error "Failed to create legacy library links"
 
     # Build framework
 
-    build_target_invoke framework build "${default_build_options[@]}" --library-prefix="${stage_directory_core}/usr/local"
+    build_target_invoke framework build "${default_build_options[@]}" --library-prefix="${core_directory}/usr/local"
     common_die_on_error "Failed to build framework"
 
-    build_target_invoke framework install --debug="${debug_directory}" -- "${stage_directory_core}/Library/Frameworks"
+    build_target_invoke framework install --debug="${debug_directory}" -- "${core_directory}/Library/Frameworks"
     common_die_on_error "Failed to install framework"
 
     # Build core component package
 
     common_log -v 3 "Build core component package"
 
-    osxfuse_build_component_package -n Core -r "${stage_directory_core}" "${packages_directory}/Core.pkg"
+    pushd "${BUILD_TARGET_BUILD_DIRECTORY}" > /dev/null 2>&1
+    common_die_on_error "Build directory '${BUILD_TARGET_BUILD_DIRECTORY}' does not exist"
+
+    osxfuse_build_component_package -n Core -r "${core_directory}" "${packages_directory}/Core.pkg"
     common_die_on_error "Failed to build core package"
+
+    popd > /dev/null 2>&1
+
     component_packages+=("${packages_directory}/Core.pkg")
 
     # Build preference pane
@@ -205,16 +258,30 @@ function distribution_build
     build_target_invoke prefpane build "${default_build_options[@]}"
     common_die_on_error "Failed to build preference pane"
 
-    build_target_invoke prefpane install -- "${stage_directory_prefpane}/Library/PreferencePanes"
+    build_target_invoke prefpane install -- "${prefpane_directory}/Library/PreferencePanes"
     common_die_on_error "Failed to install preference pane"
 
     # Build preference pane component package
 
     common_log -v 3 "Build preference pane component package"
 
-    osxfuse_build_component_package -n PrefPane -r "${stage_directory_prefpane}" "${packages_directory}/PrefPane.pkg"
+    pushd "${BUILD_TARGET_BUILD_DIRECTORY}" > /dev/null 2>&1
+    common_die_on_error "Build directory '${BUILD_TARGET_BUILD_DIRECTORY}' does not exist"
+
+    osxfuse_build_component_package -n PrefPane -r "${prefpane_directory}" "${packages_directory}/PrefPane.pkg"
     common_die_on_error "Failed to build preference pane package"
+
+    popd > /dev/null 2>&1
+
     component_packages+=("${packages_directory}/PrefPane.pkg")
+
+    # Build installer plugins
+
+    build_target_invoke installer_plugins build "${installer_plugins_build_options[@]}"
+    common_die_on_error "Failed to build installer plugins"
+
+    build_target_invoke installer_plugins install --debug="${debug_directory}" -- "${plugins_directory}"
+    common_die_on_error "Failed to install preference pane"
 
     # Build distribution package
 
@@ -233,11 +300,12 @@ function distribution_build
         fi
     done
 
-    pushd "${BUILD_TARGET_BUILD_DIRECTORY}" > /dev/null 2>&1
-    common_die_on_error "Build directory '${BUILD_TARGET_BUILD_DIRECTORY}' does not exist"
+    pushd "${distribution_directory}" > /dev/null 2>&1
+    common_die_on_error "Distribution directory '${distribution_directory}' does not exist"
 
-    osxfuse_build_distribution_package -p "${packages_directory}" \
+    osxfuse_build_distribution_package --package-path="${packages_directory}" \
                                        "${component_packages[@]/#/-c}" \
+                                       --plugin-path="${plugins_directory}" \
                                        "${macos_versions_supported[@]/#/-d}" \
                                        "${distribution_package_path}"
     common_die_on_error "Failed to build distribution package"
@@ -268,6 +336,6 @@ function distribution_install
     if [[ -n "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}" ]]
     then
         build_target_install "${BUILD_TARGET_BUILD_DIRECTORY}/Debug/" "${BUILD_TARGET_OPTION_DEBUG_DIRECTORY}"
-        common_die_on_error "Failed to Install debug files"
+        common_die_on_error "Failed to install debug files"
     fi
 }
