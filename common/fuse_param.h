@@ -76,6 +76,7 @@
 #define OSXFUSE_KEXT_NAME               "osxfuse.kext"
 #define OSXFUSE_LOAD_PROG               OSXFUSE_RESOURCES_PATH "/load_osxfuse"
 #define OSXFUSE_MOUNT_PROG              OSXFUSE_RESOURCES_PATH "/mount_osxfuse"
+#define OSXFUSE_VOLUME_ICON             OSXFUSE_RESOURCES_PATH "/Volume.icns"
 #define SYSTEM_KEXTLOAD                 "/sbin/kextload"
 #define SYSTEM_KEXTUNLOAD               "/sbin/kextunload"
 
