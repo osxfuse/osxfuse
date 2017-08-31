@@ -1,15 +1,21 @@
+[submodule "filesystems"]
+path=filesystems
+url = https://github.com/osxfuse/filesystems
 [submodule "framework"]
-        path = framework
-        url = ../framework.git
+path=framework
+url = https://github.com/osxfuse/framework
 [submodule "fuse"]
-	path = fuse
-	url = ../fuse.git
+path=fuse
+url = https://github.com/osxfuse/fuse
 [submodule "kext"]
-	path = kext
-	url = ../kext.git
+path=kext
+url = https://github.com/osxfuse/kext
 [submodule "prefpane"]
-	path = prefpane
-	url = ../prefpane.git
+path=prefpane
+url = https://github.com/osxfuse/prefpane
+[submodule "sshfs"]
+path=sshfs
+url = https://github.com/osxfuse/sshfs
 [submodule "support"]
-        path = support
-        url = ../support.git
+path=support
+url = https://github.com/osxfuse/support
