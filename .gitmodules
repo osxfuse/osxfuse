@@ -1,3 +1,9 @@
+[submodule "cloudfuse/gcsfuse"]
+path=cloudfuse/gcsfuse
+url = https://github.com/GoogleCloudPlatform/gcsfuse
+[submodule "cloudfuse/s3fs-fuse"]
+path=cloudfuse/s3fs-fuse
+url = https://github.com/s3fs-fuse/s3fs-fuse
 [submodule "filesystems"]
 path=filesystems
 url = https://github.com/osxfuse/filesystems
