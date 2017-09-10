@@ -316,7 +316,7 @@ EOF
     /usr/bin/shasum -a 256 "${disk_image_name}" "${debug_archive_name}" > "${sha256_file_name}"
     common_die_on_error "Failed to generate hash values for release"
 
-    /opt/local/bin/gpg2 --output "${sha256_file_name}.sig" --detach-sig "${sha256_file_name}" 1>&3 2>&4
+    /opt/local/bin/gpg --output "${sha256_file_name}.sig" --detach-sig "${sha256_file_name}" 1>&3 2>&4
     common_die_on_error "Failed to sign file '${sha256_file_name}'"
 
     popd > /dev/null 2>&1
