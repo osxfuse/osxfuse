@@ -31,6 +31,10 @@
     #define M_OSXFUSE_ENABLE_XATTR                      1
     #define M_OSXFUSE_ENABLE_DSELECT                    1
 
+    #if VERSION_MAJOR >= 15
+        #define M_OSXFUSE_ENABLE_VNODE_NOTIFY           1
+    #endif
+
     #if M_OSXFUSE_ENABLE_UNSUPPORTED
         #define M_OSXFUSE_ENABLE_EXCHANGE               1
         #define M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK    1
