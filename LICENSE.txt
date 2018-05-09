@@ -1,6 +1,6 @@
 FUSE for macOS is covered under the following BSD-style license:
 
-  Copyright (c) 2011-2017 Benjamin Fleischer
+  Copyright (c) 2011-2018 Benjamin Fleischer
   Copyright (c) 2011-2012 Erik Larsson
   All rights reserved.
 
