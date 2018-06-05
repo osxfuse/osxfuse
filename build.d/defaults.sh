@@ -65,7 +65,10 @@ declare -r  DEFAULT_SDK_10_12_COMPILER="com.apple.compilers.llvm.clang.1_0"
 declare -ra DEFAULT_SDK_10_13_ARCHITECURES=("i386" "x86_64")
 declare -r  DEFAULT_SDK_10_13_COMPILER="com.apple.compilers.llvm.clang.1_0"
 
-declare -ra DEFAULT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10" "10.11" "10.12" "10.13")
+declare -ra DEFAULT_SDK_10_14_ARCHITECURES=("i386" "x86_64")
+declare -r  DEFAULT_SDK_10_14_COMPILER="com.apple.compilers.llvm.clang.1_0"
+
+declare -ra DEFAULT_SDK_SUPPORTED=("10.5" "10.6" "10.7" "10.8" "10.9" "10.10" "10.11" "10.12" "10.13" "10.14")
 
 declare     DEFAULT_SDK="`macos_get_version`"
 declare -r  DEFAULT_BUILD_CONFIGURATION="Release"
