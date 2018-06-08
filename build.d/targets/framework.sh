@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2017 Benjamin Fleischer
+# Copyright (c) 2011-2018 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -64,7 +64,7 @@ function framework_build
     build_target_xcodebuild -project OSXFUSE.xcodeproj -target OSXFUSE \
                             OSXFUSE_LIBRARY_PREFIX="${FRAMEWORK_LIBRARY_PREFIX}" \
                             OSXFUSE_VERSION="${osxfuse_version}" \
-                            clean build
+                            build
     common_die_on_error "Failed to build target"
 
     # Locate framework

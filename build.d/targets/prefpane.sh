@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2014 Benjamin Fleischer
+# Copyright (c) 2011-2018 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@ function prefpane_build
     # Build autoinstaller
 
     build_target_xcodebuild -project autoinstaller/autoinstaller.xcodeproj -target autoinstall-osxfuse-core \
-                            clean build
+                            build
     common_die_on_error "Failed to build autoinstaller"
 
     # Build preference pane
@@ -57,7 +57,7 @@ function prefpane_build
     build_target_xcodebuild -project OSXFUSEPref.xcodeproj -target OSXFUSE \
                             CODE_SIGN_IDENTITY="" \
                             OSXFUSE_VERSION="${osxfuse_version}" \
-                            clean build
+                            build
     common_die_on_error "Failed to build preference pane"
 
     local autoinstaller_path=""

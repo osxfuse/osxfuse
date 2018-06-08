@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2017 Benjamin Fleischer
+# Copyright (c) 2011-2018 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,7 @@ function macfuse_framework_build
 
     build_target_xcodebuild -project MacFUSE.xcodeproj -target MacFUSE \
                             MACFUSE_LIBRARY_PREFIX="${MACFUSE_FRAMEWORK_LIBRARY_PREFIX}" \
-                            clean build
+                            build
     common_die_on_error "Failed to build target"
 }
 

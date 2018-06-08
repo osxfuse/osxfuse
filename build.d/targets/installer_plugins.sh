@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2011-2017 Benjamin Fleischer
+# Copyright (c) 2011-2018 Benjamin Fleischer
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ function installer_plugins_build
     common_die_on_error "Failed to clean target"
 
     common_log "Build target for macOS ${BUILD_TARGET_OPTION_DEPLOYMENT_TARGET}"
-    build_target_xcodebuild -project PostInstall.xcodeproj -target PostInstall clean build
+    build_target_xcodebuild -project PostInstall.xcodeproj -target PostInstall build
     common_die_on_error "Failed to build target"
 }
 

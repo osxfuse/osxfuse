@@ -67,7 +67,7 @@ function fsbundle_build
     # Build file system bundle
 
     build_target_xcodebuild -project osxfusefs.xcodeproj -target osxfuse.fs \
-                            clean build
+                            build
     common_die_on_error "Failed to build target"
 
     local fsbundle_path=""

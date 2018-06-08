@@ -1,13 +1,14 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * Copyright (c) 2018 Benjamin Fleischer
  * All rights reserved.
  */
 
 #ifndef _FUSE_MOUNT_H_
 #define _FUSE_MOUNT_H_
 
-#include <fuse_param.h>
-#include <fuse_version.h>
+#include "fuse_param.h"
+#include "fuse_version.h"
 
 #include <sys/mount.h>
 #include <sys/param.h>

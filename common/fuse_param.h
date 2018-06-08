@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2011-2016 Benjamin Fleischer
+ * Copyright (c) 2011-2018 Benjamin Fleischer
  * All rights reserved.
  */
 
 #ifndef _FUSE_PARAM_H_
 #define _FUSE_PARAM_H_
 
-#include <fuse_preprocessor.h>
-#include <fuse_version.h>
+#include "fuse_preprocessor.h"
+#include "fuse_version.h"
 
 #include <mach/vm_param.h>
 
