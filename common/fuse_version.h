@@ -28,7 +28,7 @@
 
 /* Version */
 
-#define OSXFUSE_VERSION_LITERAL             3.8.1
+#define OSXFUSE_VERSION_LITERAL             3.8.2
 #define OSXFUSE_TIMESTAMP                   __DATE__ ", " __TIME__
 
 #define OSXFUSE_VERSION                     FUSE_PP_STRINGIFY(OSXFUSE_VERSION_LITERAL)
