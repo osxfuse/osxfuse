@@ -345,7 +345,7 @@ EOF
     <array>
 EOF
 
-    for macos_version in 10.5 10.6 10.7 10.8 10.9 10.10 10.11 10.12 10.13
+    for macos_version in 10.5 10.6 10.7 10.8 10.9 10.10 10.11 10.12 10.13 10.14
     do
 /bin/cat >> "${rules_plist_path}" <<EOF
         <dict>
