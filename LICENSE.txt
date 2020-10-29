@@ -1,4 +1,4 @@
-FUSE for macOS is covered under the following license:
+macFUSE is covered under the following license:
 
   Copyright (c) 2011-2020 Benjamin Fleischer
   All rights reserved.
@@ -14,8 +14,10 @@ FUSE for macOS is covered under the following license:
   3. Neither the name of the copyright holder nor the names of its  contributors
      may be used to endorse or  promote  products  derived  from  this  software 
      without specific prior written permission.
-  4. Redistributions of source code or in binary form, bundled  with  commercial
-     software, are not allowed without specific prior written permission.
+  4. Redistributions in binary form, bundled with commercial software,  are  not
+     allowed without  specific  prior  written  permission.  This  includes  the
+     automated download or installation or  both  of  the  binary  form  in  the
+     context of commercial software.
 
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND  CONTRIBUTORS  "AS  IS"
   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,  BUT  NOT  LIMITED  TO,  THE
@@ -29,9 +31,9 @@ FUSE for macOS is covered under the following license:
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  IF  ADVISED  OF  THE
   POSSIBILITY OF SUCH DAMAGE.
 
-FUSE for macOS is a fork of MacFUSE. MacFUSE has been developed by Google.
-Additional information and the original source code of MacFUSE are available on
-http://code.google.com/p/macfuse/. MacFUSE is covered under the following
+macFUSE is a fork of the legacy Google MacFUSE software. Additional information
+and the original source code of Google MacFUSE are available on
+http://code.google.com/p/macfuse/. Google MacFUSE is covered under the following
 BSD-style license:
 
   Copyright (c) 2007—2009 Google Inc.
@@ -68,9 +70,9 @@ BSD-style license:
 Portions of this package were derived from code developed by other authors.
 Please read further for specific details.
 
-* Unless otherwise noted, parts of the FUSE for macOS kernel extension contain
-  code derived from the FreeBSD version of FUSE, which is covered under the
-  following BSD-style license:
+* Unless otherwise noted, parts of the macFUSE kernel extension contain code
+  derived from the FreeBSD version of FUSE, which is covered under the following
+  BSD-style license:
 
     Copyright (C) 2005 Csaba Henk. All rights reserved.
 
@@ -94,10 +96,10 @@ Please read further for specific details.
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT  OF  THE  USE  OF
     THIS  SOFTWARE,  EVEN  IF  ADVISED  OF  THE  POSSIBILITY  OF  SUCH   DAMAGE.
 
-* Parts of the FUSE for macOS kernel extension contain code derived from
-  Tuxera's "rebel" branch. The original source code of the "rebel" branch is
-  available on https://github.com/tuxera. These modifications are covered under
-  the following BSD-style license:
+* Parts of the macFUSE kernel extension contain code derived from Tuxera's
+  "rebel" branch. The original source code of the "rebel" branch is available on
+  https://github.com/tuxera. These modifications are covered under the following
+  BSD-style license:
 
     Copyright (c) 2010 Tuxera Inc.
     Copyright (c) 2011-2012 Erik Larsson
@@ -127,9 +129,9 @@ Please read further for specific details.
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  OF  THE
     POSSIBILITY OF SUCH DAMAGE.
 
-* Parts of FUSE for macOS contain code derived from Fuse4X. The original source
-  code of Fuse4X is available on https://github.com/fuse4x. Fuse4X is covered
-  under the following BSD-style license:
+* Parts of macFUSE contain code derived from Fuse4X. The original source code of
+  Fuse4X is available on https://github.com/fuse4x. Fuse4X is covered under the
+  following BSD-style license:
 
     Copyright (c) 2011 Anatol Pomozov
     All rights reserved.
@@ -155,9 +157,8 @@ Please read further for specific details.
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  OF  THE
     POSSIBILITY OF SUCH DAMAGE.
 
-* Parts of the mount_osxfuse and the load_osxfuse command-line programs are
-  covered under the Apple Public Source License (APSL). You can read the APSL
-  at:
+* Parts of the mount_macfuse command-line program are covered under the Apple
+  Public Source License (APSL). You can read the APSL at:
 
     http://www.opensource.apple.com/license/apsl/
 
