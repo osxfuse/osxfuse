@@ -90,7 +90,7 @@ function xcode_find
 
         for sdk_name in `DEVELOPER_DIR="${xcode_path}" xcodebuild -showsdks 2>&4 | /usr/bin/sed -E -n -e 's/.*-sdk (macosx.*)/\1/p'`
         do
-            sdk_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk ${sdk_name} SDKVersion 2>&4`"
+            sdk_version="`DEVELOPER_DIR="${xcode_path}" xcodebuild -version -sdk ${sdk_name} SDKVersion 2>&4 | cut -d'.' -f1-2`"
             if ! version_is_version "${sdk_version}"
             then
                 continue
