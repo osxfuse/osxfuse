@@ -12,8 +12,8 @@
 
 /* File system name */
 
-/*#define OSXFUSE_NAME_LITERAL                osxfuse
-//#define OSXFUSE_DISPLAY_NAME_LITERAL        OSXFUSE*/
+/*#define OSXFUSE_NAME_LITERAL                osxfuse*/
+/*#define OSXFUSE_DISPLAY_NAME_LITERAL        OSXFUSE*/
 
 #define OSXFUSE_NAME                        FUSE_PP_STRINGIFY(OSXFUSE_NAME_LITERAL)
 #define OSXFUSE_DISPLAY_NAME                FUSE_PP_STRINGIFY(OSXFUSE_DISPLAY_NAME_LITERAL)
